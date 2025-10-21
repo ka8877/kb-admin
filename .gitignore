@@ -1,0 +1,25 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+
+# IntelliJ / IDE
+.idea/
+*.iml
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Gradle / Backend
+.gradle/
+**/build/
+backend/.gradle/
+backend/build/
+
+# Others
+.env
