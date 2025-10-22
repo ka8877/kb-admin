@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Box, CircularProgress } from '@mui/material'
 
 const Loading: React.FC = () => (

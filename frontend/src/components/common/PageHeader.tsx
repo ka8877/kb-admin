@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Stack, Typography } from '@mui/material'
 
 export type PageHeaderProps = {

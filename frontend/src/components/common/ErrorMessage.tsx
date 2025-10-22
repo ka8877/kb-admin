@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Alert, AlertTitle } from '@mui/material'
 
 export type ErrorMessageProps = {

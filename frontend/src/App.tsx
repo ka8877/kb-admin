@@ -1,30 +1,36 @@
-import React, { Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import MainLayout from './layouts/MainLayout'
+import React, { Suspense } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import MainLayout from './layouts/MainLayout';
 
 // Eagerly import all page entry files following Next.js-like folder structure: src/pages/**/index.tsx
 // Example: src/pages/index.tsx -> '/'
 //          src/pages/dashboard/index.tsx -> '/dashboard'
 
-type PageModule = { default: React.ComponentType }
-const pageModules = import.meta.glob('./pages/**/index.tsx', { eager: true }) as Record<string, PageModule>
+type PageModule = { default: React.ComponentType };
+const pageModules = import.meta.glob('./pages/**/index.tsx', { eager: true }) as Record<
+  string,
+  PageModule
+>;
 
-type RouteDef = { path: string; Component: React.ComponentType }
+type RouteDef = { path: string; Component: React.ComponentType };
 
 const buildRoutes = (): RouteDef[] => {
-  const routes: RouteDef[] = []
+  const routes: RouteDef[] = [];
   Object.entries(pageModules).forEach(([file, mod]) => {
-    let path = file.replace('./pages', '').replace(/\\/g, '/').replace(/\/index\.tsx$/, '')
-    if (path === '') path = '/'
-    routes.push({ path, Component: mod.default })
-  })
+    let path = file
+      .replace('./pages', '')
+      .replace(/\\/g, '/')
+      .replace(/\/index\.tsx$/, '');
+    if (path === '') path = '/';
+    routes.push({ path, Component: mod.default });
+  });
   // Optional: ensure root is defined first for readability (not required by router)
-  routes.sort((a, b) => (a.path === '/' ? -1 : b.path === '/' ? 1 : a.path.localeCompare(b.path)))
-  return routes
-}
+  routes.sort((a, b) => (a.path === '/' ? -1 : b.path === '/' ? 1 : a.path.localeCompare(b.path)));
+  return routes;
+};
 
 const App: React.FC = () => {
-  const routes = buildRoutes()
+  const routes = buildRoutes();
 
   return (
     <MainLayout>
@@ -38,7 +44,7 @@ const App: React.FC = () => {
         </Routes>
       </Suspense>
     </MainLayout>
-  )
-}
+  );
+};
 
-export default App
+export default App;

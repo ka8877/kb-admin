@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Card, CardContent, Divider, Stack, Typography } from '@mui/material'
 import PageHeader from '../components/common/PageHeader'
 

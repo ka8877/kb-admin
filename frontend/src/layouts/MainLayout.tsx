@@ -1,33 +1,27 @@
-import { PropsWithChildren } from 'react'
-import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material'
-import { Link as RouterLink, useLocation } from 'react-router-dom'
-import { topMenus } from '../routes/menu'
+import { PropsWithChildren } from 'react';
+import { Box, Container, Toolbar } from '@mui/material';
+import AppHeader from '../components/layout/AppHeader';
+import SideNav from '../components/layout/SideNav';
+import { topMenus } from '../routes/menu';
+
+const drawerWidth = 220;
 
 const MainLayout = ({ children }: PropsWithChildren) => {
-  const { pathname } = useLocation()
-  const isActive = (to: string) => (pathname === to ? 'underline' : 'none')
-
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar position="static" color="primary" enableColorOnDark>
-        <Toolbar>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Admin
-          </Typography>
-          <Box sx={{ flexGrow: 1 }} />
-          {topMenus.map((m) => (
-            <Button key={m.path} color="inherit" component={RouterLink} to={m.path} sx={{ textDecoration: isActive(m.path) }}>
-              {m.label}
-            </Button>
-          ))}
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppHeader title="kakaobank AI" drawerWidth={drawerWidth} />
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {children}
-      </Container>
+      <SideNav drawerWidth={drawerWidth} items={topMenus} />
+
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        {/* push content below AppBar height */}
+        <Toolbar />
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          {children}
+        </Container>
+      </Box>
     </Box>
-  )
-}
+  );
+};
 
-export default MainLayout
+export default MainLayout;
