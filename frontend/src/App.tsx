@@ -1,42 +1,19 @@
 import React, { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
-
-// Eagerly import all page entry files following Next.js-like folder structure: src/pages/**/index.tsx
-// Example: src/pages/index.tsx -> '/'
-//          src/pages/dashboard/index.tsx -> '/dashboard'
-
-type PageModule = { default: React.ComponentType };
-const pageModules = import.meta.glob('./pages/**/index.tsx', { eager: true }) as Record<
-  string,
-  PageModule
->;
-
-type RouteDef = { path: string; Component: React.ComponentType };
-
-const buildRoutes = (): RouteDef[] => {
-  const routes: RouteDef[] = [];
-  Object.entries(pageModules).forEach(([file, mod]) => {
-    let path = file
-      .replace('./pages', '')
-      .replace(/\\/g, '/')
-      .replace(/\/index\.tsx$/, '');
-    if (path === '') path = '/';
-    routes.push({ path, Component: mod.default });
-  });
-  // Optional: ensure root is defined first for readability (not required by router)
-  routes.sort((a, b) => (a.path === '/' ? -1 : b.path === '/' ? 1 : a.path.localeCompare(b.path)));
-  return routes;
-};
+import { frontRoutes } from './routes/registry';
 
 const App: React.FC = () => {
-  const routes = buildRoutes();
-
   return (
     <MainLayout>
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
-          {routes.map(({ path, Component }) => (
+          {/**
+           * 보호 라우트 적용 예시 (RequireAuth 사용):
+           * <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+           * - 실제로 적용하려면 위 컴포넌트 임포트와 해당 라우트 컴포넌트를 추가.
+           */}
+          {frontRoutes.map(({ path, Component }) => (
             <Route key={path} path={path} element={<Component />} />
           ))}
           <Route path="/404" element={<div>Not Found</div>} />

@@ -2,6 +2,7 @@ import type React from 'react'
 import { Box, Drawer, List, ListItemButton, ListItemText, Toolbar } from '@mui/material'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import type { MenuItem } from '../../routes/menu'
+import { registeredPathSet } from '../../routes/registry'
 
 export type SideNavProps = {
   drawerWidth: number
@@ -10,6 +11,7 @@ export type SideNavProps = {
 
 const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
   const { pathname } = useLocation()
+  const safeItems = items.filter((m) => registeredPathSet.has(m.path))
 
   return (
     <Drawer
@@ -30,7 +32,7 @@ const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
       <Toolbar />
       <Box sx={{ overflow: 'auto' }}>
         <List dense>
-          {items.map((m) => (
+          {safeItems.map((m) => (
             <ListItemButton key={m.path} component={RouterLink} to={m.path} selected={pathname === m.path}>
               <ListItemText primary={m.label} />
             </ListItemButton>

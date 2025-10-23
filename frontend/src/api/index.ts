@@ -1,2 +1,3 @@
-export * from './dashboard'
-export { axiosClient } from '../lib/http'
+export * from './dashboard';
+export * from './menu';
+export { axiosClient } from '../lib/http';
