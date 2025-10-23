@@ -22,7 +22,14 @@
     "@mui/material": "5.15.20",
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.11.5",
-    "axios": "1.7.7"
+    "axios": "1.7.7",
+    "react-dropzone": "14.3.8",
+    "react-accessible-treeview": "2.11.2",
+    "styled-components": "6.1.19",
+    "ag-grid-react": "34.2.0",
+    "ag-grid-community": "34.2.0",
+    "exceljs": "4.4.0",
+    "dayjs": "1.11.13"
   },
   "devDependencies": {
     "typescript": "5.6.3",
@@ -30,17 +37,17 @@
     "@types/react": "18.3.8",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
-    "eslint": "^8.57.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.0",
-    "@typescript-eslint/parser": "^8.8.0",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "eslint-plugin-jsx-a11y": "^6.9.0",
-    "eslint-plugin-unused-imports": "^4.1.4",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.3.3",
-    "husky": "^9.1.6",
-    "lint-staged": "^15.2.10"
+    "eslint": "8.57.0",
+    "@typescript-eslint/eslint-plugin": "8.8.0",
+    "@typescript-eslint/parser": "8.8.0",
+    "eslint-plugin-react": "7.37.2",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "eslint-plugin-jsx-a11y": "6.9.0",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "eslint-config-prettier": "9.1.0",
+    "prettier": "3.3.3",
+    "husky": "9.1.6",
+    "lint-staged": "15.2.10"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

@@ -8,6 +8,20 @@ import theme from './theme';
 import { queryClient } from './lib/query/client';
 import './styles/variables.css';
 import './styles/globals.css';
+import { useAuthStore } from './store/auth';
+
+// Temporary mock auth bootstrap: assume user is logged in
+// This block sets a mock token and user for global availability via Zustand.
+// Remove when real authentication is implemented.
+(() => {
+  const { accessToken, setToken, setUser, user } = useAuthStore.getState();
+  if (!accessToken) {
+    setToken('mock-dev-token');
+  }
+  if (!user) {
+    setUser({ id: 'u-001', name: '개발자', email: 'dev@example.com', roles: ['ADMIN'] });
+  }
+})();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

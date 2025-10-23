@@ -1,6 +1,7 @@
 import type React from 'react';
 import { AppBar, Box, Toolbar, Typography } from '@mui/material';
 import { APP_TITLE } from '../../constants';
+import { Link as RouterLink } from 'react-router-dom';
 
 // Global application top bar (앱 전역 헤더)
 // - 항상 화면 최상단에 고정되어 사이드 네비게이션 위에 표시됩니다.
@@ -27,7 +28,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 
       }}
     >
       <Toolbar>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography
+          variant="h6"
+          component={RouterLink}
+          to="/"
+          sx={{ fontWeight: 700, textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.85 }, cursor: 'pointer' }}
+          aria-label="Go to home"
+        >
           {title}
         </Typography>
         <Box sx={{ flexGrow: 1 }} />

@@ -1,25 +1,29 @@
-import { PropsWithChildren, useEffect } from 'react';
-import { Box, Container, Toolbar } from '@mui/material';
+import { PropsWithChildren } from 'react';
+import { Box, Container, Toolbar, Avatar, Stack, Typography } from '@mui/material';
 import AppHeader from '../components/layout/AppHeader';
 import SideNav from '../components/layout/SideNav';
-import { useMenuStore } from '../store/menu';
 import { DRAWER_WIDTH } from '../constants';
+import { frontMenus } from '../routes/menu';
+import { useAuthStore } from '../store/auth';
 
 const MainLayout = ({ children }: PropsWithChildren) => {
-  const menus = useMenuStore((s) => s.menus);
-  const loadMenus = useMenuStore((s) => s.loadMenus);
-
-  useEffect(() => {
-    if (menus.length === 0) {
-      loadMenus();
-    }
-  }, [menus.length, loadMenus]);
+  const user = useAuthStore((s) => s.user);
+  const right = user ? (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Avatar sx={{ width: 28, height: 28 }}>
+        {user.name?.charAt(0) || '?'}
+      </Avatar>
+      <Typography variant="body2" color="text.secondary">
+        {user.name}
+      </Typography>
+    </Stack>
+  ) : null;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppHeader drawerWidth={DRAWER_WIDTH} />
+      <AppHeader drawerWidth={DRAWER_WIDTH} right={right} />
 
-      <SideNav drawerWidth={DRAWER_WIDTH} items={menus} />
+      <SideNav drawerWidth={DRAWER_WIDTH} items={frontMenus} />
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         {/* push content below AppBar height */}
