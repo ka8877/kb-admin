@@ -1,37 +1,50 @@
-import type React from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { useMutation } from '@tanstack/react-query'
-import { Alert, Button, Divider, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material'
-import type { CreateExampleInput } from '../../../types/example'
-import { exampleApi } from '../../../api'
+import type React from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
+import {
+  Alert,
+  Button,
+  Divider,
+  Grid,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import type { CreateExampleInput } from '../../../types/example';
+import { exampleApi } from '../../../api';
 
 export type CreateFormProps = {
-  onCreated?: () => void
-}
+  onCreated?: () => void;
+};
 
 const defaultValues: CreateExampleInput = {
   name: '',
   email: '',
   status: 'ACTIVE',
-}
+};
 
 const CreateForm: React.FC<CreateFormProps> = ({ onCreated }) => {
   const { control, handleSubmit, reset, formState } = useForm<CreateExampleInput>({
     defaultValues,
     mode: 'onChange',
-  })
+  });
 
-  const { mutateAsync: createAsync, isPending, error: createError } = useMutation({
+  const {
+    mutateAsync: createAsync,
+    isPending,
+    error: createError,
+  } = useMutation({
     mutationFn: exampleApi.create,
     onSuccess: () => {
-      reset(defaultValues)
-      onCreated?.()
+      reset(defaultValues);
+      onCreated?.();
     },
-  })
+  });
 
   const onSubmit = handleSubmit(async (values) => {
-    await createAsync(values)
-  })
+    await createAsync(values);
+  });
 
   return (
     <>
@@ -43,7 +56,10 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated }) => {
             <Controller
               name="name"
               control={control}
-              rules={{ required: '이름을 입력하세요', minLength: { value: 2, message: '최소 2자 이상' } }}
+              rules={{
+                required: '이름을 입력하세요',
+                minLength: { value: 2, message: '최소 2자 이상' },
+              }}
               render={({ field, fieldState }) => (
                 <TextField
                   {...field}
@@ -93,7 +109,12 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated }) => {
               <Button type="submit" variant="contained" disabled={!formState.isValid || isPending}>
                 {isPending ? '생성 중...' : '생성'}
               </Button>
-              <Button type="button" variant="outlined" onClick={() => reset(defaultValues)} disabled={isPending}>
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={() => reset(defaultValues)}
+                disabled={isPending}
+              >
                 초기화
               </Button>
             </Stack>
@@ -106,7 +127,7 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated }) => {
         </Alert>
       )}
     </>
-  )
-}
+  );
+};
 
-export default CreateForm
+export default CreateForm;

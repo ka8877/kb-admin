@@ -8,6 +8,8 @@ import theme from './theme';
 import { queryClient } from './lib/query/client';
 import './styles/variables.css';
 import './styles/globals.css';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAuthStore } from './store/auth';
 
 // Temporary mock auth bootstrap: assume user is logged in
@@ -31,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <App />
         </BrowserRouter>
+        <ToastContainer position="top-right" autoClose={2500} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover theme="colored" />
       </QueryClientProvider>
     </ThemeProvider>
   </StrictMode>,
