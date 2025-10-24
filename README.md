@@ -80,3 +80,9 @@
 ## 샘플/참고
 - 예제 페이지: /example — React Hook Form + React Query + MUI DataGrid 기반 생성/조회(목 데이터 사용)
 - 대시보드 예시: /dashboard — React Query로 간단한 API 호출 샘플
+
+
+---
+
+## 추가 문서
+- 프론트엔드 페이지/기능별 폴더 구조 가이드: `frontend/docs/folder-structure.md`
