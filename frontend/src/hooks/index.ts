@@ -2,4 +2,5 @@
 // Example:
 // export { useFoo } from './useFoo'
 
-export {}
+export { useDisclosure } from './useDisclosure'
+export type { UseDisclosureOptions, UseDisclosureReturn } from './useDisclosure'

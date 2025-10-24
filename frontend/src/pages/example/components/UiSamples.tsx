@@ -54,7 +54,6 @@ const UiSamples: React.FC<UiSamplesProps> = ({ onExportCsv, canExport, onRefresh
           <Button
             onClick={() => {
               setOpenConfirm(false);
-              toast.info('취소했습니다.');
             }}
           >
             취소
@@ -63,7 +62,6 @@ const UiSamples: React.FC<UiSamplesProps> = ({ onExportCsv, canExport, onRefresh
             variant="contained"
             onClick={() => {
               setOpenConfirm(false);
-              toast.success('확인했습니다.');
             }}
           >
             확인
