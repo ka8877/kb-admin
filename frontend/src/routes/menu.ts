@@ -8,4 +8,5 @@ export type MenuItem = {
 export const frontMenus: MenuItem[] = [
   { label: '홈', path: '/' },
   { label: '대시보드', path: '/dashboard' },
+  { label: '예제', path: '/example' },
 ];

@@ -27,6 +27,18 @@ module.exports = {
     // TS projects should disable base no-undef as it doesn't understand TS types
     'no-undef': 'off',
 
+    // Prefer const and function expressions (const) for consistency
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'func-style': ['error', 'expression'],
+    'react/function-component-definition': [
+      'error',
+      { namedComponents: 'arrow-function', unnamedComponents: 'arrow-function' },
+    ],
+
+    // Naming: prefer camelCase for identifiers; allow snake_case in object properties (e.g., API fields)
+    camelcase: ['warn', { properties: 'never', ignoreDestructuring: true }],
+
     // Use eslint-plugin-unused-imports instead of default no-unused-vars
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
