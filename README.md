@@ -1,5 +1,3 @@
-# kabang-admin
-
 사내 Admin 초기 단계 레포입니다. 백엔드는 Spring Boot, 프론트엔드는 React + Vite 기반으로 구성되어 있습니다.
 
 ---
@@ -31,6 +29,25 @@
 - frontend/src/layouts — 레이아웃(MainLayout 등)
 
 ---
+
+...existing code...
+
+## 파일 네이밍 권장(긴 폴더 경로 처리) — 페이지 Index 규칙 (추가)
+- 원칙: "마지막 하위 폴더명 + Page" 형태로 간결하게 표기합니다.
+  - 형식: PascalCase(LastFolder)Page.tsx
+- 예시
+  - 경로: frontend/src/pages/data-reg/registration/recommended-questions/
+    - 파일: RecommendedQuestionsPage.tsx
+    - 라우트: /data-reg/registration/recommended-questions
+    - import: import RecommendedQuestionsPage from '../pages/data-reg/registration/recommended-questions';
+
+## components/common 구조 안내 
+- components/common 디렉터리는 컴포넌트의 성질(역할)별로 폴더를 나눕니다.
+  - 예: layout, form, ui, dataDisplay 등 역할별로 폴더 생성
+- 파일명 규칙: 각 컴포넌트 파일은 `~폴더명.tsx` 형태로 작성합니다.
+  - 형식 예시: `/spinner/GlobalSpinner.tsx`, `/spinner/InlineSpinner.tsx`
+- 
+
 
 ## 로컬 실행
 - 백엔드(8080)

@@ -2,6 +2,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { env } from '../config';
 import { getAccessToken } from './auth';
+import { useLoadingStore } from '../store/loading';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -50,6 +51,8 @@ const toApiError = (err: unknown): ApiError => {
 
 // Request interceptor: inject Authorization header if token exists
 axiosClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  // global loading start
+  try { useLoadingStore.getState().start() } catch { /* no-op */ }
   const token = getAccessToken();
   if (token) {
     config.headers = config.headers || {};
@@ -62,8 +65,16 @@ axiosClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 // Response interceptor: currently pass through; errors normalized by catch wrappers
 axiosClient.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(toApiError(error)),
+  (response) => {
+    // global loading stop
+    try { useLoadingStore.getState().stop() } catch { /* no-op */ }
+    return response
+  },
+  (error) => {
+    // global loading stop on error too
+    try { useLoadingStore.getState().stop() } catch { /* no-op */ }
+    return Promise.reject(toApiError(error))
+  },
 );
 
 export { axiosClient };

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Stack, Typography, Card, CardContent, Divider } from '@mui/material';
 import { helloApi } from '../../api';
 import PageHeader from '../../components/common/PageHeader';
-import Loading from '../../components/common/Loading';
+import InlineSpinner from '../../components/common/spinner/InlineSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 
 const DashboardPage: React.FC = () => {
@@ -21,7 +21,7 @@ const DashboardPage: React.FC = () => {
           <Typography variant="h6">React Query example</Typography>
           <Divider sx={{ my: 2 }} />
           {isLoading ? (
-            <Loading />
+            <InlineSpinner />
           ) : error ? (
             <ErrorMessage error={error} />
           ) : (

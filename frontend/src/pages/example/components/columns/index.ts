@@ -1,5 +1,5 @@
 import type { GridColDef } from '@mui/x-data-grid'
-import type { ExampleItem } from '../../../types/example'
+import type { ExampleItem } from '../../../../types/example'
 
 export const exampleColumns: GridColDef<ExampleItem>[] = [
   { field: 'id', headerName: 'ID', width: 100 },

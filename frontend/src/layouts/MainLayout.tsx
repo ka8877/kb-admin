@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { Box, Container, Toolbar, Avatar, Stack, Typography } from '@mui/material';
 import AppHeader from '../components/layout/AppHeader';
+import GlobalLoadingSpinner from '../components/common/spinner/GlobalLoadingSpinner';
 import SideNav from '../components/layout/SideNav';
 import { DRAWER_WIDTH } from '../constants';
 import { frontMenus } from '../routes/menu';
@@ -21,6 +22,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <GlobalLoadingSpinner />
       <AppHeader drawerWidth={DRAWER_WIDTH} right={right} />
 
       <SideNav drawerWidth={DRAWER_WIDTH} items={frontMenus} />

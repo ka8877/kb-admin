@@ -2,15 +2,16 @@ import type React from 'react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataGrid, type GridPaginationModel } from '@mui/x-data-grid';
-import { Card, CardContent, Divider, Stack, Typography, Grid } from '@mui/material';
+import { Card, CardContent, Divider, Stack, Typography, Grid, Button } from '@mui/material';
 import PageHeader from '../../components/common/PageHeader';
-import Loading from '../../components/common/Loading';
+import InlineSpinner from '../../components/common/spinner/InlineSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import { exampleApi } from '../../api';
 import type { ExampleItem } from '../../types/example';
 import CreateForm from './form/CreateForm';
-import { exampleColumns } from './columns';
+import { exampleColumns } from './components/columns';
 import UiSamples from './components/UiSamples';
+import { useLoadingStore } from '../../store/loading';
 
 const ExamplePage: React.FC = () => {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -56,6 +57,19 @@ const ExamplePage: React.FC = () => {
         refreshing={isFetching}
       />
 
+      {/* 전역 로딩바 데모 버튼 */}
+      <Button
+        variant="contained"
+        onClick={() => {
+          const { start, stop } = useLoadingStore.getState()
+          start()
+          setTimeout(() => stop(), 1500)
+        }}
+      >
+        전역 로딩바 생성
+      </Button>
+   
+
       {/* 생성폼 + 그리드 같은 라인 */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -71,7 +85,7 @@ const ExamplePage: React.FC = () => {
               <Typography variant="h6">목록</Typography>
               <Divider sx={{ my: 2 }} />
               {isLoading ? (
-                <Loading />
+                <InlineSpinner />
               ) : error ? (
                 <ErrorMessage error={error} />
               ) : (
