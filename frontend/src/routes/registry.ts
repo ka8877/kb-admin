@@ -4,6 +4,7 @@ import HomePage from '../pages';
 import DashboardPage from '../pages/dashboard';
 import ExamplePage from '../pages/example';
 import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsPage';
+import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
 
 export type AppRoute = {
   path: string;
@@ -21,6 +22,7 @@ export const frontRoutes: AppRoute[] = [
   },
   { path: '/example', Component: ExamplePage },
   { path: '/data-reg/recommended-questions', Component: RecommendedQuestionsPage },
+  { path: '/data-reg/recommended-questions/:id', Component: RecommendedQuestionDetailPage },
 ];
 
 // Helper for validating DB-provided menu paths

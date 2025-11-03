@@ -5,6 +5,16 @@ export type MenuItem = {
   children?: MenuItem[];
 };
 
+// 경로 상수 (타입 안전 + 재사용)
+export const ROUTES = {
+  HOME: '/',
+  DASHBOARD: '/dashboard',
+  EXAMPLE: '/example',
+  RECOMMENDED_QUESTIONS: '/data-reg/recommended-questions',
+  RECOMMENDED_QUESTIONS_DETAIL: (id: string | number) => `/data-reg/recommended-questions/${id}`,
+  RECOMMENDED_QUESTIONS_EDIT: (id: string | number) => `/data-reg/recommended-questions/edit/${id}`,
+} as const;
+
 export const frontMenus: MenuItem[] = [
   {
     label: '대시보드',
