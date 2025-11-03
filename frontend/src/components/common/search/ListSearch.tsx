@@ -14,6 +14,7 @@ export type ListSearchProps = {
   onSearch: (payload: { field?: string; query: string }) => void;
   placeholder?: string;
   defaultField?: string;
+  defaultQuery?: string; // 초기 검색어
   size?: 'small' | 'medium';
 };
 
@@ -22,14 +23,19 @@ const ListSearch: React.FC<ListSearchProps> = ({
   onSearch,
   placeholder = '검색어를 입력하세요',
   defaultField = 'all',
+  defaultQuery = '',
   size = 'small',
 }) => {
   const [field, setField] = useState<string>(defaultField);
-  const [query, setQuery] = useState<string>('');
+  const [query, setQuery] = useState<string>(defaultQuery);
 
   useEffect(() => {
     setField(defaultField);
   }, [defaultField]);
+
+  useEffect(() => {
+    setQuery(defaultQuery);
+  }, [defaultQuery]);
 
   const handleSearch = () => {
     onSearch({ field: field === 'all' ? undefined : field, query: query.trim() });

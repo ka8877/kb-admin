@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 
 import type { RowItem } from './types';
 import { listColumns } from './components/columns/columns';
 import DataList from '../../../components/common/list/DataList';
-
+import { ROUTES } from '../../../routes/menu';
 
 const listApi = {
   list: async (): Promise<RowItem[]> => {
@@ -53,15 +53,23 @@ const listApi = {
 };
 
 const RecommendedQuestionsPage: React.FC = () => {
-  const handleCreate = () => { /* navigate to create */ };
-  const handleRequestApproval = () => { /* navigate to requests */ };
+  const handleCreate = () => {
+    /* navigate to create */
+  };
+  const handleRequestApproval = () => {
+    /* navigate to requests */
+  };
   const handleDeleteConfirm = (ids: (string | number)[]) => {
     console.log('삭제 요청 ids:', ids);
     // 실제 삭제 처리 후 필요 시 재요청
   };
+  const navigate = useNavigate();
 
   return (
     <DataList<RowItem>
+      onRowClick={(params) => {
+        navigate(ROUTES.RECOMMENDED_QUESTIONS_DETAIL(params.id));
+      }}
       columns={listColumns}
       fetcher={listApi.list}
       rowIdGetter={'qst_id'}
