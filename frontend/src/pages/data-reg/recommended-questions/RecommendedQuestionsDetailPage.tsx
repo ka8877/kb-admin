@@ -41,6 +41,16 @@ const detailApi = {
       status: 'in_service',
     };
   },
+
+  update: async (id: string, data: RowItem): Promise<RowItem> => {
+    // 실제로는 API 호출
+    console.log('Updating item:', id, data);
+    // 업데이트된 데이터 반환
+    return {
+      ...data,
+      updatedAt: new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14),
+    };
+  },
 };
 
 const RecommendedQuestionDetailPage: React.FC = () => {
@@ -55,12 +65,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   });
 
   const handleBack = () => {
-    navigate(ROUTES.RECOMMENDED_QUESTIONS);
-  };
-
-  const handleEdit = () => {
-    if (!id) return;
-    navigate(ROUTES.RECOMMENDED_QUESTIONS_EDIT(id));
+    navigate(-1); // 뒤로가기로 이전 상태 유지
   };
 
   const handleDelete = () => {
@@ -72,9 +77,22 @@ const RecommendedQuestionDetailPage: React.FC = () => {
       severity: 'error',
       onConfirm: () => {
         console.log('Delete:', id);
-        navigate(ROUTES.RECOMMENDED_QUESTIONS);
+        navigate(-1); // 뒤로가기로 이전 상태 유지
       },
     });
+  };
+
+  const handleSave = async (updatedData: RowItem) => {
+    if (!id) return;
+
+    try {
+      await detailApi.update(id, updatedData);
+      console.log('데이터가 성공적으로 저장되었습니다.');
+      // 필요시 데이터 다시 조회하거나 상태 업데이트
+    } catch (error) {
+      console.error('저장 실패:', error);
+      throw error; // DataDetail에서 에러 처리
+    }
   };
 
   return (
@@ -84,8 +102,9 @@ const RecommendedQuestionDetailPage: React.FC = () => {
       isLoading={isLoading}
       rowIdGetter="qst_id"
       onBack={handleBack}
-      onEdit={handleEdit}
       onDelete={handleDelete}
+      onSave={handleSave}
+      readOnlyFields={['no', 'qst_id']} // No와 qst_id는 수정 불가
     />
   );
 };

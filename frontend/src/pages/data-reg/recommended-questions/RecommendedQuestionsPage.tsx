@@ -76,6 +76,7 @@ const RecommendedQuestionsPage: React.FC = () => {
       onCreate={handleCreate}
       onRequestApproval={handleRequestApproval}
       onDeleteConfirm={handleDeleteConfirm}
+      enableStatePreservation={true} // URL 기반 상태 보존 명시적 활성화
       // onExportAll can be provided to override default CSV behavior
     />
   );
