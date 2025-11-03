@@ -2,7 +2,7 @@ import type React from 'react';
 import HomePage from '../pages';
 import DashboardPage from '../pages/dashboard';
 import ExamplePage from '../pages/example';
-import ListPage from '../pages/data-reg/recommended-questions/ListPage';
+import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsPage';
 
 export type AppRoute = {
   path: string;
@@ -14,7 +14,7 @@ export const frontRoutes: AppRoute[] = [
   { path: '/', Component: HomePage },
   { path: '/dashboard', Component: DashboardPage },
   { path: '/example', Component: ExamplePage },
-  {path: '/data-reg/recommended-questions', Component: ListPage},
+  {path: '/data-reg/recommended-questions', Component: RecommendedQuestionsPage},
 ];
 
 // Helper for validating DB-provided menu paths
