@@ -5,6 +5,7 @@ import DashboardPage from '../pages/dashboard';
 import ExamplePage from '../pages/example';
 import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsPage';
 import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
+import { ROUTES } from './menu';
 
 export type AppRoute = {
   path: string;
@@ -13,16 +14,22 @@ export type AppRoute = {
 };
 
 export const frontRoutes: AppRoute[] = [
-  { path: '/', Component: HomePage },
-  { path: '/dashboard', Component: DashboardPage },
+  // === 기본 페이지 ===
+  { path: ROUTES.HOME, Component: HomePage },
+  { path: ROUTES.DASHBOARD, Component: DashboardPage },
+  { path: ROUTES.EXAMPLE, Component: ExamplePage },
+
+  // === 데이터 등록/노출 ===
   {
-    path: '/data-reg',
+    path: ROUTES.DATA_REG,
     Component: () =>
-      React.createElement(Navigate, { to: '/data-reg/recommended-questions', replace: true }),
+      React.createElement(Navigate, { to: ROUTES.RECOMMENDED_QUESTIONS, replace: true }),
   },
-  { path: '/example', Component: ExamplePage },
-  { path: '/data-reg/recommended-questions', Component: RecommendedQuestionsPage },
-  { path: '/data-reg/recommended-questions/:id', Component: RecommendedQuestionDetailPage },
+
+  // 추천 질문 관리
+  { path: ROUTES.RECOMMENDED_QUESTIONS, Component: RecommendedQuestionsPage }, // 목록
+  { path: `${ROUTES.RECOMMENDED_QUESTIONS}/:id`, Component: RecommendedQuestionDetailPage }, // 상세
+  { path: `${ROUTES.RECOMMENDED_QUESTIONS}/create`, Component: RecommendedQuestionDetailPage }, // 등록
 ];
 
 // Helper for validating DB-provided menu paths
