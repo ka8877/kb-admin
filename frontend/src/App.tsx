@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import { frontRoutes } from './routes/registry';
 import GlobalConfirmDialog from './components/common/dialog/GlobalConfirmDialog';
+import GlobalAlertDialog from './components/common/dialog/GlobalAlertDialog';
 
 const App: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         </Suspense>
       </MainLayout>
       <GlobalConfirmDialog />
+      <GlobalAlertDialog />
     </>
   );
 };

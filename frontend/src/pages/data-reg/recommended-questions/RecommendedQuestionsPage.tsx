@@ -53,8 +53,10 @@ const listApi = {
 };
 
 const RecommendedQuestionsPage: React.FC = () => {
+  const navigate = useNavigate();
+
   const handleCreate = () => {
-    /* navigate to create */
+    navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
   };
   const handleRequestApproval = () => {
     /* navigate to requests */
@@ -63,7 +65,6 @@ const RecommendedQuestionsPage: React.FC = () => {
     console.log('삭제 요청 ids:', ids);
     // 실제 삭제 처리 후 필요 시 재요청
   };
-  const navigate = useNavigate();
 
   return (
     <DataList<RowItem>
