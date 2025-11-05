@@ -21,6 +21,33 @@ const MainLayout = ({ children }: PropsWithChildren) => {
 
   const { pathname } = useLocation();
 
+  // Helper: find breadcrumb labels for current pathname by walking frontMenus
+  const findBreadcrumb = (menus: typeof frontMenus, target: string): string[] => {
+    const dfs = (list: typeof frontMenus, acc: string[]): string[] | null => {
+      for (const m of list) {
+        const nextAcc = [...acc, m.label];
+        // treat prefix matches as belonging to the menu (e.g. /management/category/...)
+        if (m.path === target || (m.path !== '/' && target.startsWith(m.path + '/')) || (m.path === '/' && target === '/')) {
+          // try deeper children first
+          if (m.children) {
+            const child = dfs(m.children as any, nextAcc);
+            if (child) return child;
+          }
+          return nextAcc;
+        }
+        if (m.children) {
+          const child = dfs(m.children as any, nextAcc);
+          if (child) return child;
+        }
+      }
+      return null;
+    };
+
+    return dfs(menus, []) ?? [];
+  };
+
+  const breadcrumb = findBreadcrumb(frontMenus, pathname);
+
   const activeTop = frontMenus.find((m) => {
     if (m.path === pathname) return true;
     if (pathname.startsWith(m.path === '/' ? '/' : m.path + '/')) return true;
@@ -54,6 +81,12 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         {/* push content below AppBar height */}
         <Toolbar />
         <Container maxWidth="lg" sx={{ py: 4 }}>
+          {/* Breadcrumb / 현재 페이지 설명 텍스트 */}
+          {breadcrumb.length > 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {breadcrumb.join(' > ')}
+            </Typography>
+          )}
           {children}
         </Container>
       </Box>

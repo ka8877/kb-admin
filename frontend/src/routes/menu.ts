@@ -24,8 +24,9 @@ export const ROUTES = {
   // === 관리 ===
   MANAGEMENT: '/management',
   MANAGEMENT_CATEGORY: '/management/category',
-  MANAGEMENT_CATEGORY_RECOMMENDED_QUESTIONS: '/management/category/recommended-questions',
-  MANAGEMENT_CATEGORY_APP_SKIM: '/management/category/apps-kim',
+  SERVICE_NAME: '/management/category/service-name',
+  QUESTIONS_CATEGORY: '/management/category/questions-category',
+  AGE_GROUP: '/management/category/age-group',
   ADMIN_AUTH: '/admin-auth',
 } as const;
 
@@ -57,12 +58,16 @@ export const frontMenus: MenuItem[] = [
         path: ROUTES.MANAGEMENT_CATEGORY,
         children: [
           {
-            label: '추천 질문 전체 목록 조회',
-            path: ROUTES.MANAGEMENT_CATEGORY_RECOMMENDED_QUESTIONS,
+            label: '서비스명',
+            path: ROUTES.SERVICE_NAME,
           },
           {
-            label: '앱스킴',
-            path: ROUTES.MANAGEMENT_CATEGORY_APP_SKIM,
+            label: '질문 카테고리',
+            path: ROUTES.QUESTIONS_CATEGORY,
+          },
+          {
+            label: '연령대',
+            path: ROUTES.AGE_GROUP,
           },
         ],
       },
