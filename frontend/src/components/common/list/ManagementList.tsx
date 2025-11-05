@@ -11,7 +11,7 @@ import ListSearch from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import { useListState } from '../../../hooks/useListState';
 
-export type DataListProps<T extends GridValidRowModel = GridValidRowModel> = {
+export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
   fetcher?: () => Promise<T[]>;
   rows?: T[];
@@ -29,14 +29,14 @@ export type DataListProps<T extends GridValidRowModel = GridValidRowModel> = {
 };
 
 const defaultGetRowId =
-  <T extends GridValidRowModel>(getter: DataListProps<T>['rowIdGetter']) =>
+  <T extends GridValidRowModel>(getter: ManagementListProps<T>['rowIdGetter']) =>
   (row: T) => {
     if (!getter) return (row as any).id ?? (row as any).id_str ?? '';
     if (typeof getter === 'function') return getter(row);
     return (row as any)[getter as string];
   };
 
-const DataList = <T extends GridValidRowModel = GridValidRowModel>({
+const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
   fetcher,
   rows,
@@ -51,7 +51,7 @@ const DataList = <T extends GridValidRowModel = GridValidRowModel>({
   enableClientSearch = true,
   onRowClick,
   enableStatePreservation = true,
-}: DataListProps<T>): JSX.Element => {
+}: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
 
@@ -228,4 +228,4 @@ const DataList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 };
 
-export default DataList;
+export default ManagementList;

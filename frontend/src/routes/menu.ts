@@ -16,6 +16,7 @@ export const ROUTES = {
   DATA_REG: '/data-reg',
   RECOMMENDED_QUESTIONS: '/data-reg/recommended-questions',
   RECOMMENDED_QUESTIONS_CREATE: '/data-reg/recommended-questions/create',
+  RECOMMENDED_QUESTIONS_APPROVAL: '/data-reg/recommended-questions/approval',
   RECOMMENDED_QUESTIONS_DETAIL: (id: string | number) => `/data-reg/recommended-questions/${id}`,
   RECOMMENDED_QUESTIONS_EDIT: (id: string | number) => `/data-reg/recommended-questions/edit/${id}`,
   APP_SKIM: '/data-reg/app-skim',

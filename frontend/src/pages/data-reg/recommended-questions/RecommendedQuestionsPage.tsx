@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import type { RowItem } from './types';
 import { listColumns } from './components/columns/columns';
-import DataList from '../../../components/common/list/DataList';
+import ManagementList from '../../../components/common/list/ManagementList';
 import { ROUTES } from '../../../routes/menu';
 
 const listApi = {
@@ -59,7 +59,7 @@ const RecommendedQuestionsPage: React.FC = () => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
   };
   const handleRequestApproval = () => {
-    /* navigate to requests */
+    navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
   };
   const handleDeleteConfirm = (ids: (string | number)[]) => {
     console.log('삭제 요청 ids:', ids);
@@ -67,7 +67,7 @@ const RecommendedQuestionsPage: React.FC = () => {
   };
 
   return (
-    <DataList<RowItem>
+    <ManagementList<RowItem>
       onRowClick={(params) => {
         navigate(ROUTES.RECOMMENDED_QUESTIONS_DETAIL(params.id));
       }}
