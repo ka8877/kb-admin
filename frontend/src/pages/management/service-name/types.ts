@@ -1,14 +1,7 @@
 export type RowItem = {
-  no: number
-  qst_id: string
-  service_nm: string
-  qst_ctnt: string
-  parent_id:string | null
-  parent_nm:string | null
-  imp_start_date:string
-  imp_end_date:string
-  updatedAt: string
-  registeredAt: string
-  status: 'in_service'|'out_of_service'
-}
-
+  no: number;
+  category_nm: string;
+  service_cd: string;
+  // status_code is stored as 'Y' (active) or 'N' (inactive). UI displays 한글 labels.
+  status_code: 'Y' | 'N';
+};

@@ -6,8 +6,8 @@ import ExamplePage from '../pages/example';
 
 import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsPage';
 import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
-import ServiceNamePage from '../pages/management/service-name/ServiceNameCreatePage';
-import ServiceNameDetailPage from '../pages/management/service-name/ServiceNameDetailPage';
+import ServiceNamePage from '../pages/management/service-name/ServiceNamePage';
+import ServiceNameEditPage from '../pages/management/service-name/ServiceNameEditPage';
 import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
 import RecommendedQuestionsApprovalPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage';
 import RecommendedQuestionsApprovalDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage';
@@ -43,12 +43,9 @@ export const frontRoutes: AppRoute[] = [
   },
 
   // 카테고리 관리
+  { path: ROUTES.SERVICE_NAME, Component: ServiceNamePage }, // 서비스명 직접 경로
   { path: ROUTES.MANAGEMENT_CATEGORY, Component: ServiceNamePage }, // 목록
-  { path: `${ROUTES.MANAGEMENT_CATEGORY}/:id`, Component: ServiceNameDetailPage }, // 상세
-  {
-    path: `${ROUTES.MANAGEMENT_CATEGORY}/create`,
-    Component: ServiceNameDetailPage,
-  }, // 등록
+  { path: ROUTES.SERVICE_NAME_EDIT, Component: ServiceNameEditPage }, // 편집 페이지
   { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
   { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: RecommendedQuestionsApprovalPage }, // 결재요청 대기함
   {
