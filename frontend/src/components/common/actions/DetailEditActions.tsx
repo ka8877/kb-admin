@@ -8,6 +8,9 @@ export type DetailEditActionsProps = {
   onCancel: () => void;
   size?: 'small' | 'medium';
   isLoading?: boolean;
+  showDelete?: boolean; // 삭제 버튼 표시 여부
+  selectedCount?: number; // 선택된 항목 수
+  onDelete?: () => void; // 삭제 버튼 클릭 핸들러
 };
 
 const DetailEditActions: React.FC<DetailEditActionsProps> = ({
@@ -16,6 +19,9 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
   onCancel,
   size = 'small',
   isLoading = false,
+  showDelete = false,
+  selectedCount = 0,
+  onDelete,
 }) => {
   if (!open) return null;
 
@@ -26,6 +32,17 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
           수정 모드
         </Typography>
         <Stack direction="row" spacing={1}>
+          {showDelete && selectedCount > 0 && onDelete && (
+            <Button
+              variant="outlined"
+              color="error"
+              size={size}
+              onClick={onDelete}
+              disabled={isLoading}
+            >
+              삭제 ({selectedCount})
+            </Button>
+          )}
           <Button variant="contained" size={size} onClick={onSave} disabled={isLoading}>
             저장
           </Button>

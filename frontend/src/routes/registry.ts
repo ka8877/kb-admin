@@ -10,6 +10,7 @@ import ServiceNamePage from '../pages/management/service-name/ServiceNameCreateP
 import ServiceNameDetailPage from '../pages/management/service-name/ServiceNameDetailPage';
 import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
 import RecommendedQuestionsApprovalPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage';
+import RecommendedQuestionsApprovalDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage';
 import { ROUTES } from './menu';
 
 export type AppRoute = {
@@ -34,7 +35,6 @@ export const frontRoutes: AppRoute[] = [
   // 추천 질문 관리
   { path: ROUTES.RECOMMENDED_QUESTIONS, Component: RecommendedQuestionsPage }, // 목록
   { path: `${ROUTES.RECOMMENDED_QUESTIONS}/:id`, Component: RecommendedQuestionDetailPage }, // 상세
-  { path: `${ROUTES.RECOMMENDED_QUESTIONS}/create`, Component: RecommendedQuestionDetailPage }, // 등록
 
   // === 관리 ===
   {
@@ -50,7 +50,11 @@ export const frontRoutes: AppRoute[] = [
     Component: ServiceNameDetailPage,
   }, // 등록
   { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
-  { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: RecommendedQuestionsApprovalPage }, // 결재요청 대기함 (파일 생성 후 활성화)
+  { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: RecommendedQuestionsApprovalPage }, // 결재요청 대기함
+  {
+    path: `${ROUTES.RECOMMENDED_QUESTIONS_APPROVAL}/:id`,
+    Component: RecommendedQuestionsApprovalDetailPage,
+  }, // 결재요청 상세
   { path: `${ROUTES.RECOMMENDED_QUESTIONS}/:id`, Component: RecommendedQuestionDetailPage }, // 상세 (create보다 뒤에 위치)
 ];
 

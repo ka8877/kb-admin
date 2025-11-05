@@ -3,13 +3,13 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { GridColDef } from '@mui/x-data-grid';
-import type { RowItem } from './types';
+import type { RecommendedQuestionItem } from './types';
 import DataDetail from '../../../components/common/detail/DataDetail';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { ROUTES } from '../../../routes/menu';
 
 // 상세 조회용 컬럼 - 일반 목록보다 더 자세한 정보 표시
-const detailColumns: GridColDef<RowItem>[] = [
+const detailColumns: GridColDef<RecommendedQuestionItem>[] = [
   { field: 'no', headerName: 'No', width: 80 },
   { field: 'qst_id', headerName: '질문아이디', width: 120 },
   { field: 'service_nm', headerName: '서비스명', width: 140 },
@@ -25,7 +25,7 @@ const detailColumns: GridColDef<RowItem>[] = [
 
 // API 예시
 const detailApi = {
-  getById: async (id: string): Promise<RowItem> => {
+  getById: async (id: string): Promise<RecommendedQuestionItem> => {
     // 실제로는 API 호출
     return {
       no: 560,
@@ -42,7 +42,7 @@ const detailApi = {
     };
   },
 
-  update: async (id: string, data: RowItem): Promise<RowItem> => {
+  update: async (id: string, data: RecommendedQuestionItem): Promise<RecommendedQuestionItem> => {
     // 실제로는 API 호출
     console.log('Updating item:', id, data);
     // 업데이트된 데이터 반환
@@ -82,7 +82,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (updatedData: RowItem) => {
+  const handleSave = async (updatedData: RecommendedQuestionItem) => {
     if (!id) return;
 
     try {
@@ -96,7 +96,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   };
 
   return (
-    <DataDetail<RowItem>
+    <DataDetail<RecommendedQuestionItem>
       data={data}
       columns={detailColumns}
       isLoading={isLoading}

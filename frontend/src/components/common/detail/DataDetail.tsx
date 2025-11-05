@@ -54,9 +54,11 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     // onEdit는 화면 이동용이므로 호출하지 않음
   };
 
-  // 수정 모드가 활성화되면 첫 번째 편집 가능한 셀에 포커싱 및 편집 모드 진입
+  // 수정 모드 진입 시에만 첫 번째 편집 가능한 셀에 포커싱 및 편집 모드 진입
+  const [hasInitialFocus, setHasInitialFocus] = useState(false);
+
   useEffect(() => {
-    if (isEditMode && dataGridRef.current && editedData) {
+    if (isEditMode && !hasInitialFocus && dataGridRef.current && editedData) {
       // 약간의 지연 후 포커싱 (DataGrid 렌더링 완료 후)
       setTimeout(() => {
         const firstEditableColumn = columns.find((col) => !readOnlyFields.includes(col.field));
@@ -75,18 +77,23 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
                 });
               }
             }, 50);
+            setHasInitialFocus(true);
           } catch (error) {
             console.warn('포커싱/편집 모드 진입 실패:', error);
           }
         }
       }, 100);
+    } else if (!isEditMode) {
+      // 수정 모드를 벗어나면 초기 포커스 상태를 리셋
+      setHasInitialFocus(false);
     }
-  }, [isEditMode, editedData, columns, readOnlyFields, getRowId]);
+  }, [isEditMode, hasInitialFocus, editedData, columns, readOnlyFields, getRowId]);
 
   // 수정 취소
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setEditedData(data);
+    setHasInitialFocus(false);
   };
 
   // 저장 확인
@@ -99,6 +106,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           try {
             await onSave(editedData);
             setIsEditMode(false);
+            setHasInitialFocus(false);
           } catch (error) {
             console.error('저장 실패:', error);
           }

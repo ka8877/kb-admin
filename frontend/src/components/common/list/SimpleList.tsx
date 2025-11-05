@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { GridColDef, GridPaginationModel, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import ListSearch from '../search/ListSearch';
 import { useListState } from '../../../hooks/useListState';
 
@@ -15,6 +16,7 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   size?: 'small' | 'medium';
   enableClientSearch?: boolean;
   onRowClick?: (params: { id: string | number; row: T }) => void;
+  onBack?: () => void; // 목록으로 돌아가기 버튼
   enableStatePreservation?: boolean; // URL 상태 저장 활성화 (기본: true)
 };
 
@@ -36,6 +38,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   size = 'small',
   enableClientSearch = true,
   onRowClick,
+  onBack,
   enableStatePreservation = true,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
@@ -123,6 +126,14 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         defaultQuery={searchQuery}
         size={size}
       />
+
+      {onBack && (
+        <Box sx={{ mb: 1, mt: 1 }}>
+          <Button variant="outlined" size={size} onClick={onBack}>
+            목록으로
+          </Button>
+        </Box>
+      )}
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid

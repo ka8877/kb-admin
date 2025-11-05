@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { RowItem } from './types';
-import { listColumns } from './components/columns/columns';
+import type { RecommendedQuestionItem } from './types';
+import { recommendedQuestionColumns } from './components/columns/columns';
 import ManagementList from '../../../components/common/list/ManagementList';
 import { ROUTES } from '../../../routes/menu';
 
 const listApi = {
-  list: async (): Promise<RowItem[]> => {
+  list: async (): Promise<RecommendedQuestionItem[]> => {
     return Promise.resolve([
       {
         no: 560,
@@ -67,11 +67,11 @@ const RecommendedQuestionsPage: React.FC = () => {
   };
 
   return (
-    <ManagementList<RowItem>
+    <ManagementList<RecommendedQuestionItem>
       onRowClick={(params) => {
         navigate(ROUTES.RECOMMENDED_QUESTIONS_DETAIL(params.id));
       }}
-      columns={listColumns}
+      columns={recommendedQuestionColumns}
       fetcher={listApi.list}
       rowIdGetter={'qst_id'}
       onCreate={handleCreate}
