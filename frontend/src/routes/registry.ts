@@ -7,6 +7,7 @@ import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/Re
 import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
 import ServiceNamePage from '../pages/management/service-name/ServiceNameCreatePage';
 import ServiceNameDetailPage from '../pages/management/service-name/ServiceNameDetailPage';
+import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
 import { ROUTES } from './menu';
 
 export type AppRoute = {
@@ -46,6 +47,8 @@ export const frontRoutes: AppRoute[] = [
     path: `${ROUTES.MANAGEMENT_CATEGORY}/create`,
     Component: ServiceNameDetailPage,
   }, // 등록
+  { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
+  { path: `${ROUTES.RECOMMENDED_QUESTIONS}/:id`, Component: RecommendedQuestionDetailPage }, // 상세 (create보다 뒤에 위치)
 ];
 
 // Helper for validating DB-provided menu paths
