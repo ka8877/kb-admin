@@ -25,6 +25,7 @@ export const ROUTES = {
   MANAGEMENT: '/management',
   MANAGEMENT_CATEGORY: '/management/category',
   SERVICE_NAME: '/management/category/service-name',
+  SERVICE_NAME_EDIT: '/management/category/service-name/edit',
   QUESTIONS_CATEGORY: '/management/category/questions-category',
   AGE_GROUP: '/management/category/age-group',
   ADMIN_AUTH: '/admin-auth',
