@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Stack, IconButton } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import AddDataButton from '../../../components/common/actions/AddDataButton';
 import SelectionDeleteButton from '../../../components/common/actions/SelectionDeleteButton';
 import { DeleteConfirmBar } from '../../../components/common/actions/ListActions';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import CreateDataActions from '../../../components/common/actions/CreateDataActions';
 import { DataGrid, GridColDef, useGridApiRef } from '@mui/x-data-grid';
-import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
+import { ageGroupMockDb } from '../../../mocks/ageGroupDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
 
-const ServiceNameEditPage: React.FC = () => {
+const AgeGroupEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiRef = useGridApiRef();
@@ -22,23 +22,17 @@ const ServiceNameEditPage: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
 
-  // track modified rows by numeric `no`
   const modifiedRef = useRef<Set<number>>(new Set());
-  // mark if order was changed by drag/reorder
   const orderModifiedRef = useRef(false);
-  // temp negative id counter for newly added rows
-  const tempNoRef = useRef<number>(-1);
   const [draggingNo, setDraggingNo] = useState<number | null>(null);
   const [dragOverNo, setDragOverNo] = useState<number | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [orderChanged, setOrderChanged] = useState(false);
 
-  // handle mousemove / mouseup for simple drag-reorder (mousedown initiated)
   useEffect(() => {
     if (draggingNo == null) return;
 
     const onMove = (e: MouseEvent) => {
-      // update ghost position and highlight target row but do NOT reorder yet
       setDragPos({ x: e.clientX, y: e.clientY });
       const el = document
         .elementFromPoint(e.clientX, e.clientY)
@@ -52,7 +46,6 @@ const ServiceNameEditPage: React.FC = () => {
     };
 
     const onUp = (e: MouseEvent) => {
-      // on mouseup, calculate the element under the pointer and perform reorder there
       try {
         const el = document
           .elementFromPoint(e.clientX, e.clientY)
@@ -73,10 +66,8 @@ const ServiceNameEditPage: React.FC = () => {
             const from = copy.findIndex((r) => r.no === fromNo);
             const to = copy.findIndex((r) => r.no === targetNo);
             if (from === -1) return prev;
-            // if target not found (shouldn't happen), append to end
             const resolvedTo = to === -1 ? copy.length : to;
             const [item] = copy.splice(from, 1);
-            // insert at target index so the dragged item occupies the target's position
             const insertIndex = resolvedTo;
             copy.splice(insertIndex, 0, item);
             return copy;
@@ -124,20 +115,18 @@ const ServiceNameEditPage: React.FC = () => {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        renderCell: (params) => {
-          return (
-            <div
-              data-drag-handle
-              style={{ cursor: 'grab', display: 'flex', alignItems: 'center', height: '100%' }}
-            >
-              <DragIndicatorIcon fontSize="small" />
-            </div>
-          );
-        },
+        renderCell: () => (
+          <div
+            data-drag-handle
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', height: '100%' }}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </div>
+        ),
       },
       { field: 'no', headerName: 'No', width: 80, editable: false },
-      { field: 'category_nm', headerName: '카테고리명', flex: 1, editable: true },
-      { field: 'service_cd', headerName: '서비스코드', width: 200, editable: true },
+      { field: 'category_nm', headerName: '연령대', flex: 1, editable: true },
+      { field: 'service_cd', headerName: '코드', width: 200, editable: true },
       {
         field: 'status_code',
         headerName: '활성상태',
@@ -154,13 +143,12 @@ const ServiceNameEditPage: React.FC = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const data = await serviceNameMockDb.listAll();
+      const data = await ageGroupMockDb.listAll();
       setRows(data as LocalRow[]);
       setLoading(false);
     })();
   }, []);
 
-  // If an id query param (service_cd) is present, focus that row's first editable cell after rows load
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const focusServiceCd = params.get('id');
@@ -195,7 +183,6 @@ const ServiceNameEditPage: React.FC = () => {
   const processRowUpdate = useCallback((newRow: LocalRow, oldRow: LocalRow) => {
     setRows((prev) => prev.map((r) => (r.no === oldRow.no ? (newRow as LocalRow) : r)));
 
-    // detect meaningful changes
     const changed =
       newRow.category_nm !== oldRow.category_nm ||
       newRow.status_code !== oldRow.status_code ||
@@ -207,7 +194,6 @@ const ServiceNameEditPage: React.FC = () => {
   }, []);
 
   const handleAddRow = () => {
-    // assign a positive temporary `no` as current max + 1 so UI shows a natural index
     const currentMax = rows.reduce((m, r) => Math.max(m, r.no ?? 0), 0);
     const tempNo = currentMax + 1;
     const newRow: LocalRow = {
@@ -217,7 +203,6 @@ const ServiceNameEditPage: React.FC = () => {
       status_code: 'Y',
       isNew: true,
     };
-    // show the new row at the top for immediate editing but give it a natural positive no
     setRows((prev) => [newRow, ...prev]);
     modifiedRef.current.add(tempNo);
 
@@ -241,7 +226,7 @@ const ServiceNameEditPage: React.FC = () => {
     }, 80);
   };
 
-  const handleCancel = () => navigate(ROUTES.SERVICE_NAME);
+  const handleCancel = () => navigate(ROUTES.AGE_GROUP);
 
   const handleSave = async () => {
     setLoading(true);
@@ -252,29 +237,26 @@ const ServiceNameEditPage: React.FC = () => {
           const row = rows.find((r) => r.no === id) as LocalRow | undefined;
           if (!row) return null;
           if (row.isNew) {
-            const created = await serviceNameMockDb.create({
+            const created = await ageGroupMockDb.create({
               category_nm: row.category_nm,
               service_cd: row.service_cd,
               status_code: row.status_code,
             });
-            // replace temp row (matched by temp no) and move the created item to the end
             setRows((prev) => {
               const withoutTemp = prev.filter((r) => r.no !== id);
               return [...withoutTemp, created];
             });
             return created;
           }
-          return serviceNameMockDb.update(row.service_cd, row);
+          return ageGroupMockDb.update(row.service_cd, row);
         }),
       );
     }
-    // if order changed, persist display order via mock DB reorder API (reassigns nos)
+
     if (orderModifiedRef.current || orderChanged) {
       try {
         const order = rows.map((r) => r.service_cd).filter(Boolean) as string[];
-        // call reorder to persist array order and update nos on server
-        const reordered = await serviceNameMockDb.reorder(order);
-        // reflect server order + nos in UI
+        const reordered = await ageGroupMockDb.reorder(order);
         setRows(reordered as LocalRow[]);
       } catch (e) {
         console.error('Failed to persist order', e);
@@ -285,7 +267,7 @@ const ServiceNameEditPage: React.FC = () => {
     orderModifiedRef.current = false;
     setOrderChanged(false);
     setLoading(false);
-    navigate(ROUTES.SERVICE_NAME);
+    navigate(ROUTES.AGE_GROUP);
   };
 
   return (
@@ -319,7 +301,6 @@ const ServiceNameEditPage: React.FC = () => {
       <div
         style={{ height: 600, width: '100%' }}
         onMouseDown={(e) => {
-          // only start drag when clicking the drag handle
           const handle = (e.target as HTMLElement).closest(
             '[data-drag-handle]',
           ) as HTMLElement | null;
@@ -331,10 +312,8 @@ const ServiceNameEditPage: React.FC = () => {
           const id = Number(idStr);
           if (Number.isNaN(id)) return;
           setDraggingNo(id);
-          // clear any previous hover
           setDragOverNo(id);
           setDragPos({ x: e.clientX, y: e.clientY });
-          // prevent text selection while dragging
           try {
             document.body.style.userSelect = 'none';
           } catch (_err) {
@@ -371,21 +350,20 @@ const ServiceNameEditPage: React.FC = () => {
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
         />
       </div>
+
       <DeleteConfirmBar
         open={selectionMode}
         selectedIds={selectionModel}
         onConfirm={async (ids) => {
-          // map selected ids (no) to service_cd and delete
           setLoading(true);
           const nos = Array.isArray(ids) ? ids : [ids];
           for (const id of nos) {
             const row = rows.find((r) => r.no === Number(id));
             if (!row) continue;
             if (row.isNew) {
-              // just remove locally
               setRows((prev) => prev.filter((r) => r.no !== row.no));
             } else {
-              await serviceNameMockDb.delete(row.service_cd);
+              await ageGroupMockDb.delete(row.service_cd);
               setRows((prev) => prev.filter((r) => r.service_cd !== row.service_cd));
             }
           }
@@ -399,7 +377,7 @@ const ServiceNameEditPage: React.FC = () => {
         }}
         size="small"
       />
-      {/* floating ghost for dragged row (shows the held row while dragging) */}
+
       {draggingNo != null && dragPos != null
         ? (() => {
             const row = rows.find((r) => r.no === draggingNo);
@@ -421,7 +399,7 @@ const ServiceNameEditPage: React.FC = () => {
                 }}
               >
                 <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>No {row.no}</div>
-                <div style={{ fontWeight: 600 }}>{row.category_nm || '카테고리'}</div>
+                <div style={{ fontWeight: 600 }}>{row.category_nm || '연령대'}</div>
                 <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>{row.service_cd}</div>
               </div>
             );
@@ -431,4 +409,4 @@ const ServiceNameEditPage: React.FC = () => {
   );
 };
 
-export default ServiceNameEditPage;
+export default AgeGroupEditPage;

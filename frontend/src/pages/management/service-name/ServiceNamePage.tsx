@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Stack, TextField, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import EditActionButton from '../../../components/common/actions/EditActionButton';
-import { DataGrid } from '@mui/x-data-grid';
+import EditableList from '../../../components/common/list/EditableList';
 
 import type { RowItem } from './types';
 import { listColumns } from './components/columns';
@@ -33,25 +33,14 @@ const ServiceNamePage: React.FC = () => {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <EditActionButton onClick={handleGoEditPage} />
-      </Stack>
-
-      <Box sx={{ height: 480, width: '100%' }}>
-        <DataGrid
-          rows={items}
-          columns={listColumns}
-          getRowId={(row: RowItem) => row.service_cd}
-          pageSizeOptions={[25, 50, 100]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
-          disableRowSelectionOnClick
-          // make the grid read-only on this page (no cell editing / clicks)
-          isCellEditable={() => false}
-          disableColumnMenu
-          loading={loading}
-          // row click navigation intentionally disabled for read-only list
-        />
-      </Box>
+      <EditableList
+        columns={listColumns}
+        fetcher={async () => await serviceNameMockDb.listAll()}
+        rowIdGetter={(r) => (r as any).service_cd}
+        defaultPageSize={25}
+        onEdit={handleGoEditPage}
+        isEditMode={false}
+      />
     </Box>
   );
 };
