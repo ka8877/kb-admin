@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Stack, IconButton } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import AddDataButton from '../../../components/common/actions/AddDataButton';
 import SelectionDeleteButton from '../../../components/common/actions/SelectionDeleteButton';
 import { DeleteConfirmBar } from '../../../components/common/actions/ListActions';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import CreateDataActions from '../../../components/common/actions/CreateDataActions';
-import { DataGrid, GridColDef, useGridApiRef } from '@mui/x-data-grid';
+import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
+import { ManagedCategoryList } from '../../../components/common/list/CategoryList';
 import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
@@ -17,103 +18,15 @@ const ServiceNameEditPage: React.FC = () => {
   const apiRef = useGridApiRef();
 
   type LocalRow = RowItem & { isNew?: boolean };
+
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
 
-  // track modified rows by numeric `no`
   const modifiedRef = useRef<Set<number>>(new Set());
-  // mark if order was changed by drag/reorder
   const orderModifiedRef = useRef(false);
-  // temp negative id counter for newly added rows
-  const tempNoRef = useRef<number>(-1);
-  const [draggingNo, setDraggingNo] = useState<number | null>(null);
-  const [dragOverNo, setDragOverNo] = useState<number | null>(null);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const [orderChanged, setOrderChanged] = useState(false);
-
-  // handle mousemove / mouseup for simple drag-reorder (mousedown initiated)
-  useEffect(() => {
-    if (draggingNo == null) return;
-
-    const onMove = (e: MouseEvent) => {
-      // update ghost position and highlight target row but do NOT reorder yet
-      setDragPos({ x: e.clientX, y: e.clientY });
-      const el = document
-        .elementFromPoint(e.clientX, e.clientY)
-        ?.closest('[data-id]') as HTMLElement | null;
-      if (!el) return;
-      const idStr = el.getAttribute('data-id');
-      if (!idStr) return;
-      const id = Number(idStr);
-      if (Number.isNaN(id)) return;
-      setDragOverNo(id);
-    };
-
-    const onUp = (e: MouseEvent) => {
-      // on mouseup, calculate the element under the pointer and perform reorder there
-      try {
-        const el = document
-          .elementFromPoint(e.clientX, e.clientY)
-          ?.closest('[data-id]') as HTMLElement | null;
-        let targetNo: number | null = null;
-        if (el) {
-          const idStr = el.getAttribute('data-id');
-          if (idStr) {
-            const id = Number(idStr);
-            if (!Number.isNaN(id)) targetNo = id;
-          }
-        }
-
-        const fromNo = draggingNo;
-        if (fromNo != null && targetNo != null && fromNo !== targetNo) {
-          setRows((prev) => {
-            const copy = [...prev];
-            const from = copy.findIndex((r) => r.no === fromNo);
-            const to = copy.findIndex((r) => r.no === targetNo);
-            if (from === -1) return prev;
-            // if target not found (shouldn't happen), append to end
-            const resolvedTo = to === -1 ? copy.length : to;
-            const [item] = copy.splice(from, 1);
-            // insert at target index so the dragged item occupies the target's position
-            const insertIndex = resolvedTo;
-            copy.splice(insertIndex, 0, item);
-            return copy;
-          });
-          setOrderChanged(true);
-          orderModifiedRef.current = true;
-        }
-      } catch (err) {
-        // ignore
-      } finally {
-        setDraggingNo(null);
-        setDragPos(null);
-        setDragOverNo(null);
-        try {
-          document.body.style.userSelect = '';
-        } catch (_err) {
-          // ignore
-        }
-      }
-
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      try {
-        document.body.style.userSelect = '';
-      } catch (_err) {
-        // ignore
-      }
-    };
-  }, [draggingNo]);
+  const hasFocusedRef = useRef(false);
 
   const columns: GridColDef<LocalRow>[] = useMemo(
     () => [
@@ -124,16 +37,14 @@ const ServiceNameEditPage: React.FC = () => {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        renderCell: (params) => {
-          return (
-            <div
-              data-drag-handle
-              style={{ cursor: 'grab', display: 'flex', alignItems: 'center', height: '100%' }}
-            >
-              <DragIndicatorIcon fontSize="small" />
-            </div>
-          );
-        },
+        renderCell: () => (
+          <div
+            data-drag-handle
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', height: '100%' }}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </div>
+        ),
       },
       { field: 'no', headerName: 'No', width: 80, editable: false },
       { field: 'category_nm', headerName: '카테고리명', flex: 1, editable: true },
@@ -151,51 +62,58 @@ const ServiceNameEditPage: React.FC = () => {
     [],
   );
 
+  // Load data and handle focus/edit
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const data = await serviceNameMockDb.listAll();
+    let mounted = true;
+    setLoading(true);
+
+    serviceNameMockDb.listAll().then((data) => {
+      if (!mounted) return;
+
       setRows(data as LocalRow[]);
       setLoading(false);
-    })();
-  }, []);
 
-  // If an id query param (service_cd) is present, focus that row's first editable cell after rows load
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const focusServiceCd = params.get('id');
-    if (!focusServiceCd) return;
+      // Handle focus after data is loaded (only once)
+      if (hasFocusedRef.current) return;
 
-    const t = setTimeout(() => {
-      try {
+      const params = new URLSearchParams(location.search);
+      const focusServiceCd = params.get('id');
+      if (!focusServiceCd) return;
+
+      hasFocusedRef.current = true;
+      setTimeout(() => {
+        const target = (data as LocalRow[]).find((r) => r.service_cd === focusServiceCd);
         const editableCol = columns.find((c) => c.editable);
-        if (editableCol && apiRef.current) {
-          const target = rows.find((r) => r.service_cd === focusServiceCd);
-          if (!target) return;
+        if (!target || !editableCol || !apiRef.current) return;
+
+        try {
           apiRef.current.setCellFocus(target.no, editableCol.field as string);
           setTimeout(() => {
             try {
-              apiRef.current.startCellEditMode({
-                id: target.no,
-                field: editableCol.field as string,
-              });
+              if (apiRef.current) {
+                apiRef.current.startCellEditMode({
+                  id: target.no,
+                  field: editableCol.field as string,
+                });
+              }
             } catch (e) {
               // ignore
             }
-          }, 60);
+          }, 0);
+        } catch (e) {
+          // ignore
         }
-      } catch (e) {
-        // ignore
-      }
-    }, 160);
+      }, 0);
+    });
 
-    return () => clearTimeout(t);
-  }, [location.search, apiRef, rows, columns]);
+    return () => {
+      mounted = false;
+    };
+  }, [location.search, apiRef, columns]);
 
   const processRowUpdate = useCallback((newRow: LocalRow, oldRow: LocalRow) => {
-    setRows((prev) => prev.map((r) => (r.no === oldRow.no ? (newRow as LocalRow) : r)));
+    setRows((prev) => prev.map((r) => (r.no === oldRow.no ? newRow : r)));
 
-    // detect meaningful changes
     const changed =
       newRow.category_nm !== oldRow.category_nm ||
       newRow.status_code !== oldRow.status_code ||
@@ -203,11 +121,10 @@ const ServiceNameEditPage: React.FC = () => {
 
     if (changed) modifiedRef.current.add(newRow.no);
 
-    return newRow as LocalRow;
+    return newRow;
   }, []);
 
-  const handleAddRow = () => {
-    // assign a positive temporary `no` as current max + 1 so UI shows a natural index
+  const handleAddRow = useCallback(() => {
     const currentMax = rows.reduce((m, r) => Math.max(m, r.no ?? 0), 0);
     const tempNo = currentMax + 1;
     const newRow: LocalRow = {
@@ -217,64 +134,78 @@ const ServiceNameEditPage: React.FC = () => {
       status_code: 'Y',
       isNew: true,
     };
-    // show the new row at the top for immediate editing but give it a natural positive no
     setRows((prev) => [newRow, ...prev]);
     modifiedRef.current.add(tempNo);
 
     setTimeout(() => {
       try {
-        const editableCol = columns.find((c) => c.editable) as GridColDef | undefined;
+        const editableCol = columns.find((c) => c.editable);
         if (editableCol && apiRef.current) {
           apiRef.current.setCellFocus(newRow.no, editableCol.field as string);
-          setTimeout(
-            () =>
-              apiRef.current.startCellEditMode({
-                id: newRow.no,
-                field: editableCol.field as string,
-              }),
-            60,
-          );
+          setTimeout(() => {
+            try {
+              if (apiRef.current) {
+                apiRef.current.startCellEditMode({
+                  id: newRow.no,
+                  field: editableCol.field as string,
+                });
+              }
+            } catch (e) {
+              // ignore
+            }
+          }, 0);
         }
       } catch (e) {
         // ignore
       }
-    }, 80);
-  };
+    }, 0);
+  }, [rows, columns, apiRef]);
 
-  const handleCancel = () => navigate(ROUTES.SERVICE_NAME);
+  const handleCancel = useCallback(() => navigate(ROUTES.SERVICE_NAME), [navigate]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setLoading(true);
     const ids = Array.from(modifiedRef.current);
+
     if (ids.length > 0) {
-      await Promise.all(
+      const updates = await Promise.all(
         ids.map(async (id) => {
-          const row = rows.find((r) => r.no === id) as LocalRow | undefined;
+          const row = rows.find((r) => r.no === id);
           if (!row) return null;
+
           if (row.isNew) {
             const created = await serviceNameMockDb.create({
               category_nm: row.category_nm,
               service_cd: row.service_cd,
               status_code: row.status_code,
             });
-            // replace temp row (matched by temp no) and move the created item to the end
-            setRows((prev) => {
-              const withoutTemp = prev.filter((r) => r.no !== id);
-              return [...withoutTemp, created];
-            });
-            return created;
+            return { type: 'create' as const, tempNo: id, created };
           }
-          return serviceNameMockDb.update(row.service_cd, row);
+
+          await serviceNameMockDb.update(row.service_cd, row);
+          return { type: 'update' as const };
         }),
       );
+
+      const createdItems = updates.filter((u) => u?.type === 'create');
+      if (createdItems.length > 0) {
+        setRows((prev) => {
+          let updated = [...prev];
+          createdItems.forEach((item) => {
+            if (item?.created) {
+              updated = updated.filter((r) => r.no !== item.tempNo);
+              updated.push(item.created as LocalRow);
+            }
+          });
+          return updated;
+        });
+      }
     }
-    // if order changed, persist display order via mock DB reorder API (reassigns nos)
-    if (orderModifiedRef.current || orderChanged) {
+
+    if (orderModifiedRef.current) {
       try {
         const order = rows.map((r) => r.service_cd).filter(Boolean) as string[];
-        // call reorder to persist array order and update nos on server
         const reordered = await serviceNameMockDb.reorder(order);
-        // reflect server order + nos in UI
         setRows(reordered as LocalRow[]);
       } catch (e) {
         console.error('Failed to persist order', e);
@@ -283,10 +214,52 @@ const ServiceNameEditPage: React.FC = () => {
 
     modifiedRef.current.clear();
     orderModifiedRef.current = false;
-    setOrderChanged(false);
     setLoading(false);
     navigate(ROUTES.SERVICE_NAME);
-  };
+  }, [rows, navigate]);
+
+  const handleDragOrderChange = useCallback((newRows: LocalRow[]) => {
+    setRows(newRows);
+    orderModifiedRef.current = true;
+  }, []);
+
+  const handleSelectionModelChange = useCallback((newModel: (string | number)[]) => {
+    setSelectionModel(newModel);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    async (ids: string | number | (string | number)[]) => {
+      setLoading(true);
+      const nos = Array.isArray(ids) ? ids : [ids];
+
+      for (const id of nos) {
+        const row = rows.find((r) => r.no === Number(id));
+        if (!row) continue;
+
+        if (row.isNew) {
+          setRows((prev) => prev.filter((r) => r.no !== row.no));
+        } else {
+          await serviceNameMockDb.delete(row.service_cd);
+          setRows((prev) => prev.filter((r) => r.service_cd !== row.service_cd));
+        }
+      }
+
+      setSelectionModel([]);
+      setSelectionMode(false);
+      setLoading(false);
+    },
+    [rows],
+  );
+
+  const handleDeleteCancel = useCallback(() => {
+    setSelectionMode(false);
+    setSelectionModel([]);
+  }, []);
+
+  const handleToggleSelection = useCallback((next: boolean) => {
+    setSelectionMode(next);
+    if (!next) setSelectionModel([]);
+  }, []);
 
   return (
     <Box>
@@ -295,10 +268,7 @@ const ServiceNameEditPage: React.FC = () => {
           <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
           <SelectionDeleteButton
             selectionMode={selectionMode}
-            onToggleSelection={(next) => {
-              setSelectionMode(next);
-              if (!next) setSelectionModel([]);
-            }}
+            onToggleSelection={handleToggleSelection}
             size="small"
           />
         </Stack>
@@ -316,117 +286,27 @@ const ServiceNameEditPage: React.FC = () => {
         )}
       </Stack>
 
-      <div
-        style={{ height: 600, width: '100%' }}
-        onMouseDown={(e) => {
-          // only start drag when clicking the drag handle
-          const handle = (e.target as HTMLElement).closest(
-            '[data-drag-handle]',
-          ) as HTMLElement | null;
-          if (!handle) return;
-          const rowEl = (handle as HTMLElement).closest('[data-id]') as HTMLElement | null;
-          if (!rowEl) return;
-          const idStr = rowEl.getAttribute('data-id');
-          if (!idStr) return;
-          const id = Number(idStr);
-          if (Number.isNaN(id)) return;
-          setDraggingNo(id);
-          // clear any previous hover
-          setDragOverNo(id);
-          setDragPos({ x: e.clientX, y: e.clientY });
-          // prevent text selection while dragging
-          try {
-            document.body.style.userSelect = 'none';
-          } catch (_err) {
-            // ignore
-          }
-        }}
-      >
-        <DataGrid
-          apiRef={apiRef}
-          rows={rows}
-          getRowId={(r: LocalRow) => r.no}
-          columns={columns}
-          loading={loading}
-          processRowUpdate={processRowUpdate}
-          onProcessRowUpdateError={(err) => console.error('Row update error', err)}
-          isCellEditable={(params) =>
-            params.field === 'service_cd' ||
-            params.field === 'category_nm' ||
-            params.field === 'status_code'
-          }
-          disableRowSelectionOnClick
-          checkboxSelection={selectionMode}
-          rowSelectionModel={selectionModel}
-          onRowSelectionModelChange={(newModel) => setSelectionModel(newModel)}
-          getRowClassName={(params) => {
-            if (params.id === dragOverNo) return 'drag-over';
-            if (params.id === draggingNo) return 'dragging';
-            return '';
-          }}
-          sx={{
-            '& .drag-over': { bgcolor: 'action.selected' },
-            '& .dragging': { opacity: 0.7 },
-          }}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-        />
-      </div>
+      <ManagedCategoryList
+        apiRef={apiRef}
+        rows={rows}
+        setRows={setRows}
+        getRowId={(r: LocalRow) => r.no}
+        columns={columns}
+        loading={loading}
+        processRowUpdate={processRowUpdate}
+        selectionMode={selectionMode}
+        selectionModel={selectionModel}
+        onSelectionModelChange={handleSelectionModelChange}
+        onDragOrderChange={handleDragOrderChange}
+      />
+
       <DeleteConfirmBar
         open={selectionMode}
         selectedIds={selectionModel}
-        onConfirm={async (ids) => {
-          // map selected ids (no) to service_cd and delete
-          setLoading(true);
-          const nos = Array.isArray(ids) ? ids : [ids];
-          for (const id of nos) {
-            const row = rows.find((r) => r.no === Number(id));
-            if (!row) continue;
-            if (row.isNew) {
-              // just remove locally
-              setRows((prev) => prev.filter((r) => r.no !== row.no));
-            } else {
-              await serviceNameMockDb.delete(row.service_cd);
-              setRows((prev) => prev.filter((r) => r.service_cd !== row.service_cd));
-            }
-          }
-          setSelectionModel([]);
-          setSelectionMode(false);
-          setLoading(false);
-        }}
-        onCancel={() => {
-          setSelectionMode(false);
-          setSelectionModel([]);
-        }}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
         size="small"
       />
-      {/* floating ghost for dragged row (shows the held row while dragging) */}
-      {draggingNo != null && dragPos != null
-        ? (() => {
-            const row = rows.find((r) => r.no === draggingNo);
-            if (!row) return null;
-            return (
-              <div
-                style={{
-                  position: 'fixed',
-                  left: dragPos.x + 12,
-                  top: dragPos.y + 12,
-                  pointerEvents: 'none',
-                  background: 'white',
-                  border: '1px solid rgba(0,0,0,0.12)',
-                  padding: '6px 10px',
-                  borderRadius: 6,
-                  boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
-                  zIndex: 1400,
-                  minWidth: 200,
-                }}
-              >
-                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>No {row.no}</div>
-                <div style={{ fontWeight: 600 }}>{row.category_nm || '카테고리'}</div>
-                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>{row.service_cd}</div>
-              </div>
-            );
-          })()
-        : null}
     </Box>
   );
 };

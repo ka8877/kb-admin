@@ -1,10 +1,12 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import type { RowItem } from '../types';
 
+// Display columns: show human-friendly status based on status_code ('Y'|'N').
 export const listColumns: GridColDef<RowItem>[] = [
   { field: 'no', headerName: 'No', width: 80 },
-  { field: 'category_nm', headerName: '연령대', flex: 1 },
-  { field: 'service_cd', headerName: '코드', width: 200 },
+  // make category take the flexible space to match edit page layout
+  { field: 'category_nm', headerName: '카테고리명', flex: 1 },
+  { field: 'service_cd', headerName: '서비스코드', width: 200 },
   {
     field: 'status_code',
     headerName: '활성상태',
