@@ -49,6 +49,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 
             color: 'inherit',
             '&:hover': { opacity: 0.85 },
             cursor: 'pointer',
+            pr: 6,
           }}
           aria-label="Go to home"
         >
@@ -65,7 +66,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 
                 to={m.path}
                 color={active ? 'primary' : 'inherit'}
                 size="small"
-                sx={{ textTransform: 'none', fontWeight: active ? 700 : 500 }}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: active ? 700 : 500,
+                  fontSize: '0.9375rem', // 15px
+                }}
               >
                 {m.label}
               </Button>

@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, Fragment } from 'react';
 import { Box, Container, Toolbar, Avatar, Stack, Typography } from '@mui/material';
 import AppHeader from '../components/layout/AppHeader';
 import GlobalLoadingSpinner from '../components/common/spinner/GlobalLoadingSpinner';
@@ -27,7 +27,11 @@ const MainLayout = ({ children }: PropsWithChildren) => {
       for (const m of list) {
         const nextAcc = [...acc, m.label];
         // treat prefix matches as belonging to the menu (e.g. /management/category/...)
-        if (m.path === target || (m.path !== '/' && target.startsWith(m.path + '/')) || (m.path === '/' && target === '/')) {
+        if (
+          m.path === target ||
+          (m.path !== '/' && target.startsWith(m.path + '/')) ||
+          (m.path === '/' && target === '/')
+        ) {
           // try deeper children first
           if (m.children) {
             const child = dfs(m.children as any, nextAcc);
@@ -84,7 +88,22 @@ const MainLayout = ({ children }: PropsWithChildren) => {
           {/* Breadcrumb / 현재 페이지 설명 텍스트 */}
           {breadcrumb.length > 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {breadcrumb.join(' > ')}
+              {breadcrumb.map((label, index) => {
+                const isLast = index === breadcrumb.length - 1;
+                return (
+                  <Fragment key={index}>
+                    {index > 0 && ' / '}
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color={isLast ? 'text.primary' : 'text.secondary'}
+                      sx={{ fontWeight: isLast ? 600 : 400 }}
+                    >
+                      {label}
+                    </Typography>
+                  </Fragment>
+                );
+              })}
             </Typography>
           )}
           {children}

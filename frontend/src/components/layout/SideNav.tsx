@@ -8,6 +8,7 @@ import {
   Toolbar,
   Collapse,
   ListItemIcon,
+  Typography,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import type { MenuItem } from '../../routes/menu';
@@ -98,20 +99,107 @@ const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
     >
       {/* Push below AppBar */}
       <Toolbar />
-      <Box sx={{ overflow: 'auto' }}>
-        <List dense>
-          {shownTop && (
-            <ListItemButton
-              component={RouterLink}
-              to={shownTop.path}
-              selected={pathname === shownTop.path}
-            >
-              <ListItemText primary={shownTop.label} />
-            </ListItemButton>
-          )}
-        </List>
+      <Box sx={{ overflow: 'auto', px: 2, py: 2 }}>
+        {/* Category Title */}
+        {shownTop && (
+          <Typography
+            variant="caption"
+            sx={{
+              px: 2,
+              py: 1,
+              display: 'block',
+              color: 'text.secondary',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              letterSpacing: '0.5px',
+            }}
+          >
+            {shownTop.label}
+          </Typography>
+        )}
 
-        <Box sx={{ px: 1 }}>{renderNested(twoDepthItems, 2)}</Box>
+        {/* Menu Items */}
+        <List disablePadding>
+          {twoDepthItems.map((item) => {
+            const selected = pathname === item.path || pathname.startsWith(item.path + '/');
+            const hasChildren = !!(item.children && item.children.length);
+            const open = openMap[item.path] ?? selected;
+
+            return (
+              <React.Fragment key={item.path}>
+                <ListItemButton
+                  component={hasChildren ? 'div' : RouterLink}
+                  to={hasChildren ? undefined : item.path}
+                  selected={selected}
+                  onClick={() => (hasChildren ? toggleOpen(item.path) : undefined)}
+                  sx={{
+                    borderRadius: 1,
+                    mb: 0.5,
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.lighter',
+                      color: 'primary.main',
+                      '&:hover': {
+                        bgcolor: 'primary.lighter',
+                      },
+                    },
+                  }}
+                >
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontSize: '0.875rem',
+                      fontWeight: selected ? 600 : 400,
+                    }}
+                  />
+                  {hasChildren && (
+                    <ListItemIcon sx={{ minWidth: 24 }}>
+                      {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                    </ListItemIcon>
+                  )}
+                </ListItemButton>
+                {hasChildren && (
+                  <Collapse in={open} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {item.children!.map((child) => {
+                        const childSelected =
+                          pathname === child.path || pathname.startsWith(child.path + '/');
+                        return (
+                          <ListItemButton
+                            key={child.path}
+                            component={RouterLink}
+                            to={child.path}
+                            selected={childSelected}
+                            sx={{
+                              pl: 4,
+                              borderRadius: 1,
+                              mb: 0.5,
+                              '&.Mui-selected': {
+                                bgcolor: 'primary.lighter',
+                                color: 'primary.main',
+                                '&:hover': {
+                                  bgcolor: 'primary.lighter',
+                                },
+                              },
+                            }}
+                          >
+                            <ListItemText
+                              primary={child.label}
+                              primaryTypographyProps={{
+                                fontSize: '0.8125rem',
+                                fontWeight: childSelected ? 600 : 400,
+                              }}
+                            />
+                          </ListItemButton>
+                        );
+                      })}
+                    </List>
+                  </Collapse>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </List>
       </Box>
     </Drawer>
   );

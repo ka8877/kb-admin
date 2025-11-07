@@ -1,5 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Box } from '@mui/material';
+import PageHeader from '../../../components/common/PageHeader';
 import EditableList from '../../../components/common/list/EditableList';
 
 import type { RowItem } from './types';
@@ -13,14 +15,17 @@ const ServiceNamePage: React.FC = () => {
   const handleGoEditPage = () => navigate(ROUTES.SERVICE_NAME_EDIT);
 
   return (
-    <EditableList
-      columns={listColumns}
-      fetcher={async () => await serviceNameMockDb.listAll()}
-      rowIdGetter={(r) => (r as any).service_cd}
-      defaultPageSize={25}
-      onEdit={handleGoEditPage}
-      isEditMode={false}
-    />
+    <Box>
+      <PageHeader title="서비스명 카테고리 관리" />
+      <EditableList
+        columns={listColumns}
+        fetcher={async () => await serviceNameMockDb.listAll()}
+        rowIdGetter={(r) => (r as any).service_cd}
+        defaultPageSize={25}
+        onEdit={handleGoEditPage}
+        isEditMode={false}
+      />
+    </Box>
   );
 };
 

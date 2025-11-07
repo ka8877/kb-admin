@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
+import PageHeader from '../../../components/common/PageHeader';
 import AddDataButton from '../../../components/common/actions/AddDataButton';
 import SelectionDeleteButton from '../../../components/common/actions/SelectionDeleteButton';
 import { DeleteConfirmBar } from '../../../components/common/actions/ListActions';
@@ -263,6 +264,8 @@ const AgeGroupEditPage: React.FC = () => {
 
   return (
     <Box>
+      <PageHeader title="연령대 카테고리 관리" />
+
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center">
           <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
