@@ -22,6 +22,29 @@ const GlobalConfirmDialog: React.FC = () => {
     }
   };
 
+  const getCancelButtonStyles = () => {
+    const getBorderColor = () => {
+      switch (severity) {
+        case 'error':
+          return '#f44336'; // 에러 색상
+        case 'warning':
+          return '#ff9800'; // 경고 색상
+        default:
+          return '#1976d2'; // 기본 primary 색상
+      }
+    };
+
+    return {
+      backgroundColor: '#ffffff',
+      color: '#666',
+      border: `1px solid ${getBorderColor()}`,
+      '&:hover': {
+        backgroundColor: '#f5f5f5',
+        border: `1px solid ${getBorderColor()}`,
+      },
+    };
+  };
+
   return (
     <Dialog
       open={open}
@@ -34,7 +57,7 @@ const GlobalConfirmDialog: React.FC = () => {
         <DialogContentText id="global-confirm-dialog-description">{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={cancel} color="inherit">
+        <Button onClick={cancel} color="inherit" sx={getCancelButtonStyles()}>
           {cancelText}
         </Button>
         <Button onClick={confirm} color={getConfirmButtonColor()} variant="contained" autoFocus>

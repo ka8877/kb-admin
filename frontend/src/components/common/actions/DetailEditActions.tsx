@@ -1,6 +1,9 @@
 // frontend/src/components/common/actions/DetailEditActions.tsx
 import React from 'react';
-import { Box, Button, Paper, Stack, Typography } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
+import MediumButton from '../button/MediumButton';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { CONFIRM_TITLES, getDeleteConfirmMessage } from '../../../constants/message';
 
 export type DetailEditActionsProps = {
   open: boolean;
@@ -10,6 +13,7 @@ export type DetailEditActionsProps = {
   isLoading?: boolean;
   showDelete?: boolean; // 삭제 버튼 표시 여부
   selectedCount?: number; // 선택된 항목 수
+  selectedRowNumbers?: number[]; // 선택된 행 번호 배열
   onDelete?: () => void; // 삭제 버튼 클릭 핸들러
 };
 
@@ -21,8 +25,28 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
   isLoading = false,
   showDelete = false,
   selectedCount = 0,
+  selectedRowNumbers = [],
   onDelete,
 }) => {
+  const { showConfirm } = useConfirmDialog();
+
+  const handleDeleteClick = () => {
+    const message =
+      selectedRowNumbers.length > 0
+        ? getDeleteConfirmMessage(selectedRowNumbers)
+        : `${selectedCount}개의 데이터를 삭제하시겠습니까?`;
+
+    showConfirm({
+      title: CONFIRM_TITLES.DELETE,
+      message,
+      onConfirm: () => {
+        if (onDelete) {
+          onDelete();
+        }
+      },
+    });
+  };
+
   if (!open) return null;
 
   return (
@@ -33,22 +57,21 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
         </Typography>
         <Stack direction="row" spacing={1}>
           {showDelete && selectedCount > 0 && onDelete && (
-            <Button
+            <MediumButton
               variant="outlined"
               color="error"
-              size={size}
-              onClick={onDelete}
+              onClick={handleDeleteClick}
               disabled={isLoading}
             >
               삭제 ({selectedCount})
-            </Button>
+            </MediumButton>
           )}
-          <Button variant="contained" size={size} onClick={onSave} disabled={isLoading}>
+          <MediumButton variant="contained" onClick={onSave} disabled={isLoading}>
             저장
-          </Button>
-          <Button variant="outlined" size={size} onClick={onCancel} disabled={isLoading}>
+          </MediumButton>
+          <MediumButton variant="outlined" onClick={onCancel} disabled={isLoading}>
             취소
-          </Button>
+          </MediumButton>
         </Stack>
       </Box>
     </Paper>

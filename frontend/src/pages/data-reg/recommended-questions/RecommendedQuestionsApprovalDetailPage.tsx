@@ -1,44 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import type { ApprovalRequestItem, RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import EditableList from '../../../components/common/list/EditableList';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { ROUTES } from '../../../routes/menu';
+import { mockApprovalDetailQuestions } from './data';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '../../../constants/message';
 
 // 결재 요청에 포함된 추천 질문 데이터를 가져오는 API
 const approvalDetailApi = {
   getRecommendedQuestions: async (approvalId: string): Promise<RecommendedQuestionItem[]> => {
     // 실제로는 결재 요청 ID를 통해 관련된 추천 질문들을 조회
-    return Promise.resolve([
-      {
-        no: 1,
-        qst_id: 'Q001',
-        service_nm: 'AI 검색',
-        qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-        parent_id: 'M020011',
-        parent_nm: '대출 문의',
-        imp_start_date: '2025.06.17. 00:00:00',
-        imp_end_date: '2025.12.31. 23:59:59',
-        updatedAt: '2025.06.17. 14:30:00',
-        registeredAt: '2025.06.17. 14:30:00',
-        status: 'in_service',
-      },
-      {
-        no: 2,
-        qst_id: 'Q002',
-        service_nm: 'AI 계산기',
-        qst_ctnt: '투자 상품 추천해줘',
-        parent_id: null,
-        parent_nm: null,
-        imp_start_date: '2025.06.17. 00:00:00',
-        imp_end_date: '2025.12.31. 23:59:59',
-        updatedAt: '2025.06.17. 15:00:00',
-        registeredAt: '2025.06.17. 15:00:00',
-        status: 'in_service',
-      },
-    ]);
+    return Promise.resolve(mockApprovalDetailQuestions);
   },
 
   approve: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
@@ -55,6 +30,7 @@ const approvalDetailApi = {
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showConfirm } = useConfirmDialog();
   const [data, setData] = useState<RecommendedQuestionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +58,23 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   }, [id, navigate]);
 
   const handleBack = () => {
-    navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+    // ApprovalPage의 저장된 상태로 돌아가기
+    const savedApprovalState = sessionStorage.getItem('approval_page_state');
+    console.log('🔍 DetailPage handleBack - savedApprovalState:', savedApprovalState);
+
+    if (savedApprovalState) {
+      // ApprovalPage의 이전 상태(검색조건 포함)로 복원
+      console.log(
+        '🔍 DetailPage handleBack - navigating to saved approval state:',
+        savedApprovalState,
+      );
+      sessionStorage.removeItem('approval_page_state'); // 사용 후 정리
+      navigate(savedApprovalState);
+    } else {
+      // 저장된 상태가 없으면 기본 결재 요청 목록으로
+      console.log('🔍 DetailPage handleBack - no saved state, going to default approval page');
+      navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+    }
   };
 
   const handleEdit = () => {
@@ -94,29 +86,30 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   };
 
   const handleSave = () => {
-    // 편집 모드 저장 처리
-    console.log('편집 내용 저장');
-    setIsEditMode(false);
+    showConfirm({
+      title: CONFIRM_TITLES.APPROVAL_REQUEST,
+      message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
+      onConfirm: () => {
+        // 편집 모드 저장 처리
+        console.log('편집 내용 저장 및 결재 요청');
+        setIsEditMode(false);
+        // TODO: 실제 저장 및 결재 요청 API 호출
+      },
+    });
   };
 
   const handleDeleteConfirm = async (selectedIds: (string | number)[]) => {
     if (!id) return;
 
-    showConfirm({
-      title: '데이터 삭제 확인',
-      message: `선택된 ${selectedIds.length}개의 데이터를 삭제하시겠습니까?`,
-      onConfirm: async () => {
-        try {
-          await approvalDetailApi.reject(id, selectedIds);
-          console.log('선택된 항목들이 거부되었습니다:', selectedIds);
-          // 목록 새로고침 또는 상태 업데이트
-          const updatedData = data.filter((item) => !selectedIds.includes(item.qst_id));
-          setData(updatedData);
-        } catch (error) {
-          console.error('거부 처리 실패:', error);
-        }
-      },
-    });
+    try {
+      await approvalDetailApi.reject(id, selectedIds);
+      console.log('선택된 항목들이 거부되었습니다:', selectedIds);
+      // 목록 새로고침 또는 상태 업데이트
+      const updatedData = data.filter((item) => !selectedIds.includes(item.qst_id));
+      setData(updatedData);
+    } catch (error) {
+      console.error('거부 처리 실패:', error);
+    }
   };
 
   const handleApproveAll = async () => {

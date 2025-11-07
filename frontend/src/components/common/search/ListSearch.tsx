@@ -7,7 +7,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
+import MediumButton from '../button/MediumButton';
 
 export type ListSearchProps = {
   columns?: GridColDef<any>[];
@@ -15,7 +15,7 @@ export type ListSearchProps = {
   placeholder?: string;
   defaultField?: string;
   defaultQuery?: string; // 초기 검색어
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
 };
 
 const ListSearch: React.FC<ListSearchProps> = ({
@@ -28,6 +28,20 @@ const ListSearch: React.FC<ListSearchProps> = ({
 }) => {
   const [field, setField] = useState<string>(defaultField);
   const [query, setQuery] = useState<string>(defaultQuery);
+
+  // MUI에서 지원하는 사이즈로 매핑 ('large' -> 'medium')
+  const muiSize = size === 'large' ? 'medium' : (size as 'small' | 'medium');
+
+  // 셀렉트박스와 텍스트필드 스타일 (버튼과 높이 맞춤)
+  const inputStyles = {
+    '& .MuiOutlinedInput-root': {
+      height: '40px',
+      fontSize: '0.875rem',
+    },
+    '& .MuiInputLabel-root': {
+      fontSize: '0.875rem',
+    },
+  };
 
   useEffect(() => {
     setField(defaultField);
@@ -54,7 +68,7 @@ const ListSearch: React.FC<ListSearchProps> = ({
 
   return (
     <Box display="flex" alignItems="center" gap={1}>
-      <FormControl size={size} sx={{ minWidth: 140 }}>
+      <FormControl size={muiSize} sx={{ minWidth: 140, ...inputStyles }}>
         <InputLabel id="list-search-field-label">검색대상</InputLabel>
         <Select
           labelId="list-search-field-label"
@@ -71,17 +85,22 @@ const ListSearch: React.FC<ListSearchProps> = ({
       </FormControl>
 
       <TextField
-        size={size}
+        size={muiSize}
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        sx={{ flex: 1, minWidth: 200 }}
+        sx={{ flex: 1, minWidth: 200, ...inputStyles }}
       />
 
-      <Button variant="contained" size={size} onClick={handleSearch} aria-label="검색">
+      <MediumButton
+        variant="contained"
+        onClick={handleSearch}
+        aria-label="검색"
+        sx={{ minWidth: '70px', height: '40px', padding: '6px 14px' }}
+      >
         검색
-      </Button>
+      </MediumButton>
     </Box>
   );
 };

@@ -1,7 +1,8 @@
 // frontend/src/components/common/actions/CreateDataActions.tsx
 import React from 'react';
-import { Button, Stack } from '@mui/material';
+import { Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import MediumButton from '../button/MediumButton';
 
 export type CreateDataActionsProps = {
   onSave: () => void;
@@ -34,12 +35,12 @@ const CreateDataActions: React.FC<CreateDataActionsProps> = ({
 }) => {
   return (
     <Stack direction={direction} spacing={spacing} sx={sx ?? { mt: 3 }}>
-      <Button variant={saveVariant} size={size} onClick={onSave} disabled={disabled || isLoading}>
+      <MediumButton variant={saveVariant} onClick={onSave} disabled={disabled || isLoading}>
         {saveLabel}
-      </Button>
-      <Button variant={cancelVariant} size={size} onClick={onCancel} disabled={isLoading}>
+      </MediumButton>
+      <MediumButton variant={cancelVariant} onClick={onCancel} disabled={isLoading}>
         {cancelLabel}
-      </Button>
+      </MediumButton>
     </Stack>
   );
 };

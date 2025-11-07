@@ -14,6 +14,10 @@ import GroupedSelectInput from '../../../components/common/input/GroupedSelectIn
 import DateInput from '../../../components/common/input/DateInput';
 import RadioInput from '../../../components/common/input/RadioInput';
 import dayjs, { Dayjs } from 'dayjs';
+import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from './data';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '../../../constants/message';
+import { recommendedQuestionColumns } from './components/columns/columns';
 
 const RecommendedQuestionsCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,16 +28,6 @@ const RecommendedQuestionsCreatePage: React.FC = () => {
 
   return (
     <Box>
-      {/* 페이지 헤더 */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Button variant="outlined" size="small" startIcon={<ArrowBackIcon />} onClick={handleBack}>
-          목록으로
-        </Button>
-        <Typography variant="h4" component="h1">
-          추천 질문 등록
-        </Typography>
-      </Box>
-
       <DualTabs
         label1="직접 입력하기"
         label2="엑셀파일로 일괄등록"
@@ -46,87 +40,33 @@ const RecommendedQuestionsCreatePage: React.FC = () => {
   );
 };
 
-// 서비스 옵션 데이터
-const serviceOptions = [
-  { label: 'AI 검색', value: 'ai_search' },
-  { label: 'AI 금융계산기', value: 'ai_calc' },
-  { label: 'AI 이체', value: 'ai_transfer' },
-  { label: 'AI 모임총무', value: 'ai_shared_account' },
-];
-
-// 연령대 옵션 데이터
-const ageGroupOptions = [
-  { label: '10대', value: '10' },
-  { label: '20대', value: '20' },
-  { label: '30대', value: '30' },
-  { label: '40대', value: '40' },
-  { label: '50대', value: '50' },
-];
-
-// 17세 미만 노출 여부 옵션 데이터
-const under17Options = [
-  { label: '예', value: 'Y' },
-  { label: '아니오', value: 'N' },
-];
-
-// 질문 카테고리 옵션 데이터
-const questionCategoryOptions = [
-  {
-    groupLabel: 'AI검색',
-    options: [
-      { label: 'mid (엔어드민아이디)', value: 'ai_search_mid' },
-      { label: 'story (돈이뭔놈이야기)', value: 'ai_search_story' },
-      { label: 'child (아동보호)', value: 'ai_search_child' },
-      { label: 'promo (프로모션)', value: 'ai_search_promo' },
-      { label: 'signature (시그니처)', value: 'ai_search_signature' },
-    ],
-  },
-  {
-    groupLabel: 'AI금융계산기',
-    options: [
-      { label: 'save (저축)', value: 'ai_calc_save' },
-      { label: 'loan (대출)', value: 'ai_calc_loan' },
-      { label: 'exchange (환율)', value: 'ai_calc_exchange' },
-    ],
-  },
-  {
-    groupLabel: 'AI이체',
-    options: [
-      { label: 'svc_intro', value: 'ai_transfer_svc_intro' },
-      { label: 'trn_nick', value: 'ai_transfer_trn_nick' },
-      { label: 'sec_auth', value: 'ai_transfer_sec_auth' },
-      { label: 'mstk_trn', value: 'ai_transfer_mstk_trn' },
-    ],
-  },
-  {
-    groupLabel: 'AI모임총무',
-    options: [
-      { label: 'DUES_STATUS', value: 'ai_shared_dues_status' },
-      { label: 'DUES_RECORD', value: 'ai_shared_dues_record' },
-      { label: 'DUES_ANALYSIS', value: 'ai_shared_dues_analysis' },
-      { label: 'EXPENSE_OVERVIEW', value: 'ai_shared_expense_overview' },
-      { label: 'EXPENSE_ANALYSIS', value: 'ai_shared_expense_analysis' },
-      { label: 'MOIM_DUES_STATUS', value: 'ai_shared_moim_dues_status' },
-      { label: 'MOIM_DUES_RECORD', value: 'ai_shared_moim_dues_record' },
-    ],
-  },
-];
-
 // 폼 검증 스키마
 const schema = yup.object({
-  service_nm: yup.string().required('서비스명은 필수입니다'),
-  qst_ctgr: yup.string().required('질문 카테고리는 필수입니다'),
-  qst_ctnt: yup.string().required('질문 내용은 필수입니다'),
-  qst_style: yup.string(),
+  service_nm: yup
+    .string()
+    .required('서비스명은 필수입니다')
+    .max(50, '서비스명은 50자를 초과할 수 없습니다'),
+  qst_ctgr: yup
+    .string()
+    .required('질문 카테고리는 필수입니다')
+    .max(100, '질문 카테고리는 100자를 초과할 수 없습니다'),
+  qst_ctnt: yup
+    .string()
+    .required('질문 내용은 필수입니다')
+    .min(5, '질문 내용은 최소 5자 이상 입력해주세요')
+    .max(500, '질문 내용은 500자를 초과할 수 없습니다'),
+  qst_style: yup.string().max(200, '질문 태그는 200자를 초과할 수 없습니다'),
   parentId: yup.string().when('qst_ctgr', {
     is: (value: string) => value === 'ai_search_mid' || value === 'ai_search_story',
-    then: (schema) => schema.required('부모 ID는 필수입니다'),
-    otherwise: (schema) => schema,
+    then: (schema) =>
+      schema.required('부모 ID는 필수입니다').max(20, '부모 ID는 20자를 초과할 수 없습니다'),
+    otherwise: (schema) => schema.max(20, '부모 ID는 20자를 초과할 수 없습니다'),
   }),
   parentIdName: yup.string().when('qst_ctgr', {
     is: (value: string) => value === 'ai_search_mid' || value === 'ai_search_story',
-    then: (schema) => schema.required('부모 ID명은 필수입니다'),
-    otherwise: (schema) => schema,
+    then: (schema) =>
+      schema.required('부모 ID명은 필수입니다').max(100, '부모 ID명은 100자를 초과할 수 없습니다'),
+    otherwise: (schema) => schema.max(100, '부모 ID명은 100자를 초과할 수 없습니다'),
   }),
   age_grp: yup.string().when('service_nm', {
     is: (value: string) => value === 'ai_calc',
@@ -154,10 +94,12 @@ type FormData = {
 // 직접 입력 컴포넌트
 const ManualInputComponent: React.FC = () => {
   const navigate = useNavigate();
+  const { showConfirm } = useConfirmDialog();
 
   const {
     control,
     handleSubmit,
+    trigger,
     formState: { errors },
   } = useForm<FormData>({
     resolver: yupResolver(schema) as any,
@@ -197,6 +139,23 @@ const ManualInputComponent: React.FC = () => {
   const onSubmit = (data: FormData) => {
     // TODO: 폼 데이터 검증 및 저장 로직
     console.log('직접 입력 저장:', data);
+  };
+
+  const handleSaveClick = async () => {
+    // 먼저 validation 체크
+    const isValid = await trigger();
+
+    if (isValid) {
+      // validation 통과한 경우에만 확인 다이얼로그 표시
+      showConfirm({
+        title: CONFIRM_TITLES.SAVE,
+        message: CONFIRM_MESSAGES.SAVE,
+        onConfirm: () => {
+          handleSubmit(onSubmit)();
+        },
+      });
+    }
+    // validation 실패 시 에러 메시지가 자동으로 표시됨
   };
 
   const handleCancel = () => {
@@ -373,11 +332,7 @@ const ManualInputComponent: React.FC = () => {
               )}
             />
 
-            <CreateDataActions
-              onSave={handleSubmit(onSubmit)}
-              onCancel={handleCancel}
-              size="medium"
-            />
+            <CreateDataActions onSave={handleSaveClick} onCancel={handleCancel} size="medium" />
           </Stack>
         </form>
       </CardContent>
@@ -398,18 +353,48 @@ const ExcelUploadComponent: React.FC = () => {
     navigate(-1);
   };
 
-  const handleTemplateDownload = () => {
-    // TODO: 템플릿 파일 다운로드 로직
-    console.log('템플릿 다운로드');
+  // 템플릿에서 제외할 자동 생성 필드들
+  const excludeFields = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+
+  // 템플릿용 컬럼 (자동 생성 필드 제외)
+  const templateColumns = recommendedQuestionColumns.filter(
+    (col) => !excludeFields.includes(col.field),
+  );
+
+  // 필드별 가이드 메시지 (필요한 필드만)
+  const fieldGuides: Record<string, string> = {
+    service_nm: '필수 | AI 검색, AI 금융계산기 등',
+    qst_ctnt: '필수 | 5-500자',
+    parent_id: '선택 | 부모 ID (예: M020011)',
+    parent_nm: '선택 | 부모 ID명',
+    imp_start_date: '필수 | YYYYMMDDHHMMSS 형식',
+    imp_end_date: '필수 | YYYYMMDDHHMMSS 형식',
+    status: 'in_service 또는 out_of_service',
   };
+
+  // 예시 데이터 (자동 생성 필드 제외)
+  const exampleData = [
+    {
+      service_nm: 'AI 검색',
+      qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+      parent_id: 'M020011',
+      parent_nm: '26주 적금',
+      imp_start_date: '20250501235959',
+      imp_end_date: '99991231235959',
+      status: 'in_service',
+    },
+  ];
 
   return (
     <ExcelUpload
       onSave={handleSave}
       onCancel={handleCancel}
+      columns={templateColumns}
+      templateFileName="추천질문_업로드템플릿"
+      fieldGuides={fieldGuides}
+      exampleData={exampleData}
       acceptedFormats={['.xlsx', '.csv']}
       description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
-      onTemplateDownload={handleTemplateDownload}
       templateLabel="엑셀 양식 다운로드"
       size="medium"
     />

@@ -4,6 +4,10 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import MediumButton from '../button/MediumButton';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '../../../constants/message';
 
 export type ListActionsProps = {
   selectionMode: boolean;
@@ -13,7 +17,7 @@ export type ListActionsProps = {
   onRequestApproval?: () => void;
   onDeleteConfirm: (ids: (string | number)[]) => void;
   onDownloadAll?: () => void;
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
 };
 
 const ListActions: React.FC<ListActionsProps> = ({
@@ -37,21 +41,21 @@ const ListActions: React.FC<ListActionsProps> = ({
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} mt={1}>
       <Stack direction="row" spacing={1}>
-        <Button variant="contained" size={size} onClick={onCreate}>
+        <MediumButton variant="contained" onClick={onCreate}>
           신규 등록
-        </Button>
+        </MediumButton>
 
-        <Button variant="outlined" size={size} onClick={handleToggleSelection}>
+        <MediumButton variant="outlined" onClick={handleToggleSelection}>
           {selectionMode ? '삭제 취소' : '선택 삭제'}
-        </Button>
+        </MediumButton>
 
-        <Button variant="contained" size={size} onClick={onRequestApproval}>
+        <MediumButton variant="contained" onClick={onRequestApproval}>
           결재요청 대기함
-        </Button>
+        </MediumButton>
 
-        <Button variant="outlined" size={size} onClick={onDownloadAll}>
+        <MediumButton variant="outlined" onClick={onDownloadAll}>
           전체목록 xlsx 다운로드
-        </Button>
+        </MediumButton>
       </Stack>
 
       {/* 간단한 상태 안내 */}
@@ -67,22 +71,49 @@ export const DeleteConfirmBar: React.FC<{
   selectedIds: (string | number)[];
   onConfirm: (ids: (string | number)[]) => void;
   onCancel?: () => void;
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
 }> = ({ open, selectedIds, onConfirm, onCancel, size = 'small' }) => {
+  const { showConfirm } = useConfirmDialog();
+  const { showAlert } = useAlertDialog();
+
+  const handleDeleteClick = () => {
+    // 선택된 항목이 없는 경우 알림 표시
+    if (!selectedIds || selectedIds.length === 0) {
+      showAlert({
+        title: '알림',
+        message: ALERT_MESSAGES.NO_ITEMS_TO_DELETE,
+        severity: 'warning',
+      });
+      return;
+    }
+
+    // 선택된 항목이 있는 경우 확인 다이얼로그 표시
+    showConfirm({
+      title: CONFIRM_TITLES.DELETE,
+      message: CONFIRM_MESSAGES.DELETE,
+      onConfirm: () => {
+        onConfirm(selectedIds);
+      },
+    });
+  };
+
   if (!open) return null;
   return (
     <Paper elevation={1} sx={{ mt: 1, p: 1 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="body2">
-          선택된 항목: {selectedIds.length}개
-        </Typography>
+        <Typography variant="body2">선택된 항목: {selectedIds.length}개</Typography>
         <Stack direction="row" spacing={1}>
-          <Button variant="contained" color="error" size={size} onClick={() => onConfirm(selectedIds)}>
-            삭제 확인
-          </Button>
-          <Button variant="outlined" size={size} onClick={onCancel}>
+          <MediumButton
+            variant="contained"
+            color="error"
+            onClick={handleDeleteClick}
+            sx={{ minWidth: '80px' }}
+          >
+            삭제
+          </MediumButton>
+          <MediumButton variant="outlined" onClick={onCancel} sx={{ minWidth: '80px' }}>
             취소
-          </Button>
+          </MediumButton>
         </Stack>
       </Box>
     </Paper>
