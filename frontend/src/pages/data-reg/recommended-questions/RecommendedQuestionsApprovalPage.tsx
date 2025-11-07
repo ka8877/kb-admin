@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-import type { ApprovalRequestItem } from './types';
-import { approvalRequestColumns } from './components/columns/columns';
+import type { ApprovalRequestItem } from '../../../types/types';
+import { approvalRequestColumns } from '../../../constants/columns';
 import SimpleList from '../../../components/common/list/SimpleList';
 import { ROUTES } from '../../../routes/menu';
 import { mockApprovalRequests } from './data';
