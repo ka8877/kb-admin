@@ -5,17 +5,17 @@ import EditableList from '../../../components/common/list/EditableList';
 import type { RowItem } from './types';
 import { listColumns } from './components/columns';
 import { ROUTES } from '../../../routes/menu';
-import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
+import { questionsCategoryMockDb } from '../../../mocks/questionsCategoryDb';
 
-const ServiceNamePage: React.FC = () => {
+const QuestionsCategoryPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleGoEditPage = () => navigate(ROUTES.SERVICE_NAME_EDIT);
+  const handleGoEditPage = () => navigate(`${ROUTES.QUESTIONS_CATEGORY}/edit`);
 
   return (
     <EditableList
       columns={listColumns}
-      fetcher={async () => await serviceNameMockDb.listAll()}
+      fetcher={async () => await questionsCategoryMockDb.listAll()}
       rowIdGetter={(r) => (r as any).service_cd}
       defaultPageSize={25}
       onEdit={handleGoEditPage}
@@ -24,4 +24,4 @@ const ServiceNamePage: React.FC = () => {
   );
 };
 
-export default ServiceNamePage;
+export default QuestionsCategoryPage;

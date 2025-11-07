@@ -8,6 +8,10 @@ import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/Re
 import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
 import ServiceNamePage from '../pages/management/service-name/ServiceNamePage';
 import ServiceNameEditPage from '../pages/management/service-name/ServiceNameEditPage';
+import QuestionsCategoryPage from '../pages/management/questions-category/QuestionsCategoryPage';
+import QuestionsCategoryEditPage from '../pages/management/questions-category/QuestionsCategoryEditPage';
+import AgeGroupPage from '../pages/management/age-group/AgeGroupPage';
+import AgeGroupEditPage from '../pages/management/age-group/AgeGroupEditPage';
 import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
 import RecommendedQuestionsApprovalPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage';
 import RecommendedQuestionsApprovalDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage';
@@ -46,6 +50,10 @@ export const frontRoutes: AppRoute[] = [
   { path: ROUTES.SERVICE_NAME, Component: ServiceNamePage }, // 서비스명 직접 경로
   { path: ROUTES.MANAGEMENT_CATEGORY, Component: ServiceNamePage }, // 목록
   { path: ROUTES.SERVICE_NAME_EDIT, Component: ServiceNameEditPage }, // 편집 페이지
+  { path: ROUTES.QUESTIONS_CATEGORY, Component: QuestionsCategoryPage },
+  { path: `${ROUTES.QUESTIONS_CATEGORY}/edit`, Component: QuestionsCategoryEditPage },
+  { path: ROUTES.AGE_GROUP, Component: AgeGroupPage },
+  { path: `${ROUTES.AGE_GROUP}/edit`, Component: AgeGroupEditPage },
   { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
   { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: RecommendedQuestionsApprovalPage }, // 결재요청 대기함
   {

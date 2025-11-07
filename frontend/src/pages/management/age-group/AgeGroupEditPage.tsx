@@ -8,11 +8,11 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import CreateDataActions from '../../../components/common/actions/CreateDataActions';
 import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
 import { ManagedCategoryList } from '../../../components/common/list/CategoryList';
-import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
+import { ageGroupMockDb } from '../../../mocks/ageGroupDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
 
-const ServiceNameEditPage: React.FC = () => {
+const AgeGroupEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiRef = useGridApiRef();
@@ -47,8 +47,8 @@ const ServiceNameEditPage: React.FC = () => {
         ),
       },
       { field: 'no', headerName: 'No', width: 80, editable: false },
-      { field: 'category_nm', headerName: '카테고리명', flex: 1, editable: true },
-      { field: 'service_cd', headerName: '서비스코드', width: 200, editable: true },
+      { field: 'category_nm', headerName: '연령대', flex: 1, editable: true },
+      { field: 'service_cd', headerName: '코드', width: 200, editable: true },
       {
         field: 'status_code',
         headerName: '활성상태',
@@ -67,7 +67,7 @@ const ServiceNameEditPage: React.FC = () => {
     let mounted = true;
     setLoading(true);
 
-    serviceNameMockDb.listAll().then((data) => {
+    ageGroupMockDb.listAll().then((data) => {
       if (!mounted) return;
 
       setRows(data as LocalRow[]);
@@ -161,7 +161,7 @@ const ServiceNameEditPage: React.FC = () => {
     }, 0);
   }, [rows, columns, apiRef]);
 
-  const handleCancel = useCallback(() => navigate(ROUTES.SERVICE_NAME), [navigate]);
+  const handleCancel = useCallback(() => navigate(ROUTES.AGE_GROUP), [navigate]);
 
   const handleSave = useCallback(async () => {
     setLoading(true);
@@ -174,7 +174,7 @@ const ServiceNameEditPage: React.FC = () => {
           if (!row) return null;
 
           if (row.isNew) {
-            const created = await serviceNameMockDb.create({
+            const created = await ageGroupMockDb.create({
               category_nm: row.category_nm,
               service_cd: row.service_cd,
               status_code: row.status_code,
@@ -182,7 +182,7 @@ const ServiceNameEditPage: React.FC = () => {
             return { type: 'create' as const, tempNo: id, created };
           }
 
-          await serviceNameMockDb.update(row.service_cd, row);
+          await ageGroupMockDb.update(row.service_cd, row);
           return { type: 'update' as const };
         }),
       );
@@ -205,7 +205,7 @@ const ServiceNameEditPage: React.FC = () => {
     if (orderModifiedRef.current) {
       try {
         const order = rows.map((r) => r.service_cd).filter(Boolean) as string[];
-        const reordered = await serviceNameMockDb.reorder(order);
+        const reordered = await ageGroupMockDb.reorder(order);
         setRows(reordered as LocalRow[]);
       } catch (e) {
         console.error('Failed to persist order', e);
@@ -215,7 +215,7 @@ const ServiceNameEditPage: React.FC = () => {
     modifiedRef.current.clear();
     orderModifiedRef.current = false;
     setLoading(false);
-    navigate(ROUTES.SERVICE_NAME);
+    navigate(ROUTES.AGE_GROUP);
   }, [rows, navigate]);
 
   const handleDragOrderChange = useCallback((newRows: LocalRow[]) => {
@@ -239,7 +239,7 @@ const ServiceNameEditPage: React.FC = () => {
         if (row.isNew) {
           setRows((prev) => prev.filter((r) => r.no !== row.no));
         } else {
-          await serviceNameMockDb.delete(row.service_cd);
+          await ageGroupMockDb.delete(row.service_cd);
           setRows((prev) => prev.filter((r) => r.service_cd !== row.service_cd));
         }
       }
@@ -311,4 +311,4 @@ const ServiceNameEditPage: React.FC = () => {
   );
 };
 
-export default ServiceNameEditPage;
+export default AgeGroupEditPage;
