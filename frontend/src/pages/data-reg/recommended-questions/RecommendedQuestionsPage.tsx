@@ -1,64 +1,31 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import ManagementList from '../../../components/common/list/ManagementList';
 import { ROUTES } from '../../../routes/menu';
+import { mockRecommendedQuestions } from './data';
 
 const listApi = {
   list: async (): Promise<RecommendedQuestionItem[]> => {
-    return Promise.resolve([
-      {
-        no: 560,
-        qst_id: '1',
-        service_nm: 'AI 검색',
-        qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-        parent_id: 'M020011',
-        parent_nm: '26주 적금',
-        imp_start_date: '20250501235959',
-        imp_end_date: '99991231235959',
-        updatedAt: '202501235959',
-        registeredAt: '202501235959',
-        status: 'in_service',
-      },
-      {
-        no: 561,
-        qst_id: '2',
-        service_nm: 'AI 추천',
-        qst_ctnt: '지금 가입하면 혜택이 있나요?',
-        parent_id: null,
-        parent_nm: null,
-        imp_start_date: '20250601235959',
-        imp_end_date: '20251231235959',
-        updatedAt: '20250601235959',
-        registeredAt: '20250601235959',
-        status: 'out_of_service',
-      },
-      {
-        no: 562,
-        qst_id: '3',
-        service_nm: 'AI 검색',
-        qst_ctnt: '모바일에서도 동일한 혜택을 받을 수 있나요?',
-        parent_id: 'M020012',
-        parent_nm: '12개월 적금',
-        imp_start_date: '20250401235959',
-        imp_end_date: '20250630235959',
-        updatedAt: '20250415235959',
-        registeredAt: '20250415235959',
-        status: 'in_service',
-      },
-    ]);
+    return Promise.resolve(mockRecommendedQuestions);
   },
 };
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleCreate = () => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
   };
   const handleRequestApproval = () => {
+    // 현재 URL을 sessionStorage에 저장하고 결재 요청 페이지로 이동
+    const currentUrl = location.pathname + location.search;
+
+    console.log('🔍 RecommendedQuestionsPage - saving currentUrl to sessionStorage:', currentUrl);
+    sessionStorage.setItem('approval_return_url', currentUrl);
+
     navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
   };
   const handleDeleteConfirm = (ids: (string | number)[]) => {
@@ -77,7 +44,8 @@ const RecommendedQuestionsPage: React.FC = () => {
       onCreate={handleCreate}
       onRequestApproval={handleRequestApproval}
       onDeleteConfirm={handleDeleteConfirm}
-      enableStatePreservation={true} // URL 기반 상태 보존 명시적 활성화
+      enableStatePreservation={true} // URL 기반 상태 보존 활성화
+      exportFileName="추천질문목록" // 다운로드 파일명
       // onExportAll can be provided to override default CSV behavior
     />
   );

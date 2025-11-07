@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import { useListState } from '../../../hooks/useListState';
+import ExcelJS from 'exceljs';
 
 export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -22,10 +23,11 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   onDeleteConfirm?: (ids: (string | number)[]) => void;
   onExportAll?: (rows: T[]) => void;
   searchPlaceholder?: string;
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
   enableClientSearch?: boolean;
   onRowClick?: (params: { id: string | number; row: T }) => void;
   enableStatePreservation?: boolean; // URL 상태 저장 활성화 (기본: true)
+  exportFileName?: string; // 다운로드 파일명 (확장자 제외)
 };
 
 const defaultGetRowId =
@@ -41,16 +43,17 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   fetcher,
   rows,
   rowIdGetter,
-  defaultPageSize = 10,
+  defaultPageSize = 20,
   onCreate,
   onRequestApproval,
   onDeleteConfirm,
   onExportAll,
   searchPlaceholder = '검색어를 입력하세요',
-  size = 'small',
+  size = 'medium',
   enableClientSearch = true,
   onRowClick,
   enableStatePreservation = true,
+  exportFileName = '목록',
 }: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -105,30 +108,85 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
 
-  const handleExportAll = () => {
+  const handleExportAll = async () => {
     if (onExportAll) return onExportAll(filteredRows);
-    // 기본 CSV export (UTF-8 BOM, 숫자처럼 보이는 필드는 ="..."로 강제)
     if (!filteredRows.length) return;
-    const headers = Object.keys(filteredRows[0] as any);
-    const escapeCell = (v: unknown) => {
-      if (v == null) return '';
-      const s = String(v);
-      if (/^\d{6,}$/.test(s)) {
-        const esc = s.replace(/"/g, '""');
-        return `="${esc}"`;
-      }
-      const esc = s.replace(/"/g, '""');
-      return esc.includes(',') || esc.includes('\n') ? `"${esc}"` : esc;
-    };
-    const csv = [
-      headers.join(','),
-      ...filteredRows.map((r) => headers.map((h) => escapeCell((r as any)[h])).join(',')),
-    ].join('\r\n');
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+
+    // columns의 field와 headerName 매핑 생성
+    const columnMap = new Map<string, string>();
+    columns.forEach((col) => {
+      columnMap.set(col.field, col.headerName || col.field);
+    });
+
+    // 헤더 생성 (columns 순서대로, headerName 사용)
+    const orderedFields = columns.map((col) => col.field);
+    const headers = orderedFields.map((field) => columnMap.get(field) || field);
+
+    // ExcelJS 워크북 생성
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+
+    // 헤더 행 추가
+    const headerRow = worksheet.addRow(headers);
+
+    // 헤더 스타일 적용
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' }, // 파란색
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' }, // 흰색
+      };
+      cell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+      };
+    });
+
+    // 데이터 행 추가
+    filteredRows.forEach((row) => {
+      const rowData = orderedFields.map((field) => {
+        const value = (row as any)[field];
+        return value ?? '';
+      });
+      worksheet.addRow(rowData);
+    });
+
+    // 열 너비 자동 조정
+    worksheet.columns = orderedFields.map((field, idx) => {
+      // 헤더 길이
+      const headerLength = (headers[idx] || '').length;
+      // 데이터 최대 길이
+      const maxDataLength = Math.max(
+        ...filteredRows.map((row) => {
+          const value = (row as any)[field];
+          return String(value ?? '').length;
+        }),
+        0,
+      );
+      // 헤더와 데이터 중 더 긴 것 기준으로 너비 설정 (최소 10, 최대 50)
+      const width = Math.min(Math.max(headerLength, maxDataLength, 10), 50);
+      return { width };
+    });
+
+    // 파일명: {메뉴명}_{YYYYMMDD_HHmmss}.xlsx
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHmmss
+    const fileName = `${exportFileName}_${dateStr}_${timeStr}.xlsx`;
+
+    // 파일 다운로드
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -140,6 +198,12 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   };
 
   const handleSearch = (p: { field?: string; query: string }) => {
+    // 검색 시 삭제 모드 해제
+    if (selectionMode) {
+      setSelectionMode(false);
+      setSelectionModel([]);
+    }
+
     if (enableStatePreservation) {
       updateListState({
         searchField: p.field,

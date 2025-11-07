@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { GridColDef, GridPaginationModel, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import ListSearch from '../search/ListSearch';
+import DetailNavigationActions from '../actions/DetailNavigationActions';
 import { useListState } from '../../../hooks/useListState';
 
 export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
@@ -127,13 +127,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         size={size}
       />
 
-      {onBack && (
-        <Box sx={{ mb: 1, mt: 1 }}>
-          <Button variant="outlined" size={size} onClick={onBack}>
-            목록으로
-          </Button>
-        </Box>
-      )}
+      <DetailNavigationActions onBack={onBack} />
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid

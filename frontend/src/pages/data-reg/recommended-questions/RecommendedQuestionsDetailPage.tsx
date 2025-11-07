@@ -6,7 +6,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import type { RecommendedQuestionItem } from './types';
 import DataDetail from '../../../components/common/detail/DataDetail';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { ROUTES } from '../../../routes/menu';
+import { toast } from 'react-toastify';
 
 // 상세 조회용 컬럼 - 일반 목록보다 더 자세한 정보 표시
 const detailColumns: GridColDef<RecommendedQuestionItem>[] = [
@@ -77,6 +77,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
       severity: 'error',
       onConfirm: () => {
         console.log('Delete:', id);
+        toast.success('결재를 요청하였습니다.');
         navigate(-1); // 뒤로가기로 이전 상태 유지
       },
     });

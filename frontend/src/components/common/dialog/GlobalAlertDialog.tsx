@@ -36,7 +36,8 @@ const severityColors: Record<AlertSeverity, 'success' | 'info' | 'warning' | 'er
 };
 
 const GlobalAlertDialog: React.FC = () => {
-  const { isOpen, title, message, severity, confirmText, confirm, hideAlert } = useAlertDialog();
+  const { isOpen, title, message, severity, confirmText, confirm, hideAlert, resetAlert } =
+    useAlertDialog();
 
   const handleConfirm = () => {
     confirm();
@@ -46,10 +47,18 @@ const GlobalAlertDialog: React.FC = () => {
     hideAlert();
   };
 
+  const handleExited = () => {
+    // 다이얼로그가 완전히 닫힌 후 상태 초기화
+    resetAlert();
+  };
+
   return (
     <Dialog
       open={isOpen}
       onClose={handleClose}
+      TransitionProps={{
+        onExited: handleExited,
+      }}
       maxWidth="sm"
       fullWidth
       aria-labelledby="alert-dialog-title"

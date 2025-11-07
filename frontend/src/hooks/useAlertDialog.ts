@@ -21,6 +21,7 @@ interface AlertDialogStore extends AlertDialogState {
     onConfirm?: () => void;
   }) => void;
   hideAlert: () => void;
+  resetAlert: () => void;
   confirm: () => void;
 }
 
@@ -45,10 +46,16 @@ export const useAlertDialog = create<AlertDialogStore>((set, get) => ({
     });
   },
 
-  // 알림창 숨김
+  // 알림창 숨김 (즉시 닫기만, 상태 초기화 안함)
   hideAlert: () => {
     set({
       isOpen: false,
+    });
+  },
+
+  // 상태 초기화 (다이얼로그가 완전히 닫힌 후)
+  resetAlert: () => {
+    set({
       title: '알림',
       message: '',
       severity: 'info',

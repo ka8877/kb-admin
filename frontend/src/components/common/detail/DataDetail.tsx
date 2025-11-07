@@ -3,10 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
 import DetailEditActions from '../actions/DetailEditActions';
+import DataDetailActions from '../actions/DataDetailActions';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { toast } from 'react-toastify';
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   data?: T;
@@ -105,9 +105,11 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
         if (editedData && onSave) {
           try {
             await onSave(editedData);
+            toast.success('수정을 요청하였습니다.');
             setIsEditMode(false);
             setHasInitialFocus(false);
           } catch (error) {
+            toast.error('수정을 실패하였습니다.');
             console.error('저장 실패:', error);
           }
         }
@@ -139,21 +141,13 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     <Box>
       {/* 일반 모드 액션 버튼들 */}
       {!isEditMode && (
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Button variant="outlined" size={size} onClick={onBack}>
-            목록으로
-          </Button>
-          {onSave && (
-            <Button variant="contained" size={size} onClick={handleEditClick}>
-              수정
-            </Button>
-          )}
-          {onDelete && (
-            <Button variant="outlined" color="error" size={size} onClick={onDelete}>
-              삭제
-            </Button>
-          )}
-        </Stack>
+        <DataDetailActions
+          onBack={onBack}
+          onEdit={onSave ? handleEditClick : undefined}
+          onDelete={onDelete}
+          showEdit={!!onSave}
+          showDelete={!!onDelete}
+        />
       )}
 
       <Box sx={{ width: '100%' }}>

@@ -2,9 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { GridColDef, GridPaginationModel, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
 import DetailEditActions from '../actions/DetailEditActions';
+import DetailNavigationActions from '../actions/DetailNavigationActions';
 
 export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -36,7 +35,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   fetcher,
   rows,
   rowIdGetter,
-  defaultPageSize = 10,
+  defaultPageSize = 20,
   size = 'small',
   onRowClick,
   onBack,
@@ -87,20 +86,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   return (
     <Box>
       {/* 상단 버튼들 - 일반 모드일 때만 */}
-      {!isEditMode && (
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          {onBack && (
-            <Button variant="outlined" size={size} onClick={onBack}>
-              목록으로
-            </Button>
-          )}
-          {onEdit && (
-            <Button variant="contained" size={size} onClick={onEdit}>
-              편집
-            </Button>
-          )}
-        </Stack>
-      )}
+      {!isEditMode && <DetailNavigationActions onBack={onBack} onEdit={onEdit} />}
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid
@@ -133,6 +119,12 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           isLoading={false}
           showDelete={!!onDeleteConfirm}
           selectedCount={selectionModel.length}
+          selectedRowNumbers={selectionModel
+            .map((id) => {
+              const row = data.find((r) => getRowId(r) === id);
+              return row ? (row as any).no : null;
+            })
+            .filter((num): num is number => num !== null)}
           onDelete={() => {
             if (onDeleteConfirm && selectionModel.length > 0) {
               onDeleteConfirm(selectionModel);
