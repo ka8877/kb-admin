@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import type { ApprovalRequestItem, RecommendedQuestionItem } from './types';
+import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import EditableList from '../../../components/common/list/EditableList';
 import { ROUTES } from '../../../routes/menu';
