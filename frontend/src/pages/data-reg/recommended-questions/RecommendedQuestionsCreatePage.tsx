@@ -370,12 +370,9 @@ const ExcelUploadComponent: React.FC = () => {
         columnFields.forEach((field, colIndex) => {
           let cellValue = row.getCell(colIndex + 1).value;
 
-          // 드롭다운 필드인 경우 label을 value로 변환
-          if (dropdownOptions[field] && cellValue) {
-            const option = dropdownOptions[field].find((opt) => opt.label === String(cellValue));
-            if (option) {
-              cellValue = option.value;
-            }
+          // ExcelJS의 rich text 객체 처리
+          if (cellValue && typeof cellValue === 'object' && 'richText' in cellValue) {
+            cellValue = (cellValue as any).richText.map((t: any) => t.text).join('');
           }
 
           rowData[field] = cellValue;
@@ -389,17 +386,23 @@ const ExcelUploadComponent: React.FC = () => {
 
         if (!hasData) continue;
 
-        // 날짜 필드를 백엔드 형식으로 변환 (필요한 경우)
-        // ISO 8601 형식으로 보내려면 toBackendFormat 사용
-        // 기존 YYYYMMDDHHMMSS 형식을 유지하려면 toCompactFormat 사용
+        // 데이터 타입 변환
+        // age_grp: 숫자로 변환
+        if (
+          rowData.age_grp !== null &&
+          rowData.age_grp !== undefined &&
+          String(rowData.age_grp).trim() !== ''
+        ) {
+          rowData.age_grp = Number(rowData.age_grp);
+        }
 
-        // 예시: ISO 8601 형식으로 변환
-        // if (rowData.imp_start_date) {
-        //   rowData.imp_start_date = toBackendFormat(rowData.imp_start_date);
-        // }
-        // if (rowData.imp_end_date) {
-        //   rowData.imp_end_date = toBackendFormat(rowData.imp_end_date);
-        // }
+        // under_17_yn: 대문자로 변환
+        if (rowData.under_17_yn) {
+          rowData.under_17_yn = String(rowData.under_17_yn).toUpperCase();
+        }
+
+        // 날짜 필드: 문자열 형태로 유지 (YYYY-MM-DD HH:mm:ss 또는 YYYYMMDDHHmmss)
+        // validation에서 날짜 형태 체크함
 
         data.push(rowData);
       }
@@ -423,35 +426,53 @@ const ExcelUploadComponent: React.FC = () => {
   const excludeFields = ['no', 'qst_id', 'updatedAt', 'registeredAt', 'status'];
 
   // 템플릿용 컬럼 (자동 생성 필드 제외)
-  const templateColumns = recommendedQuestionColumns.filter(
+  const baseTemplateColumns = recommendedQuestionColumns.filter(
     (col) => !excludeFields.includes(col.field),
   );
 
+  // service_nm 제외하고 service_cd로 대체
+  const templateColumns: any[] = baseTemplateColumns
+    .filter((col) => col.field !== 'service_nm')
+    .map((col, index, arr) => {
+      // 첫 번째 위치에 service_cd 추가
+      if (index === 0) {
+        return [
+          {
+            field: 'service_cd',
+            headerName: '서비스코드',
+            width: 140,
+          },
+          col,
+        ];
+      }
+      return col;
+    })
+    .flat();
+
   // 필드별 가이드 메시지 (필요한 필드만)
   const fieldGuides: Record<string, string> = {
-    service_nm: '필수 | 드롭다운에서 선택 (AI 검색, AI 금융계산기, AI 이체, AI 모임총무)',
+    service_cd: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
     qst_ctnt: '필수 | 5-500자',
-    qst_ctgr:
-      '필수 | AI검색: ai_search_mid/story/child/promo/signature, AI계산기: ai_calc_save/loan/exchange, AI이체: ai_transfer_svc_intro/trn_nick/sec_auth/mstk_trn, AI모임: ai_shared_dues_status/dues_record/dues_analysis/expense_overview/expense_analysis/moim_dues_status/moim_dues_record',
+    qst_ctgr: '필수 | 참조 데이터 확인',
     qst_style: '선택 | 질문 관련 태그나 스타일',
     parent_id: '조건부 필수 | AI검색 mid/story인 경우 필수 (예: M020011)',
     parent_nm: '조건부 필수 | AI검색 mid/story인 경우 필수',
-    age_grp: '조건부 필수 | AI 금융계산기인 경우 필수, 드롭다운에서 선택 (10, 20, 30, 40, 50)',
-    under_17_yn: '필수 | 드롭다운에서 선택 (예 또는 아니오)',
-    imp_start_date: '필수 | 2025-12-12 15:00:00 또는 20251212150000 형식',
-    imp_end_date: '필수 | 2025-12-12 15:00:00 또는 20251212150000 형식',
+    age_grp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
+    under_17_yn: '필수 | Y 또는 N',
+    imp_start_date: '필수 | 2025-12-12 15:00:00',
+    imp_end_date: '필수 | 2025-12-12 15:00:00 (노출시작일시 이후여야 함)',
   };
 
   // 예시 데이터 (자동 생성 필드 제외)
   const exampleData = [
     {
-      service_nm: 'AI 검색',
+      service_cd: 'ai_search',
       qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
       qst_ctgr: 'ai_search_mid',
       qst_style: '적금, 금리',
       parent_id: 'M020011',
       parent_nm: '26주 적금',
-      age_grp: '10', // AI 검색이므로 선택사항
+      age_grp: 10,
       under_17_yn: 'N',
       imp_start_date: '2025-05-01 23:59:59',
       imp_end_date: '9999-12-31 23:59:59',
@@ -461,12 +482,12 @@ const ExcelUploadComponent: React.FC = () => {
   // 공통 validation을 사용한 엑셀 검증 규칙
   const validationRules = createExcelValidationRules();
 
-  // Excel 드롭다운 옵션 정의 (옵션 수가 적은 필드만)
-  const dropdownOptions: Record<string, Array<{ label: string; value: string }>> = {
-    service_nm: serviceOptions,
-    // qst_ctgr는 옵션이 너무 많아서 드롭다운 제외 (가이드만 제공)
-    age_grp: ageGroupOptions,
-    under_17_yn: under17Options,
+  // Sheet2에 표시할 참조 데이터
+  const referenceData = {
+    서비스코드: serviceOptions,
+    연령대: ageGroupOptions,
+    '17세미만노출여부': under17Options,
+    질문카테고리: questionCategoryOptions,
   };
 
   return (
@@ -478,7 +499,7 @@ const ExcelUploadComponent: React.FC = () => {
       fieldGuides={fieldGuides}
       validationRules={validationRules}
       exampleData={exampleData}
-      dropdownOptions={dropdownOptions}
+      referenceData={referenceData}
       acceptedFormats={['.xlsx', '.csv']}
       description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
       templateLabel="엑셀 양식 다운로드"

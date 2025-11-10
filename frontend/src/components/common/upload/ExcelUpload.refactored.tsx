@@ -15,12 +15,6 @@ import {
   downloadWorkbook,
   type ReferenceData,
 } from './utils/templateGenerators';
-import {
-  ALERT_MESSAGES,
-  CONFIRM_TITLES,
-  CONFIRM_MESSAGES,
-  getFileFormatErrorMessage,
-} from '../../../constants/message';
 
 export type { ValidationFunction } from './utils/validationUtils';
 
@@ -82,8 +76,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
 
       if (!worksheet) {
         showAlert({
-          title: ALERT_MESSAGES.VALIDATION_ERROR,
-          message: ALERT_MESSAGES.WORKSHEET_NOT_FOUND,
+          title: 'Validation 오류',
+          message: '워크시트를 찾을 수 없습니다.',
           severity: 'error',
         });
         return false;
@@ -95,7 +89,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         const message =
           error.rowNumber > 0 ? `${error.rowNumber}행: ${error.message}` : error.message;
         showAlert({
-          title: ALERT_MESSAGES.VALIDATION_ERROR,
+          title: 'Validation 오류',
           message,
           severity: 'error',
         });
@@ -106,8 +100,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     } catch (error) {
       console.error('파일 validation 오류:', error);
       showAlert({
-        title: ALERT_MESSAGES.VALIDATION_ERROR,
-        message: ALERT_MESSAGES.FILE_READ_ERROR,
+        title: 'Validation 오류',
+        message: '파일을 읽는 중 오류가 발생했습니다.',
         severity: 'error',
       });
       return false;
@@ -116,9 +110,10 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
 
   const processFile = async (file: File, clearInput?: () => void): Promise<void> => {
     if (!isValidFileFormat(file)) {
+      const formatList = acceptedFormats.map((f) => f.replace('.', '')).join(', ');
       showAlert({
-        title: ALERT_MESSAGES.FILE_FORMAT_ERROR,
-        message: getFileFormatErrorMessage(acceptedFormats),
+        title: '파일 포맷 오류',
+        message: `파일 포맷을 확인해주세요\n(가능포맷: ${formatList})`,
         severity: 'error',
       });
       clearInput?.();
@@ -133,8 +128,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
 
     setSelectedFile(file);
     showAlert({
-      title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
-      message: ALERT_MESSAGES.FILE_UPLOAD_SUCCESS,
+      title: '파일 검증 완료',
+      message: '등록이 완료되었습니다',
       severity: 'success',
     });
   };
@@ -171,28 +166,28 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
   const handleSave = () => {
     if (!selectedFile) {
       showAlert({
-        title: ALERT_MESSAGES.FILE_SELECT_REQUIRED,
-        message: ALERT_MESSAGES.PLEASE_SELECT_FILE,
+        title: '파일 선택 필요',
+        message: '파일을 선택해주세요.',
         severity: 'warning',
       });
       return;
     }
 
     showConfirm({
-      title: CONFIRM_TITLES.SAVE,
-      message: CONFIRM_MESSAGES.SAVE,
+      title: '저장 확인',
+      message: '저장하시겠습니까?',
       onConfirm: () => {
         try {
           onSave(selectedFile);
           showAlert({
-            title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
-            message: ALERT_MESSAGES.UPLOAD_SUCCESS,
+            title: '등록 완료',
+            message: '등록을 성공하였습니다',
             severity: 'success',
           });
         } catch (error) {
           showAlert({
-            title: ALERT_MESSAGES.UPLOAD_FAILED,
-            message: ALERT_MESSAGES.UPLOAD_ERROR_RETRY,
+            title: '등록 실패',
+            message: '등록 중 오류가 발생했습니다. 다시 시도해주세요.',
             severity: 'error',
           });
         }
@@ -203,8 +198,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
   const handleTemplateDownloadCSV = () => {
     if (!columns || columns.length === 0) {
       showAlert({
-        title: ALERT_MESSAGES.TEMPLATE_GENERATION_ERROR,
-        message: ALERT_MESSAGES.TEMPLATE_GENERATION_FAILED,
+        title: '템플릿 생성 불가',
+        message: '템플릿 양식을 생성할 수 없습니다.',
         severity: 'error',
       });
       return;
@@ -216,8 +211,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     } catch (error) {
       console.error('CSV 템플릿 다운로드 실패:', error);
       showAlert({
-        title: ALERT_MESSAGES.DOWNLOAD_FAILED,
-        message: ALERT_MESSAGES.CSV_TEMPLATE_DOWNLOAD_ERROR,
+        title: '다운로드 실패',
+        message: 'CSV 템플릿 다운로드 중 오류가 발생했습니다.',
         severity: 'error',
       });
     }
@@ -231,8 +226,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
 
     if (!columns || columns.length === 0) {
       showAlert({
-        title: ALERT_MESSAGES.TEMPLATE_GENERATION_ERROR,
-        message: ALERT_MESSAGES.TEMPLATE_GENERATION_FAILED,
+        title: '템플릿 생성 불가',
+        message: '템플릿 양식을 생성할 수 없습니다.',
         severity: 'error',
       });
       return;
@@ -249,8 +244,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     } catch (error) {
       console.error('템플릿 다운로드 실패:', error);
       showAlert({
-        title: ALERT_MESSAGES.DOWNLOAD_FAILED,
-        message: ALERT_MESSAGES.TEMPLATE_DOWNLOAD_ERROR,
+        title: '다운로드 실패',
+        message: '템플릿 다운로드 중 오류가 발생했습니다.',
         severity: 'error',
       });
     }

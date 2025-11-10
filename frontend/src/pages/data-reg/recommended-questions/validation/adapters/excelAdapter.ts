@@ -1,6 +1,7 @@
 // frontend/src/pages/data-reg/recommended-questions/validation/adapters/excelAdapter.ts
 
 import { RecommendedQuestionValidator } from '../recommendedQuestionValidation';
+import { isValidDate, toISOString } from '../../../../../utils/dateUtils';
 
 // 엑셀 validation 함수 타입 정의
 export type ValidationResult = {
@@ -11,26 +12,22 @@ export type ValidationResult = {
 export type ValidationFunction = (value: any, row?: any) => ValidationResult;
 
 /**
- * 공통 validation을 엑셀 ValidationFunction으로 변환하는 어댑터
+ * 엑셀 전용 validation 규칙
  */
 export const createExcelValidationRules = (): Record<string, ValidationFunction> => {
   return {
-    service_nm: (value, row) => {
-      const result = RecommendedQuestionValidator.validateServiceName(value);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+    // service_cd: 필수, 20자 이하
+    service_cd: (value, row) => {
+      if (!value || String(value).trim() === '') {
+        return { isValid: false, errorMessage: '서비스코드는 필수입니다' };
+      }
+      if (String(value).length > 20) {
+        return { isValid: false, errorMessage: '서비스코드는 20자를 초과할 수 없습니다' };
+      }
+      return { isValid: true };
     },
 
-    qst_ctgr: (value, row) => {
-      const result = RecommendedQuestionValidator.validateQuestionCategory(value);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
-    },
-
+    // qst_ctnt: 공통과 같음
     qst_ctnt: (value, row) => {
       const result = RecommendedQuestionValidator.validateQuestionContent(value);
       return {
@@ -39,6 +36,18 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
+    // qst_ctgr: 필수, 20자 이하
+    qst_ctgr: (value, row) => {
+      if (!value || String(value).trim() === '') {
+        return { isValid: false, errorMessage: '질문 카테고리는 필수입니다' };
+      }
+      if (String(value).length > 20) {
+        return { isValid: false, errorMessage: '질문 카테고리는 20자를 초과할 수 없습니다' };
+      }
+      return { isValid: true };
+    },
+
+    // qst_style: 공통과 같음
     qst_style: (value, row) => {
       const result = RecommendedQuestionValidator.validateQuestionStyle(value);
       return {
@@ -47,6 +56,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
+    // parent_id: 공통과 같음
     parent_id: (value, row) => {
       const result = RecommendedQuestionValidator.validateParentId(value, row);
       return {
@@ -55,6 +65,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
+    // parent_nm: 공통과 같음
     parent_nm: (value, row) => {
       const result = RecommendedQuestionValidator.validateParentIdName(value, row);
       return {
@@ -63,37 +74,100 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
+    // age_grp: 조건부 필수, 숫자형태
     age_grp: (value, row) => {
-      const result = RecommendedQuestionValidator.validateAgeGroup(value, row);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+      // service_cd가 ai_calc인 경우 필수
+      const serviceCode = row?.service_cd;
+      const isRequired = serviceCode === 'ai_calc';
+
+      if (isRequired) {
+        if (!value || String(value).trim() === '') {
+          return {
+            isValid: false,
+            errorMessage: 'AI 금융계산기 서비스는 연령대가 필수입니다',
+          };
+        }
+      }
+
+      // 값이 있으면 숫자 형태인지 확인
+      if (value && String(value).trim() !== '') {
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          return { isValid: false, errorMessage: '연령대는 숫자 형태여야 합니다' };
+        }
+      }
+
+      return { isValid: true };
     },
 
+    // under_17_yn: 필수, Y 또는 N
     under_17_yn: (value, row) => {
-      const result = RecommendedQuestionValidator.validateUnder17Yn(value);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+      if (!value || String(value).trim() === '') {
+        return { isValid: false, errorMessage: '17세 미만 노출 여부는 필수입니다' };
+      }
+      const strValue = String(value).toUpperCase();
+      if (strValue !== 'Y' && strValue !== 'N') {
+        return { isValid: false, errorMessage: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
+      }
+      return { isValid: true };
     },
 
+    // imp_start_date: 필수, 날짜형태, 현재일 <= 노출시작일자
     imp_start_date: (value, row) => {
-      // 엑셀 등록용이므로 현재 일시 체크 포함
-      const result = RecommendedQuestionValidator.validateImpStartDateForCreate(value, row);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+      if (!value) {
+        return { isValid: false, errorMessage: '노출 시작 일시는 필수입니다' };
+      }
+
+      // 날짜 형태 검증
+      if (!isValidDate(value)) {
+        return {
+          isValid: false,
+          errorMessage: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
+        };
+      }
+
+      // 현재 일시 체크
+      const startDate = toISOString(value);
+      const now = new Date().toISOString();
+
+      if (startDate && startDate < now) {
+        return {
+          isValid: false,
+          errorMessage: '노출 시작 일시는 현재 일시 이후여야 합니다',
+        };
+      }
+
+      return { isValid: true };
     },
 
+    // imp_end_date: 필수, 날짜형태, 노출시작일자 < 노출종료일자
     imp_end_date: (value, row) => {
-      const result = RecommendedQuestionValidator.validateImpEndDate(value, row);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+      if (!value) {
+        return { isValid: false, errorMessage: '노출 종료 일시는 필수입니다' };
+      }
+
+      // 날짜 형태 검증
+      if (!isValidDate(value)) {
+        return {
+          isValid: false,
+          errorMessage: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
+        };
+      }
+
+      // 시작일과 비교
+      if (row?.imp_start_date) {
+        const startDate = toISOString(row.imp_start_date);
+        const endDate = toISOString(value);
+
+        if (startDate && endDate && endDate <= startDate) {
+          return {
+            isValid: false,
+            errorMessage: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
+          };
+        }
+      }
+
+      return { isValid: true };
     },
 
     status: (value, row) => {
