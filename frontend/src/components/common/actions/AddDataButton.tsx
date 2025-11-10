@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, SxProps } from '@mui/material';
+import { SxProps } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import MediumButton from '../button/MediumButton';
 
 type Props = {
   onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
@@ -22,7 +23,7 @@ const AddDataButton: React.FC<Props> = ({
   sx,
 }) => {
   return (
-    <Button
+    <MediumButton
       startIcon={startIcon ?? <AddIcon />}
       size={size}
       variant={variant}
@@ -31,7 +32,7 @@ const AddDataButton: React.FC<Props> = ({
       sx={sx}
     >
       {children}
-    </Button>
+    </MediumButton>
   );
 };
 

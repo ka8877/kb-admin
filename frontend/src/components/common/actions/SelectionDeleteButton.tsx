@@ -1,5 +1,5 @@
 import React from 'react';
-import Button from '@mui/material/Button';
+import MediumButton from '../button/MediumButton';
 
 type Props = {
   selectionMode: boolean;
@@ -13,9 +13,9 @@ const SelectionDeleteButton: React.FC<Props> = ({
   size = 'small',
 }) => {
   return (
-    <Button variant="outlined" size={size} onClick={() => onToggleSelection(!selectionMode)}>
+    <MediumButton variant="outlined" size={size} onClick={() => onToggleSelection(!selectionMode)}>
       {selectionMode ? '삭제 취소' : '선택 삭제'}
-    </Button>
+    </MediumButton>
   );
 };
 

@@ -11,6 +11,8 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   rows?: T[];
   rowIdGetter?: keyof T | ((row: T) => string | number);
   defaultPageSize?: number;
+  pageSizeOptions?: number[]; // 페이지당 행 수 옵션
+  showPagination?: boolean; // 페이지네이션 표시 여부
   size?: 'small' | 'medium';
   onRowClick?: (params: { id: string | number; row: T }) => void;
   onBack?: () => void; // 목록으로 버튼
@@ -36,6 +38,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   rows,
   rowIdGetter,
   defaultPageSize = 20,
+  pageSizeOptions = [5, 10, 20, 50],
+  showPagination = true,
   size = 'small',
   onRowClick,
   onBack,
@@ -96,10 +100,10 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           checkboxSelection={isEditMode}
           rowSelectionModel={isEditMode ? selectionModel : []}
           onRowSelectionModelChange={isEditMode ? setSelectionModel : undefined}
-          pagination
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
-          pageSizeOptions={[5, 10, 20, 50]}
+          pageSizeOptions={pageSizeOptions}
+          hideFooterPagination={!showPagination}
           disableRowSelectionOnClick
           density="standard"
           autoHeight={false}

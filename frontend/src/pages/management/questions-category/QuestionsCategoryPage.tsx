@@ -22,6 +22,7 @@ const QuestionsCategoryPage: React.FC = () => {
         fetcher={async () => await questionsCategoryMockDb.listAll()}
         rowIdGetter={(r) => (r as any).service_cd}
         defaultPageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
         onEdit={handleGoEditPage}
         isEditMode={false}
       />
