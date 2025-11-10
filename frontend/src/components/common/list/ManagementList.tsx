@@ -124,14 +124,44 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     if (onExportAll) return onExportAll(filteredRows);
     if (!filteredRows.length) return;
 
+    // processedColumns 생성 (포맷터 적용)
+    const processedColumnsForExport = columns.map((col) => {
+      const isSelectField = selectFields && selectFields[col.field];
+      const isDateField = dateFields && dateFields.includes(col.field);
+
+      // 날짜 필드인 경우
+      if (isDateField) {
+        return {
+          ...col,
+          valueFormatter: (params: any) => {
+            return formatDateForDisplay(params.value, dateFormat);
+          },
+        };
+      }
+
+      // 셀렉트 필드인 경우
+      if (isSelectField) {
+        return {
+          ...col,
+          valueFormatter: (params: any) => {
+            // value를 label로 변환
+            const option = isSelectField.find((opt) => opt.value === params.value);
+            return option ? option.label : (params.value ?? '');
+          },
+        };
+      }
+
+      return col;
+    });
+
     // columns의 field와 headerName 매핑 생성
     const columnMap = new Map<string, string>();
-    columns.forEach((col) => {
+    processedColumnsForExport.forEach((col) => {
       columnMap.set(col.field, col.headerName || col.field);
     });
 
     // 헤더 생성 (columns 순서대로, headerName 사용)
-    const orderedFields = columns.map((col) => col.field);
+    const orderedFields = processedColumnsForExport.map((col) => col.field);
     const headers = orderedFields.map((field) => columnMap.get(field) || field);
 
     // ExcelJS 워크북 생성
@@ -158,11 +188,27 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       };
     });
 
-    // 데이터 행 추가
+    // 데이터 행 추가 (화면에 표시되는 포맷팅된 값 사용)
     filteredRows.forEach((row) => {
       const rowData = orderedFields.map((field) => {
-        const value = (row as any)[field];
-        return value ?? '';
+        const column = processedColumnsForExport.find((col) => col.field === field);
+        if (!column) return '';
+
+        // valueGetter가 있으면 사용
+        if (column.valueGetter) {
+          const value = column.valueGetter({ row, field } as any);
+          return value ?? '';
+        }
+
+        // valueFormatter가 있으면 사용
+        const rawValue = (row as any)[field];
+        if (column.valueFormatter) {
+          const formattedValue = column.valueFormatter({ value: rawValue } as any);
+          return formattedValue ?? '';
+        }
+
+        // 기본값
+        return rawValue ?? '';
       });
       worksheet.addRow(rowData);
     });
@@ -267,6 +313,11 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
             value: opt.value,
             label: opt.label,
           })),
+          valueFormatter: (params: any) => {
+            // value를 label로 변환
+            const option = isSelectField.find((opt) => opt.value === params.value);
+            return option ? option.label : (params.value ?? '');
+          },
         };
       }
 

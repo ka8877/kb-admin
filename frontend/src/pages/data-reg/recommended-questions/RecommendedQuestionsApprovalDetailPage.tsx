@@ -5,9 +5,17 @@ import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import EditableList from '../../../components/common/list/EditableList';
 import { ROUTES } from '../../../routes/menu';
-import { mockApprovalDetailQuestions } from './data';
+import {
+  ageGroupOptions,
+  mockApprovalDetailQuestions,
+  questionCategoryOptions,
+  serviceOptions,
+  statusOptions,
+  under17Options,
+} from './data';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '../../../constants/message';
+import { RecommendedQuestionValidator } from './validation';
 
 // 결재 요청에 포함된 추천 질문 데이터를 가져오는 API
 const approvalDetailApi = {
@@ -137,6 +145,16 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       onCancel={handleCancelEdit}
       onDeleteConfirm={handleDeleteConfirm}
       readOnlyFields={['no', 'qst_id', 'updatedAt', 'registeredAt']}
+      selectFields={{
+        service_nm: serviceOptions,
+        age_grp: ageGroupOptions,
+        under_17_yn: under17Options,
+        status: statusOptions,
+        qst_ctgr: questionCategoryOptions,
+      }}
+      dateFields={['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt']}
+      dateFormat="YYYYMMDDHHmmss"
+      validator={(data) => RecommendedQuestionValidator.validateAll(data as any)}
     />
   );
 };

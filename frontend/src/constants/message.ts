@@ -34,6 +34,26 @@ export const ALERT_MESSAGES = {
 
   // 경고 메시지
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
+
+  // 파일 업로드 관련
+  FILE_VALIDATION_COMPLETE: '파일 검증 완료',
+  FILE_UPLOAD_SUCCESS: '등록이 완료되었습니다',
+  UPLOAD_SUCCESS: '등록을 성공하였습니다',
+  FILE_SELECT_REQUIRED: '파일 선택 필요',
+  PLEASE_SELECT_FILE: '파일을 선택해주세요.',
+  FILE_FORMAT_ERROR: '파일 포맷 오류',
+  TEMPLATE_GENERATION_ERROR: '템플릿 생성 불가',
+  TEMPLATE_GENERATION_FAILED: '템플릿 양식을 생성할 수 없습니다.',
+  DOWNLOAD_FAILED: '다운로드 실패',
+  UPLOAD_FAILED: '등록 실패',
+  UPLOAD_ERROR_RETRY: '등록 중 오류가 발생했습니다. 다시 시도해주세요.',
+
+  // Validation 오류
+  VALIDATION_ERROR: 'Validation 오류',
+  WORKSHEET_NOT_FOUND: '워크시트를 찾을 수 없습니다.',
+  FILE_READ_ERROR: '파일을 읽는 중 오류가 발생했습니다.',
+  CSV_TEMPLATE_DOWNLOAD_ERROR: 'CSV 템플릿 다운로드 중 오류가 발생했습니다.',
+  TEMPLATE_DOWNLOAD_ERROR: '템플릿 다운로드 중 오류가 발생했습니다.',
 } as const;
 
 // ========== 동적 메시지 생성 함수 ==========
@@ -48,4 +68,16 @@ export const getDeleteConfirmMessage = (rowNumbers: number[]): string => {
   const count = rowNumbers.length;
   const rowsText = rowNumbers.map((num) => `${num}행`).join(', ');
   return `${rowsText}의 ${count}개의 데이터를 삭제하시겠습니까?`;
+};
+
+/**
+ * 파일 포맷 오류 메시지 생성
+ * @param formats - 허용되는 파일 포맷 배열
+ * @returns 파일 포맷 오류 메시지
+ * @example
+ * getFileFormatErrorMessage(['.xlsx', '.csv']) // "파일 포맷을 확인해주세요\n(가능포맷: xlsx, csv)"
+ */
+export const getFileFormatErrorMessage = (formats: string[]): string => {
+  const formatList = formats.map((f) => f.replace('.', '')).join(', ');
+  return `파일 포맷을 확인해주세요\n(가능포맷: ${formatList})`;
 };
