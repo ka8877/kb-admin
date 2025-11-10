@@ -24,8 +24,14 @@ export const under17Options = [
   { label: '아니오', value: 'N' },
 ];
 
-// 질문 카테고리 옵션 데이터
-export const questionCategoryOptions = [
+// 데이터 등록 반영 상태 옵션 데이터
+export const statusOptions = [
+  { label: '서비스 중', value: 'in_service' },
+  { label: '서비스 종료', value: 'out_of_service' },
+];
+
+// 질문 카테고리 옵션 데이터 (그룹화된 버전 - ManagementList에서 사용)
+export const questionCategoryGroupedOptions = [
   {
     groupLabel: 'AI검색',
     options: [
@@ -67,28 +73,41 @@ export const questionCategoryOptions = [
   },
 ];
 
+// 질문 카테고리 옵션 (평탄화된 버전 - DataDetail에서 사용)
+export const questionCategoryOptions = questionCategoryGroupedOptions.flatMap(
+  (group) => group.options,
+);
+
 export const mockRecommendedQuestions: RecommendedQuestionItem[] = [
   {
     no: 560,
     qst_id: '1',
-    service_nm: 'AI 검색',
+    service_nm: 'ai_search',
     qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+    qst_ctgr: 'ai_search_mid',
+    qst_style: '적금, 금리',
     parent_id: 'M020011',
     parent_nm: '26주 적금',
-    imp_start_date: '20250501235959',
+    age_grp: '30',
+    under_17_yn: 'N',
+    imp_start_date: '20250401235959',
     imp_end_date: '99991231235959',
-    updatedAt: '202501235959',
-    registeredAt: '202501235959',
+    updatedAt: '20250601235959',
+    registeredAt: '20250601235959',
     status: 'in_service',
   },
   {
     no: 561,
     qst_id: '2',
-    service_nm: 'AI 추천',
+    service_nm: 'ai_calc',
     qst_ctnt: '지금 가입하면 혜택이 있나요?',
+    qst_ctgr: 'ai_calc_loan',
+    qst_style: '대출, 혜택',
     parent_id: null,
     parent_nm: null,
-    imp_start_date: '20250601235959',
+    age_grp: '40',
+    under_17_yn: 'N',
+    imp_start_date: '20250401235959',
     imp_end_date: '20251231235959',
     updatedAt: '20250601235959',
     registeredAt: '20250601235959',
@@ -97,10 +116,14 @@ export const mockRecommendedQuestions: RecommendedQuestionItem[] = [
   {
     no: 562,
     qst_id: '3',
-    service_nm: 'AI 검색',
+    service_nm: 'ai_search',
     qst_ctnt: '모바일에서도 동일한 혜택을 받을 수 있나요?',
+    qst_ctgr: 'ai_search_story',
+    qst_style: '모바일, 혜택',
     parent_id: 'M020012',
     parent_nm: '12개월 적금',
+    age_grp: '20',
+    under_17_yn: 'Y',
     imp_start_date: '20250401235959',
     imp_end_date: '20250630235959',
     updatedAt: '20250415235959',
@@ -154,10 +177,14 @@ export const mockApprovalDetailQuestions: RecommendedQuestionItem[] = [
   {
     no: 1,
     qst_id: 'Q001',
-    service_nm: 'AI 검색',
+    service_nm: 'ai_search',
     qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+    qst_ctgr: 'ai_search_mid',
+    qst_style: '적금, 금리',
     parent_id: 'M020011',
     parent_nm: '대출 문의',
+    age_grp: '30',
+    under_17_yn: 'N',
     imp_start_date: '2025.06.17. 00:00:00',
     imp_end_date: '2025.12.31. 23:59:59',
     updatedAt: '2025.06.17. 14:30:00',
@@ -167,10 +194,14 @@ export const mockApprovalDetailQuestions: RecommendedQuestionItem[] = [
   {
     no: 2,
     qst_id: 'Q002',
-    service_nm: 'AI 계산기',
+    service_nm: 'ai_calc',
     qst_ctnt: '투자 상품 추천해줘',
+    qst_ctgr: 'ai_calc_save',
+    qst_style: '투자, 저축',
     parent_id: null,
     parent_nm: null,
+    age_grp: '20',
+    under_17_yn: 'N',
     imp_start_date: '2025.06.17. 00:00:00',
     imp_end_date: '2025.12.31. 23:59:59',
     updatedAt: '2025.06.17. 15:00:00',
@@ -178,3 +209,22 @@ export const mockApprovalDetailQuestions: RecommendedQuestionItem[] = [
     status: 'in_service',
   },
 ];
+
+// 상세 페이지 샘플 데이터
+export const mockRecommendedQuestionDetail: RecommendedQuestionItem = {
+  no: 560,
+  qst_id: '1',
+  service_nm: 'ai_search',
+  qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+  qst_ctgr: 'ai_search_mid',
+  qst_style: '적금, 금리',
+  parent_id: 'M020011',
+  parent_nm: '26주 적금',
+  age_grp: '30',
+  under_17_yn: 'N',
+  imp_start_date: '20250501235959',
+  imp_end_date: '20251231235959',
+  updatedAt: '20250617150000',
+  registeredAt: '20250617150000',
+  status: 'in_service',
+};

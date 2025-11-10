@@ -58,7 +58,9 @@ export const createRecommendedQuestionYupSchema = () => {
       .mixed()
       .nullable()
       .test('imp_start_date', function (value) {
-        const result = RecommendedQuestionValidator.validateImpStartDate(value);
+        const formData = this.parent;
+        // 등록용이므로 현재 일시 체크 포함
+        const result = RecommendedQuestionValidator.validateImpStartDateForCreate(value, formData);
         return result.isValid || this.createError({ message: result.message });
       }),
 
@@ -66,7 +68,8 @@ export const createRecommendedQuestionYupSchema = () => {
       .mixed()
       .nullable()
       .test('imp_end_date', function (value) {
-        const result = RecommendedQuestionValidator.validateImpEndDate(value);
+        const formData = this.parent;
+        const result = RecommendedQuestionValidator.validateImpEndDate(value, formData);
         return result.isValid || this.createError({ message: result.message });
       }),
   });

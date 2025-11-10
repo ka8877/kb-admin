@@ -1,12 +1,28 @@
 // frontend/src/components/common/detail/DataDetail.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
+import type { GridColDef, GridValidRowModel, GridRenderEditCellParams } from '@mui/x-data-grid';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import DetailEditActions from '../actions/DetailEditActions';
 import DataDetailActions from '../actions/DataDetailActions';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import { useAlertDialog } from '../../../hooks/useAlertDialog';
 import { toast } from 'react-toastify';
+import dayjs, { Dayjs } from 'dayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { formatDateForDisplay, formatDateForStorage } from '../../../utils/dateUtils';
+
+export type SelectFieldOption = {
+  label: string;
+  value: string;
+};
+
+export type ValidationResult = {
+  isValid: boolean;
+  message?: string;
+};
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   data?: T;
@@ -19,6 +35,10 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   onSave?: (updatedData: T) => Promise<void> | void;
   size?: 'small' | 'medium';
   readOnlyFields?: string[]; // No, qst_id 같은 수정 불가 필드들
+  selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
+  dateFields?: string[]; // 날짜 필드 목록
+  dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
+  validator?: (data: T) => Record<string, ValidationResult>; // validation 함수
 };
 
 const defaultGetRowId =
@@ -40,9 +60,14 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   onSave,
   size = 'small',
   readOnlyFields = ['No', 'qst_id'], // 기본적으로 No, qst_id는 수정 불가
+  selectFields,
+  dateFields,
+  dateFormat = 'YYYYMMDDHHmmss',
+  validator,
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = defaultGetRowId<T>(rowIdGetter);
   const { showConfirm } = useConfirmDialog();
+  const { showAlert } = useAlertDialog();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<T | undefined>(data);
   const dataGridRef = useGridApiRef();
@@ -98,6 +123,28 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
 
   // 저장 확인
   const handleSaveClick = () => {
+    // Validation 체크 (컬럼 순서대로 검증, 첫 번째 에러에서 중단)
+    if (validator && editedData) {
+      const validationResults = validator(editedData);
+
+      // 컬럼 순서대로 validation 체크
+      for (const col of columns) {
+        const fieldName = col.field;
+        const result = validationResults[fieldName];
+
+        if (result && !result.isValid) {
+          // 첫 번째 에러 발견 시 즉시 alert 표시하고 return
+          const errorMessage = `1행: ${result.message}`;
+          showAlert({
+            title: '입력값 확인',
+            message: errorMessage,
+            severity: 'error',
+          });
+          return;
+        }
+      }
+    }
+
     showConfirm({
       title: '저장 확인',
       message: '변경사항을 저장하시겠습니까?',
@@ -119,12 +166,70 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
 
   // 컬럼을 수정 모드에 맞게 변환
   const processedColumns = columns.map((col) => {
+    const isSelectField = selectFields && selectFields[col.field];
+    const isDateField = dateFields && dateFields.includes(col.field);
+
+    // 날짜 필드인 경우
+    if (isDateField) {
+      return {
+        ...col,
+        editable: isEditMode && !readOnlyFields.includes(col.field),
+        valueFormatter: (params: any) => {
+          return formatDateForDisplay(params.value, dateFormat);
+        },
+        renderEditCell: (params: GridRenderEditCellParams) => {
+          const handleDateChange = (newValue: dayjs.Dayjs | null) => {
+            const dateObj = newValue ? newValue.toDate() : null;
+            const formattedValue = formatDateForStorage(dateObj, dateFormat);
+            params.api.setEditCellValue({
+              id: params.id,
+              field: params.field,
+              value: formattedValue,
+            });
+          };
+
+          const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
+
+          return (
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateTimePicker
+                value={currentValue}
+                onChange={handleDateChange}
+                format="YYYY-MM-DD HH:mm"
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    fullWidth: true,
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          );
+        },
+      };
+    }
+
+    // 셀렉트 필드인 경우 (읽기/수정 모드 모두)
+    if (isSelectField) {
+      return {
+        ...col,
+        type: 'singleSelect',
+        valueOptions: isSelectField.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+        })),
+        editable: isEditMode && !readOnlyFields.includes(col.field),
+      };
+    }
+
+    // 일반 필드
     if (isEditMode && !readOnlyFields.includes(col.field)) {
       return {
         ...col,
         editable: true,
       };
     }
+
     return {
       ...col,
       editable: false,

@@ -14,7 +14,13 @@ import GroupedSelectInput from '../../../components/common/input/GroupedSelectIn
 import DateInput from '../../../components/common/input/DateInput';
 import RadioInput from '../../../components/common/input/RadioInput';
 import dayjs, { Dayjs } from 'dayjs';
-import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from './data';
+import {
+  serviceOptions,
+  ageGroupOptions,
+  under17Options,
+  questionCategoryOptions,
+  questionCategoryGroupedOptions,
+} from './data';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '../../../constants/message';
 import { recommendedQuestionColumns } from './components/columns/columns';
@@ -203,7 +209,7 @@ const ManualInputComponent: React.FC = () => {
                 <GroupedSelectInput
                   label="질문 카테고리"
                   value={field.value}
-                  optionGroups={questionCategoryOptions}
+                  optionGroups={questionCategoryGroupedOptions}
                   onChange={field.onChange}
                   required
                   error={hasTriedSubmit && !!errors.qst_ctgr}

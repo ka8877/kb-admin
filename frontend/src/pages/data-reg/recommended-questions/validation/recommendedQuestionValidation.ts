@@ -59,12 +59,10 @@ export class RecommendedQuestionValidator {
       return { isValid: false, message: '질문 카테고리는 필수입니다' };
     }
 
-    // 유효한 카테고리인지 확인
-    const allCategories = questionCategoryOptions.flatMap((group) =>
-      group.options.map((option) => option.value),
-    );
+    // 유효한 카테고리인지 확인 (questionCategoryOptions는 이미 평탄화된 배열)
+    const validCategories = questionCategoryOptions.map((option) => option.value);
 
-    if (!allCategories.includes(String(value))) {
+    if (!validCategories.includes(String(value))) {
       return { isValid: false, message: '없는 질문 카테고리입니다' };
     }
 
@@ -180,20 +178,81 @@ export class RecommendedQuestionValidator {
     return { isValid: true };
   }
 
-  // 노출 시작 일시 validation
-  static validateImpStartDate(value: any): ValidationResult {
+  // 노출 시작 일시 validation (수정용 - 현재 일시 체크 없음)
+  static validateImpStartDate(value: any, data?: RecommendedQuestionData): ValidationResult {
     if (!value || value === null || value === undefined) {
       return { isValid: false, message: '노출 시작 일시는 필수입니다' };
     }
-    return this.validateDate(value, '노출 시작 일시');
+
+    const dateValidation = this.validateDate(value, '노출 시작 일시');
+    if (!dateValidation.isValid) {
+      return dateValidation;
+    }
+
+    return { isValid: true };
+  }
+
+  // 노출 시작 일시 validation (등록용 - 현재 일시 체크 포함)
+  static validateImpStartDateForCreate(
+    value: any,
+    data?: RecommendedQuestionData,
+  ): ValidationResult {
+    if (!value || value === null || value === undefined) {
+      return { isValid: false, message: '노출 시작 일시는 필수입니다' };
+    }
+
+    const dateValidation = this.validateDate(value, '노출 시작 일시');
+    if (!dateValidation.isValid) {
+      return dateValidation;
+    }
+
+    // 현재 일자 <= 노출 시작일시 체크 (등록 시에만)
+    const startDate = toISOString(value);
+    if (startDate) {
+      const now = new Date();
+      const startDateTime = new Date(startDate);
+
+      if (startDateTime < now) {
+        return {
+          isValid: false,
+          message: '노출 시작 일시는 현재 일시 이후여야 합니다',
+        };
+      }
+    }
+
+    return { isValid: true };
   }
 
   // 노출 종료 일시 validation
-  static validateImpEndDate(value: any): ValidationResult {
+  static validateImpEndDate(value: any, data?: RecommendedQuestionData): ValidationResult {
     if (!value || value === null || value === undefined) {
       return { isValid: false, message: '노출 종료 일시는 필수입니다' };
     }
-    return this.validateDate(value, '노출 종료 일시');
+
+    const dateValidation = this.validateDate(value, '노출 종료 일시');
+    if (!dateValidation.isValid) {
+      return dateValidation;
+    }
+
+    // 노출 시작일시 < 노출 종료일시 체크
+    if (data?.imp_start_date) {
+      const startDate = toISOString(data.imp_start_date);
+      const endDate = toISOString(value);
+
+      if (startDate && endDate) {
+        const startDateTime = new Date(startDate);
+        const endDateTime = new Date(endDate);
+
+        if (endDateTime <= startDateTime) {
+          return {
+            isValid: false,
+            message: '노출 종료 일시는 노출 시작 일시보다 커야 합니다',
+          };
+        }
+      }
+    }
+
+    return { isValid: true };
   }
 
   // 상태 validation
@@ -225,8 +284,8 @@ export class RecommendedQuestionValidator {
 
     results.age_grp = this.validateAgeGroup(data.age_grp, data);
     results.under_17_yn = this.validateUnder17Yn(data.under_17_yn);
-    results.imp_start_date = this.validateImpStartDate(data.imp_start_date);
-    results.imp_end_date = this.validateImpEndDate(data.imp_end_date);
+    results.imp_start_date = this.validateImpStartDate(data.imp_start_date, data);
+    results.imp_end_date = this.validateImpEndDate(data.imp_end_date, data);
     results.status = this.validateStatus(data.status);
 
     return results;

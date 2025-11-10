@@ -80,7 +80,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     imp_start_date: (value, row) => {
-      const result = RecommendedQuestionValidator.validateImpStartDate(value);
+      // 엑셀 등록용이므로 현재 일시 체크 포함
+      const result = RecommendedQuestionValidator.validateImpStartDateForCreate(value, row);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
@@ -88,7 +89,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     imp_end_date: (value, row) => {
-      const result = RecommendedQuestionValidator.validateImpEndDate(value);
+      const result = RecommendedQuestionValidator.validateImpEndDate(value, row);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
