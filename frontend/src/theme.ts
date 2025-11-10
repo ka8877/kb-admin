@@ -1,4 +1,14 @@
-import { createTheme } from '@mui/material/styles'
+import { createTheme } from '@mui/material/styles';
+
+declare module '@mui/material/styles' {
+  interface Components {
+    MuiDataGrid?: {
+      styleOverrides?: {
+        root?: any;
+      };
+    };
+  }
+}
 
 const theme = createTheme({
   palette: {
@@ -16,6 +26,53 @@ const theme = createTheme({
   shape: {
     borderRadius: 10,
   },
-})
+  components: {
+    MuiDataGrid: {
+      styleOverrides: {
+        root: {
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#f5f5f5',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+          },
+          '& .MuiDataGrid-row': {
+            backgroundColor: '#fff',
+          },
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#eeeeee',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+          },
+          '& .MuiDataGrid-footerContainer': {
+            backgroundColor: '#fff',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputBase-root': {
+            backgroundColor: '#fff',
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#fff',
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#fff',
+        },
+      },
+    },
+  },
+});
 
-export default theme
+export default theme;

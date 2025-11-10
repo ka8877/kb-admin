@@ -12,6 +12,8 @@ import QuestionsCategoryPage from '../pages/management/questions-category/Questi
 import QuestionsCategoryEditPage from '../pages/management/questions-category/QuestionsCategoryEditPage';
 import AgeGroupPage from '../pages/management/age-group/AgeGroupPage';
 import AgeGroupEditPage from '../pages/management/age-group/AgeGroupEditPage';
+import AdminAuthPage from '../pages/management/admin-auth/AdminAuthPage';
+import AdminAuthEditPage from '../pages/management/admin-auth/AdminAuthEditPage';
 import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
 import RecommendedQuestionsApprovalPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage';
 import RecommendedQuestionsApprovalDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage';
@@ -54,6 +56,12 @@ export const frontRoutes: AppRoute[] = [
   { path: `${ROUTES.QUESTIONS_CATEGORY}/edit`, Component: QuestionsCategoryEditPage },
   { path: ROUTES.AGE_GROUP, Component: AgeGroupPage },
   { path: `${ROUTES.AGE_GROUP}/edit`, Component: AgeGroupEditPage },
+
+  // 어드민 권한관리
+  { path: ROUTES.ADMIN_AUTH, Component: AdminAuthPage },
+  { path: `${ROUTES.ADMIN_AUTH}/edit`, Component: AdminAuthEditPage },
+  { path: `${ROUTES.ADMIN_AUTH}/detail/:id`, Component: AdminAuthPage }, // 상세는 목록 페이지 재사용
+
   { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
   { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: RecommendedQuestionsApprovalPage }, // 결재요청 대기함
   {

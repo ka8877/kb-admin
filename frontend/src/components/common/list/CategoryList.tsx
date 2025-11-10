@@ -158,7 +158,10 @@ const CategoryList = ({
           if (params.id === draggingId) return 'dragging';
           return '';
         }}
-        sx={{ '& .drag-over': { bgcolor: 'action.selected' }, '& .dragging': { opacity: 0.7 } }}
+        sx={{
+          '& .drag-over': { bgcolor: 'action.selected' },
+          '& .dragging': { opacity: 0.7 },
+        }}
         initialState={{ pagination: { paginationModel: { pageSize: defaultPageSize } } }}
       />
 

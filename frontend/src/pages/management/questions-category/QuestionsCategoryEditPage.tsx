@@ -12,11 +12,14 @@ import { ManagedCategoryList } from '../../../components/common/list/CategoryLis
 import { questionsCategoryMockDb } from '../../../mocks/questionsCategoryDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
+import { QuestionsCategoryValidator } from './validation';
+import { useAlertDialog } from '../../../hooks/useAlertDialog';
 
 const QuestionsCategoryEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiRef = useGridApiRef();
+  const { showAlert } = useAlertDialog();
 
   type LocalRow = RowItem & { isNew?: boolean };
 
@@ -166,58 +169,103 @@ const QuestionsCategoryEditPage: React.FC = () => {
 
   const handleSave = useCallback(async () => {
     setLoading(true);
-    const ids = Array.from(modifiedRef.current);
 
-    if (ids.length > 0) {
-      const updates = await Promise.all(
-        ids.map(async (id) => {
-          const row = rows.find((r) => r.no === id);
-          if (!row) return null;
+    try {
+      const ids = Array.from(modifiedRef.current);
 
-          if (row.isNew) {
-            const created = await questionsCategoryMockDb.create({
-              category_nm: row.category_nm,
-              service_cd: row.service_cd,
-              status_code: row.status_code,
-            });
-            return { type: 'create' as const, tempNo: id, created };
-          }
+      if (ids.length > 0) {
+        // Validation 실행
+        const validationErrors: string[] = [];
+        const rowsToValidate = rows.filter((r) => ids.includes(r.no));
 
-          await questionsCategoryMockDb.update(row.service_cd, row);
-          return { type: 'update' as const };
-        }),
-      );
-
-      const createdItems = updates.filter((u) => u?.type === 'create');
-      if (createdItems.length > 0) {
-        setRows((prev) => {
-          let updated = [...prev];
-          createdItems.forEach((item) => {
-            if (item?.created) {
-              updated = updated.filter((r) => r.no !== item.tempNo);
-              updated.push(item.created as LocalRow);
-            }
+        rowsToValidate.forEach((row) => {
+          const validationResult = QuestionsCategoryValidator.validateAll({
+            category_nm: row.category_nm,
+            service_cd: row.service_cd,
+            status_code: row.status_code,
           });
-          return updated;
+
+          if (!validationResult.isValid) {
+            validationErrors.push(`${row.no}번 행: ${validationResult.errors.join(', ')}`);
+          }
         });
-      }
-    }
 
-    if (orderModifiedRef.current) {
-      try {
-        const order = rows.map((r) => r.service_cd).filter(Boolean) as string[];
-        const reordered = await questionsCategoryMockDb.reorder(order);
-        setRows(reordered as LocalRow[]);
-      } catch (e) {
-        console.error('Failed to persist order', e);
-      }
-    }
+        // Validation 실패 시
+        if (validationErrors.length > 0) {
+          const hasControlChar = validationErrors.some((err) =>
+            err.includes('알 수 없는 제어 문자'),
+          );
+          const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
-    modifiedRef.current.clear();
-    orderModifiedRef.current = false;
-    setLoading(false);
-    navigate(ROUTES.QUESTIONS_CATEGORY);
-  }, [rows, navigate]);
+          if (hasControlChar) {
+            await showAlert({
+              message:
+                '알 수 없는 제어 문자가 포함되어 있습니다. 입력 문자 점검 후 다시 시도해주세요.',
+            });
+          } else if (hasMissingField) {
+            await showAlert({ message: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.' });
+          } else {
+            await showAlert({ message: validationErrors.join('\n') });
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Validation 성공 시 저장
+        const updates = await Promise.all(
+          ids.map(async (id) => {
+            const row = rows.find((r) => r.no === id);
+            if (!row) return null;
+
+            if (row.isNew) {
+              const created = await questionsCategoryMockDb.create({
+                category_nm: row.category_nm,
+                service_cd: row.service_cd,
+                status_code: row.status_code,
+              });
+              return { type: 'create' as const, tempNo: id, created };
+            }
+
+            await questionsCategoryMockDb.update(row.service_cd, row);
+            return { type: 'update' as const };
+          }),
+        );
+
+        const createdItems = updates.filter((u) => u?.type === 'create');
+        if (createdItems.length > 0) {
+          setRows((prev) => {
+            let updated = [...prev];
+            createdItems.forEach((item) => {
+              if (item?.created) {
+                updated = updated.filter((r) => r.no !== item.tempNo);
+                updated.push(item.created as LocalRow);
+              }
+            });
+            return updated;
+          });
+        }
+      }
+
+      if (orderModifiedRef.current) {
+        try {
+          const order = rows.map((r) => r.service_cd).filter(Boolean) as string[];
+          const reordered = await questionsCategoryMockDb.reorder(order);
+          setRows(reordered as LocalRow[]);
+        } catch (e) {
+          console.error('Failed to persist order', e);
+        }
+      }
+
+      modifiedRef.current.clear();
+      orderModifiedRef.current = false;
+      setLoading(false);
+      navigate(ROUTES.QUESTIONS_CATEGORY);
+    } catch (error) {
+      console.error('Save error:', error);
+      await showAlert({ message: '에러가 발생하였습니다. 다시 시도해주세요.' });
+      setLoading(false);
+    }
+  }, [rows, navigate, showAlert]);
 
   const handleDragOrderChange = useCallback((newRows: LocalRow[]) => {
     setRows(newRows);
