@@ -11,6 +11,12 @@ import ListSearch from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import { useListState } from '../../../hooks/useListState';
 import ExcelJS from 'exceljs';
+import { formatDateForDisplay } from '../../../utils/dateUtils';
+
+export type SelectFieldOption = {
+  label: string;
+  value: string;
+};
 
 export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -28,6 +34,9 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   onRowClick?: (params: { id: string | number; row: T }) => void;
   enableStatePreservation?: boolean; // URL 상태 저장 활성화 (기본: true)
   exportFileName?: string; // 다운로드 파일명 (확장자 제외)
+  selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
+  dateFields?: string[]; // 날짜 필드 목록
+  dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
 };
 
 const defaultGetRowId =
@@ -54,6 +63,9 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   onRowClick,
   enableStatePreservation = true,
   exportFileName = '목록',
+  selectFields,
+  dateFields,
+  dateFormat = 'YYYYMMDDHHmmss',
 }: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -228,6 +240,40 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     }
   };
 
+  // 컬럼에 셀렉트 필드와 날짜 필드 적용
+  const processedColumns = useMemo(() => {
+    if (!selectFields && !dateFields) return columns;
+
+    return columns.map((col) => {
+      const isSelectField = selectFields && selectFields[col.field];
+      const isDateField = dateFields && dateFields.includes(col.field);
+
+      // 날짜 필드인 경우
+      if (isDateField) {
+        return {
+          ...col,
+          valueFormatter: (params: any) => {
+            return formatDateForDisplay(params.value, dateFormat);
+          },
+        };
+      }
+
+      // 셀렉트 필드인 경우
+      if (isSelectField) {
+        return {
+          ...col,
+          type: 'singleSelect',
+          valueOptions: isSelectField.map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+          })),
+        };
+      }
+
+      return col;
+    });
+  }, [columns, selectFields, dateFields, dateFormat]);
+
   return (
     <Box>
       <ListSearch
@@ -258,7 +304,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid
           rows={filteredRows}
-          columns={columns as any}
+          columns={processedColumns as any}
           getRowId={(r) => getRowId(r) as any}
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}

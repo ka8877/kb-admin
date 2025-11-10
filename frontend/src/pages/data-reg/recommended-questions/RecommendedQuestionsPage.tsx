@@ -4,7 +4,14 @@ import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import ManagementList from '../../../components/common/list/ManagementList';
 import { ROUTES } from '../../../routes/menu';
-import { mockRecommendedQuestions } from './data';
+import {
+  mockRecommendedQuestions,
+  serviceOptions,
+  ageGroupOptions,
+  under17Options,
+  statusOptions,
+  questionCategoryOptions,
+} from './data';
 
 const listApi = {
   list: async (): Promise<RecommendedQuestionItem[]> => {
@@ -46,6 +53,15 @@ const RecommendedQuestionsPage: React.FC = () => {
       onDeleteConfirm={handleDeleteConfirm}
       enableStatePreservation={true} // URL 기반 상태 보존 활성화
       exportFileName="추천질문목록" // 다운로드 파일명
+      selectFields={{
+        service_nm: serviceOptions,
+        age_grp: ageGroupOptions,
+        under_17_yn: under17Options,
+        status: statusOptions,
+        qst_ctgr: questionCategoryOptions,
+      }}
+      dateFields={['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt']}
+      dateFormat="YYYYMMDDHHmmss"
       // onExportAll can be provided to override default CSV behavior
     />
   );
