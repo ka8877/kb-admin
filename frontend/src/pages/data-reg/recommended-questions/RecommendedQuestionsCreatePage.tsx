@@ -2,17 +2,18 @@
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, CardContent, TextField, Stack } from '@mui/material';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Dayjs } from 'dayjs';
-import DualTabs from '../../../components/common/tabs/DualTabs';
-import PageHeader from '../../../components/common/PageHeader';
-import CreateDataActions from '../../../components/common/actions/CreateDataActions';
-import ExcelUpload from '../../../components/common/upload/ExcelUpload';
-import SelectInput from '../../../components/common/input/SelectInput';
-import GroupedSelectInput from '../../../components/common/input/GroupedSelectInput';
-import DateInput from '../../../components/common/input/DateInput';
-import RadioInput from '../../../components/common/input/RadioInput';
+import type { GridColDef } from '@mui/x-data-grid';
+import DualTabs from '@/components/common/tabs/DualTabs';
+import PageHeader from '@/components/common/PageHeader';
+import CreateDataActions from '@/components/common/actions/CreateDataActions';
+import ExcelUpload from '@/components/common/upload/ExcelUpload';
+import SelectInput from '@/components/common/input/SelectInput';
+import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
+import DateInput from '@/components/common/input/DateInput';
+import RadioInput from '@/components/common/input/RadioInput';
 import {
   serviceOptions,
   ageGroupOptions,
@@ -20,8 +21,8 @@ import {
   questionCategoryOptions,
   questionCategoryGroupedOptions,
 } from './data';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '../../../constants/message';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { createRecommendedQuestionYupSchema, createExcelValidationRules } from './validation';
 
@@ -79,7 +80,7 @@ const ManualInputComponent: React.FC = () => {
     setValue,
     watch,
   } = useForm<FormData>({
-    resolver: yupResolver(schema) as any,
+    resolver: yupResolver(schema) as Resolver<FormData>,
     mode: 'onChange', // 항상 실시간 validation 활성화
     defaultValues: {
       service_nm: '',
@@ -348,7 +349,7 @@ const ExcelUploadComponent: React.FC = () => {
   );
 
   // service_nm 제외하고 service_cd로 대체
-  const templateColumns: any[] = useMemo(
+  const templateColumns: GridColDef[] = useMemo(
     () =>
       baseTemplateColumns
         .filter((col) => col.field !== 'service_nm')
@@ -384,7 +385,7 @@ const ExcelUploadComponent: React.FC = () => {
           throw new Error('워크시트를 찾을 수 없습니다.');
         }
 
-        const data: any[] = [];
+        const data: Record<string, unknown>[] = [];
         const startRow = 4; // 4행부터 데이터 시작
         const lastRow = worksheet.lastRow?.number || startRow - 1;
         const columnFields = templateColumns.map((col) => col.field);
@@ -392,14 +393,15 @@ const ExcelUploadComponent: React.FC = () => {
         // 각 행의 데이터를 변환
         for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
           const row = worksheet.getRow(rowNum);
-          const rowData: any = {};
+          const rowData: Record<string, unknown> = {};
 
           columnFields.forEach((field, colIndex) => {
             let cellValue = row.getCell(colIndex + 1).value;
 
             // ExcelJS의 rich text 객체 처리
             if (cellValue && typeof cellValue === 'object' && 'richText' in cellValue) {
-              cellValue = (cellValue as any).richText.map((t: any) => t.text).join('');
+              const richTextObj = cellValue as { richText: Array<{ text: string }> };
+              cellValue = richTextObj.richText.map((t) => t.text).join('');
             }
 
             rowData[field] = cellValue;

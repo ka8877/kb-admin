@@ -11,7 +11,7 @@ export type ReferenceData = Record<string, Array<{ label: string; value: string 
 export const generateCSVTemplate = (
   columns: GridColDef[],
   fieldGuides?: Record<string, string>,
-  exampleData?: any[],
+  exampleData?: Record<string, unknown>[],
   referenceData?: ReferenceData,
 ): string => {
   const fields = columns.map((col) => col.field);
@@ -96,7 +96,7 @@ export const generateCSVTemplate = (
 export const generateExcelTemplate = async (
   columns: GridColDef[],
   fieldGuides?: Record<string, string>,
-  exampleData?: any[],
+  exampleData?: Record<string, unknown>[],
   referenceData?: ReferenceData,
 ): Promise<ExcelJS.Workbook> => {
   const workbook = new ExcelJS.Workbook();

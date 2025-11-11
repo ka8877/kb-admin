@@ -4,9 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
-import DataDetail from '../../../components/common/detail/DataDetail';
-import PageHeader from '../../../components/common/PageHeader';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
+import DataDetail from '@/components/common/detail/DataDetail';
+import PageHeader from '@/components/common/PageHeader';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { toast } from 'react-toastify';
 import {
   statusOptions,
@@ -18,7 +18,7 @@ import {
 } from './data';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '../../../constants/message';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
 
 // API 예시
 const detailApi = {
@@ -98,8 +98,23 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
   const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
-  const handleValidate = (data: RecommendedQuestionItem) =>
-    RecommendedQuestionValidator.validateAll(data as any);
+  const handleValidate = (data: RecommendedQuestionItem) => {
+    // RecommendedQuestionItem을 RecommendedQuestionData로 변환
+    const validationData: Parameters<typeof RecommendedQuestionValidator.validateAll>[0] = {
+      service_nm: data.service_nm,
+      qst_ctgr: data.qst_ctgr,
+      qst_ctnt: data.qst_ctnt,
+      qst_style: data.qst_style,
+      parent_id: data.parent_id,
+      parent_nm: data.parent_nm,
+      age_grp: data.age_grp,
+      under_17_yn: data.under_17_yn,
+      imp_start_date: data.imp_start_date,
+      imp_end_date: data.imp_end_date,
+      status: data.status,
+    };
+    return RecommendedQuestionValidator.validateAll(validationData);
+  };
 
   return (
     <Box>

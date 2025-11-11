@@ -28,7 +28,7 @@ export class ServiceNameValidator {
   }
 
   // 카테고리명 validation
-  static validateCategoryName(value: any): ValidationResult {
+  static validateCategoryName(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '카테고리명은 필수입니다' };
     }
@@ -50,7 +50,7 @@ export class ServiceNameValidator {
   }
 
   // 서비스코드 validation
-  static validateServiceCode(value: any): ValidationResult {
+  static validateServiceCode(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '서비스코드는 필수입니다' };
     }
@@ -80,7 +80,7 @@ export class ServiceNameValidator {
   }
 
   // 활성상태 validation
-  static validateStatusCode(value: any): ValidationResult {
+  static validateStatusCode(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '활성상태는 필수입니다' };
     }

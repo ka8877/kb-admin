@@ -17,7 +17,7 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
 } from '@mui/icons-material';
-import { useAlertDialog, type AlertSeverity } from '../../../hooks/useAlertDialog';
+import { useAlertDialog, type AlertSeverity } from '@/hooks/useAlertDialog';
 
 // 아이콘 매핑
 const severityIcons = {

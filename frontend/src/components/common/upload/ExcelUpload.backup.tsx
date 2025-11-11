@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
 import type { GridColDef } from '@mui/x-data-grid';
 import CreateDataActions from '../actions/CreateDataActions';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import ExcelJS from 'exceljs';
 
 export type ValidationResult = {
@@ -12,14 +12,17 @@ export type ValidationResult = {
   errorMessage?: string;
 };
 
-export type ValidationFunction = (value: any, row: any) => ValidationResult;
+export type ValidationFunction = (
+  value: string | number | Date | null | undefined,
+  row: Record<string, unknown>,
+) => ValidationResult;
 
 export type ExcelUploadProps = {
   onSave: (file: File) => void;
   onCancel: () => void;
   columns?: GridColDef[]; // 템플릿 생성을 위한 컬럼 정의
   templateFileName?: string; // 템플릿 파일명
-  exampleData?: any[]; // 예시 데이터 (선택적)
+  exampleData?: Record<string, unknown>[]; // 예시 데이터 (선택적)
   fieldGuides?: Record<string, string>; // 각 필드별 작성 가이드
   validationRules?: Record<string, ValidationFunction>; // 필드별 validation 함수
   referenceData?: Record<string, Array<{ label: string; value: string }>>; // Sheet2에 표시할 참조 테이블
@@ -85,7 +88,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
 
         lines.forEach((line) => {
           // CSV 파싱 (간단한 버전 - 따옴표 내 쉼표 처리)
-          const row: any[] = [];
+          const row: (string | number)[] = [];
           let current = '';
           let inQuotes = false;
 
@@ -141,7 +144,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
       // 각 행별 validation 체크
       for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
         const row = worksheet.getRow(rowNum);
-        const rowData: any = {};
+        const rowData: Record<string, unknown> = {};
 
         // 행의 각 열 데이터를 객체로 변환
         columnFields.forEach((field, colIndex) => {
@@ -168,7 +171,15 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
           if (fieldIndex === -1) continue;
 
           const cellValue = rowData[fieldName];
-          const validationResult = validationFn(cellValue, rowData);
+          const validationValue =
+            cellValue instanceof Date
+              ? cellValue
+              : typeof cellValue === 'string' || typeof cellValue === 'number'
+                ? cellValue
+                : cellValue == null
+                  ? null
+                  : undefined;
+          const validationResult = validationFn(validationValue, rowData);
 
           if (!validationResult.isValid) {
             showAlert({

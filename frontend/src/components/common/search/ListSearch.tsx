@@ -1,6 +1,6 @@
 // ...existing code...
 import React, { useEffect, useState } from 'react';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -9,8 +9,8 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import MediumButton from '../button/MediumButton';
 
-export type ListSearchProps = {
-  columns?: GridColDef<any>[];
+export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
+  columns?: GridColDef<T>[];
   onSearch: (payload: { field?: string; query: string }) => void;
   placeholder?: string;
   defaultField?: string;
@@ -18,14 +18,14 @@ export type ListSearchProps = {
   size?: 'small' | 'medium' | 'large';
 };
 
-const ListSearch: React.FC<ListSearchProps> = ({
+const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   columns = [],
   onSearch,
   placeholder = '검색어를 입력하세요',
   defaultField = 'all',
   defaultQuery = '',
   size = 'small',
-}) => {
+}: ListSearchProps<T>): JSX.Element => {
   const [field, setField] = useState<string>(defaultField);
   const [query, setQuery] = useState<string>(defaultQuery);
 

@@ -8,7 +8,10 @@ export type ValidationResult = {
   errorMessage?: string;
 };
 
-export type ValidationFunction = (value: any, row: any) => ValidationResult;
+export type ValidationFunction = (
+  value: string | number | Date | null | undefined,
+  row: Record<string, unknown>,
+) => ValidationResult;
 
 export type ValidationError = {
   rowNumber: number;
@@ -57,7 +60,10 @@ export const validateWorksheetData = (
       if (fieldIndex === -1) continue;
 
       const cellValue = rowData[fieldName];
-      const validationResult = validationFn(cellValue, rowData);
+      const validationResult = validationFn(
+        cellValue as string | number | Date | null | undefined,
+        rowData,
+      );
 
       if (!validationResult.isValid) {
         return {

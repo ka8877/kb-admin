@@ -13,7 +13,7 @@ import { adminAuthMockDb } from '../../../mocks/adminAuthDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
 import EmployeeSearchCell from './components/EmployeeSearchCell';
-import { AdminAuthValidator } from './validation';
+import { AdminAuthValidator } from './validation/adminAuthValidation';
 import { useAlertDialog } from '../../../hooks/useAlertDialog';
 
 const AdminAuthEditPage: React.FC = () => {
@@ -335,21 +335,21 @@ const AdminAuthEditPage: React.FC = () => {
         )}
       </Stack>
 
-      <CategoryList
+      <CategoryList<LocalRow>
         apiRef={apiRef}
         columns={columns}
         rows={rows}
         setRows={setRows}
         processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={(err) => console.error('Row update error', err)}
-        getRowId={(row: LocalRow) => row.no}
+        getRowId={(row) => row.no}
         selectionMode={selectionMode}
         selectionModel={selectionModel}
         onSelectionModelChange={handleSelectionModelChange}
         loading={loading}
-        isCellEditable={(params: any) => params.field !== 'no'}
+        isCellEditable={(params) => params.field !== 'no'}
         defaultPageSize={25}
-        ghostLabelGetter={(r: LocalRow) => ({ title: r.user_name, subtitle: r.position })}
+        ghostLabelGetter={(r) => ({ title: r.user_name, subtitle: r.position })}
       />
 
       <DeleteConfirmBar

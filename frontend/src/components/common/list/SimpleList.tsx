@@ -1,10 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { GridColDef, GridPaginationModel, GridValidRowModel } from '@mui/x-data-grid';
+import type {
+  GridColDef,
+  GridPaginationModel,
+  GridValidRowModel,
+  GridRowId,
+} from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
-import { useListState } from '../../../hooks/useListState';
+import { useListState } from '@/hooks/useListState';
 
 export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -23,9 +28,12 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
 const defaultGetRowId =
   <T extends GridValidRowModel>(getter: SimpleListProps<T>['rowIdGetter']) =>
   (row: T) => {
-    if (!getter) return (row as any).id ?? (row as any).id_str ?? '';
+    if (!getter) {
+      const rowObj = row as Record<string, unknown>;
+      return (rowObj.id ?? rowObj.id_str ?? '') as string | number;
+    }
     if (typeof getter === 'function') return getter(row);
-    return (row as any)[getter as string];
+    return row[getter as keyof T] as string | number;
   };
 
 const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
@@ -86,7 +94,8 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           v == null ? false : String(v).toLowerCase().includes(q),
         );
       }
-      const value = (row as any)[searchField];
+      const rowObj = row as Record<string, unknown>;
+      const value = rowObj[searchField];
       return value == null ? false : String(value).toLowerCase().includes(q);
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
@@ -123,7 +132,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleRowClick = useCallback(
-    (params: any) => {
+    (params: { id: GridRowId; row: T }) => {
       if (onRowClick) {
         onRowClick({ id: params.id, row: params.row });
       }
@@ -145,10 +154,10 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       <DetailNavigationActions onBack={onBack} />
 
       <Box sx={{ height: 420, width: '100%' }}>
-        <DataGrid
+        <DataGrid<T>
           rows={filteredRows}
-          columns={columns as any}
-          getRowId={(r) => getRowId(r) as any}
+          columns={columns}
+          getRowId={(r) => getRowId(r) as GridRowId}
           pagination
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}

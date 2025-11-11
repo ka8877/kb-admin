@@ -3,8 +3,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
 import type { GridColDef } from '@mui/x-data-grid';
 import CreateDataActions from '../actions/CreateDataActions';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { loadWorkbookFromFile } from './utils/excelUtils';
 import { validateWorksheetData } from './utils/validationUtils';
 import type { ValidationFunction } from './utils/validationUtils';
@@ -20,7 +20,7 @@ import {
   CONFIRM_TITLES,
   CONFIRM_MESSAGES,
   getFileFormatErrorMessage,
-} from '../../../constants/message';
+} from '@/constants/message';
 
 export type { ValidationFunction } from './utils/validationUtils';
 
@@ -29,7 +29,7 @@ export type ExcelUploadProps = {
   onCancel: () => void;
   columns?: GridColDef[];
   templateFileName?: string;
-  exampleData?: any[];
+  exampleData?: Record<string, unknown>[];
   fieldGuides?: Record<string, string>;
   validationRules?: Record<string, ValidationFunction>;
   referenceData?: ReferenceData;

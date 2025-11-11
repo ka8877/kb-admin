@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { ApprovalRequestItem } from '../../../types/types';
-import { approvalRequestColumns } from '../../../constants/columns';
-import SimpleList from '../../../components/common/list/SimpleList';
-import PageHeader from '../../../components/common/PageHeader';
-import { ROUTES } from '../../../routes/menu';
+import type { ApprovalRequestItem } from '@/types/types';
+import { approvalRequestColumns } from '@/constants/columns';
+import SimpleList from '@/components/common/list/SimpleList';
+import PageHeader from '@/components/common/PageHeader';
+import { ROUTES } from '@/routes/menu';
 import { mockApprovalRequests } from './data';
 
 const listApi = {

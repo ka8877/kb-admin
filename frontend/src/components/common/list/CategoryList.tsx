@@ -1,28 +1,37 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { DataGrid, GridColDef, GridRowId } from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridColDef,
+  GridRowId,
+  GridValidRowModel,
+  GridCellParams,
+  GridApiCommon,
+} from '@mui/x-data-grid';
 
-type CategoryListProps = {
-  rows: any[];
-  setRows: (updater: any[] | ((prev: any[]) => any[])) => void;
-  columns: GridColDef<any>[];
+type CategoryRow = Record<string, unknown> & { id?: string | number };
+
+type CategoryListProps<T extends GridValidRowModel = CategoryRow> = {
+  rows: T[];
+  setRows: (updater: T[] | ((prev: T[]) => T[])) => void;
+  columns: GridColDef<T>[];
   // optional apiRef to control grid from parent (focus/start edit)
-  apiRef?: any;
-  getRowId?: (row: any) => string | number;
+  apiRef?: React.MutableRefObject<GridApiCommon>;
+  getRowId?: (row: T) => string | number;
   loading?: boolean;
-  processRowUpdate?: (newRow: any, oldRow: any) => any;
-  onProcessRowUpdateError?: (err: any) => void;
+  processRowUpdate?: (newRow: T, oldRow: T) => T | Promise<T>;
+  onProcessRowUpdateError?: (err: Error) => void;
   selectionMode?: boolean;
   selectionModel?: (string | number)[];
   onSelectionModelChange?: (m: (string | number)[]) => void;
   defaultPageSize?: number;
   // called after a drop reorder; receives the new array of rows
-  onDragOrderChange?: (newRows: any[]) => void;
+  onDragOrderChange?: (newRows: T[]) => void;
   // optional renderer data for ghost label
-  ghostLabelGetter?: (row: any) => { title?: string; subtitle?: string };
-  isCellEditable?: any;
+  ghostLabelGetter?: (row: T) => { no?: number; title?: string; subtitle?: string };
+  isCellEditable?: (params: GridCellParams<T>) => boolean;
 };
 
-const CategoryList = ({
+const CategoryList = <T extends GridValidRowModel = CategoryRow>({
   rows,
   setRows,
   columns,
@@ -38,7 +47,7 @@ const CategoryList = ({
   apiRef,
   ghostLabelGetter,
   isCellEditable,
-}: CategoryListProps) => {
+}: CategoryListProps<T>) => {
   const [draggingId, setDraggingId] = useState<GridRowId | null>(null);
   const [dragOverId, setDragOverId] = useState<GridRowId | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
@@ -74,10 +83,14 @@ const CategoryList = ({
 
         const fromId = draggingId;
         if (fromId != null && targetId != null && fromId !== targetId) {
-          setRows((prev: any) => {
+          setRows((prev) => {
             const copy = [...prev];
-            const from = copy.findIndex((r) => (getRowId ? getRowId(r) : (r as any).id) === fromId);
-            const to = copy.findIndex((r) => (getRowId ? getRowId(r) : (r as any).id) === targetId);
+            const from = copy.findIndex(
+              (r) => (getRowId ? getRowId(r) : (r as CategoryRow).id) === fromId,
+            );
+            const to = copy.findIndex(
+              (r) => (getRowId ? getRowId(r) : (r as CategoryRow).id) === targetId,
+            );
             if (from === -1) return prev;
             const resolvedTo = to === -1 ? copy.length : to;
             const [item] = copy.splice(from, 1);
@@ -130,24 +143,31 @@ const CategoryList = ({
     } catch (_err) {}
   };
 
-  const getGhostContent = useMemo(() => {
+  const getGhostContent = useMemo<{ no?: number; title?: string; subtitle?: string } | null>(() => {
     if (!draggingId) return null;
-    const r = rows.find((row: any) => (getRowId ? getRowId(row) : row.id) === draggingId);
+    const r = rows.find(
+      (row) => (getRowId ? getRowId(row) : (row as CategoryRow).id) === draggingId,
+    );
     if (!r) return null;
     if (ghostLabelGetter) return ghostLabelGetter(r);
-    return { title: (r as any).category_nm ?? '', subtitle: (r as any).service_cd ?? '' };
+    const rowData = r as Record<string, unknown>;
+    return {
+      no: (rowData.no as number) ?? undefined,
+      title: (rowData.category_nm as string) ?? '',
+      subtitle: (rowData.service_cd as string) ?? '',
+    };
   }, [draggingId, rows, getRowId, ghostLabelGetter]);
 
   return (
     <div style={{ height: 600, width: '100%' }} onMouseDown={handleMouseDown}>
       <DataGrid
-        rows={rows as any}
-        columns={columns as any}
+        rows={rows}
+        columns={columns}
         apiRef={apiRef}
-        getRowId={(r: any) => (getRowId ? (getRowId(r) as any) : (r as any).id)}
+        getRowId={(r) => (getRowId ? getRowId(r) : (r as CategoryRow).id) as GridRowId}
         loading={loading}
         isCellEditable={isCellEditable}
-        processRowUpdate={processRowUpdate as any}
+        processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={onProcessRowUpdateError}
         disableRowSelectionOnClick
         checkboxSelection={selectionMode}
@@ -181,13 +201,9 @@ const CategoryList = ({
             minWidth: 200,
           }}
         >
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>
-            No {(getGhostContent as any).no}
-          </div>
-          <div style={{ fontWeight: 600 }}>{(getGhostContent as any).title}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>
-            {(getGhostContent as any).subtitle}
-          </div>
+          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>No {getGhostContent.no}</div>
+          <div style={{ fontWeight: 600 }}>{getGhostContent.title}</div>
+          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>{getGhostContent.subtitle}</div>
         </div>
       ) : null}
     </div>
@@ -215,14 +231,21 @@ export const ManagedCategoryList = (
     onSelectionModelChange,
     onDragOrderChange,
     apiRef,
-  } = props as any;
+  } = props;
 
-  const defaultIsCellEditable = (params: any) =>
+  const defaultIsCellEditable = (params: GridCellParams) =>
     params.field === 'service_cd' ||
     params.field === 'category_nm' ||
     params.field === 'status_code';
 
-  const defaultGhost = (r: any) => ({ no: r.no, title: r.category_nm, subtitle: r.service_cd });
+  const defaultGhost = (r: CategoryRow) => {
+    const rowData = r as Record<string, unknown>;
+    return {
+      no: rowData.no as number,
+      title: rowData.category_nm as string,
+      subtitle: rowData.service_cd as string,
+    };
+  };
 
   return (
     <CategoryList

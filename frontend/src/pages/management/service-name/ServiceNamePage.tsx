@@ -7,6 +7,7 @@ import EditableList from '../../../components/common/list/EditableList';
 import { listColumns } from './components/columns';
 import { ROUTES } from '../../../routes/menu';
 import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
+import type { RowItem } from './types';
 
 const ServiceNamePage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const ServiceNamePage: React.FC = () => {
       <EditableList
         columns={listColumns}
         fetcher={async () => await serviceNameMockDb.listAll()}
-        rowIdGetter={(r) => (r as any).service_cd}
+        rowIdGetter={(r: RowItem) => r.service_cd}
         defaultPageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         onEdit={handleGoEditPage}

@@ -4,9 +4,9 @@ import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import MediumButton from '../button/MediumButton';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '../../../constants/message';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '@/constants/message';
 
 export type ListActionsProps = {
   selectionMode: boolean;

@@ -4,7 +4,7 @@ import AppHeader from '../components/layout/AppHeader';
 import GlobalLoadingSpinner from '../components/common/spinner/GlobalLoadingSpinner';
 import SideNav from '../components/layout/SideNav';
 import { DRAWER_WIDTH } from '../constants';
-import { frontMenus } from '../routes/menu';
+import { frontMenus, type MenuItem } from '../routes/menu';
 import { useAuthStore } from '../store/auth';
 import { useLocation } from 'react-router-dom';
 
@@ -22,8 +22,8 @@ const MainLayout = ({ children }: PropsWithChildren) => {
   const { pathname } = useLocation();
 
   // Helper: find breadcrumb labels for current pathname by walking frontMenus
-  const findBreadcrumb = (menus: typeof frontMenus, target: string): string[] => {
-    const dfs = (list: typeof frontMenus, acc: string[]): string[] | null => {
+  const findBreadcrumb = (menus: MenuItem[], target: string): string[] => {
+    const dfs = (list: MenuItem[], acc: string[]): string[] | null => {
       for (const m of list) {
         const nextAcc = [...acc, m.label];
         // treat prefix matches as belonging to the menu (e.g. /management/category/...)
@@ -34,13 +34,13 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         ) {
           // try deeper children first
           if (m.children) {
-            const child = dfs(m.children as any, nextAcc);
+            const child = dfs(m.children, nextAcc);
             if (child) return child;
           }
           return nextAcc;
         }
         if (m.children) {
-          const child = dfs(m.children as any, nextAcc);
+          const child = dfs(m.children, nextAcc);
           if (child) return child;
         }
       }
@@ -56,9 +56,9 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     if (m.path === pathname) return true;
     if (pathname.startsWith(m.path === '/' ? '/' : m.path + '/')) return true;
     if (m.children) {
-      const stack: typeof m.children = [...m.children];
+      const stack: MenuItem[] = [...m.children];
       while (stack.length) {
-        const it = stack.pop() as any;
+        const it = stack.pop();
         if (!it) break;
         if (it.path === pathname) return true;
         if (pathname.startsWith(it.path === '/' ? '/' : it.path + '/')) return true;

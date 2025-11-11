@@ -1,5 +1,5 @@
 import type { RecommendedQuestionItem } from './types';
-import type { ApprovalRequestItem } from '../../../types/types';
+import type { ApprovalRequestItem } from '@/types/types';
 
 // 서비스 옵션 데이터
 export const serviceOptions = [

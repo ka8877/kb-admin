@@ -7,6 +7,7 @@ import EditableList from '../../../components/common/list/EditableList';
 import { listColumns } from './components/columns';
 import { ROUTES } from '../../../routes/menu';
 import { ageGroupMockDb } from '../../../mocks/ageGroupDb';
+import type { RowItem } from './types';
 
 const AgeGroupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const AgeGroupPage: React.FC = () => {
       <EditableList
         columns={listColumns}
         fetcher={async () => await ageGroupMockDb.listAll()}
-        rowIdGetter={(r) => (r as any).service_cd}
+        rowIdGetter={(r: RowItem) => r.service_cd}
         defaultPageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         onEdit={handleGoEditPage}

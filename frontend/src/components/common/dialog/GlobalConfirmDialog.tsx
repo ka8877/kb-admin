@@ -5,7 +5,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import { useConfirmDialogStore } from '../../../hooks/useConfirmDialog';
+import { useConfirmDialogStore } from '@/hooks/useConfirmDialog';
 
 const GlobalConfirmDialog: React.FC = () => {
   const { open, title, message, confirmText, cancelText, severity, confirm, cancel } =

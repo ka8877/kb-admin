@@ -9,12 +9,12 @@ import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import DetailEditActions from '../actions/DetailEditActions';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage } from '../../../utils/dateUtils';
+import { formatDateForDisplay, formatDateForStorage } from '@/utils/dateUtils';
 
 export type SelectFieldOption = {
   label: string;
@@ -52,9 +52,12 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
 const defaultGetRowId =
   <T extends GridValidRowModel>(getter: EditableListProps<T>['rowIdGetter']) =>
   (row: T) => {
-    if (!getter) return (row as any).id ?? (row as any).id_str ?? '';
+    if (!getter) {
+      const rowObj = row as Record<string, unknown>;
+      return (rowObj.id ?? rowObj.id_str ?? '') as string | number;
+    }
     if (typeof getter === 'function') return getter(row);
-    return (row as any)[getter as string];
+    return row[getter as keyof T] as string | number;
   };
 
 const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
@@ -100,7 +103,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         return {
           ...col,
           editable: isEditMode && !readOnlyFields.includes(col.field),
-          valueFormatter: (params: any) => {
+          valueFormatter: (params: { value: string }) => {
             return formatDateForDisplay(params.value, dateFormat);
           },
           renderEditCell: (params: GridRenderEditCellParams) => {
@@ -231,7 +234,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   }, [validator, data, columns, showAlert, onSave]);
 
   const handleRowClick = useCallback(
-    (params: any) => {
+    (params: { id: string | number; row: T }) => {
       if (onRowClick) {
         onRowClick({ id: params.id, row: params.row });
       }
@@ -252,7 +255,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       selectionModel
         .map((id) => {
           const row = data.find((r) => getRowId(r) === id);
-          return row ? (row as any).no : null;
+          if (!row) return null;
+          const rowObj = row as Record<string, unknown>;
+          return typeof rowObj.no === 'number' ? rowObj.no : null;
         })
         .filter((num): num is number => num !== null),
     [selectionModel, data, getRowId],
@@ -266,8 +271,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid
           rows={data}
-          columns={processedColumns as any}
-          getRowId={(r) => getRowId(r) as any}
+          columns={processedColumns}
+          getRowId={getRowId}
           checkboxSelection={isEditMode}
           rowSelectionModel={isEditMode ? selectionModel : []}
           onRowSelectionModelChange={isEditMode ? setSelectionModel : undefined}

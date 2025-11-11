@@ -70,7 +70,8 @@ const AdminAuthPage: React.FC = () => {
     // 데이터 행 추가
     data.forEach((row) => {
       const rowData = orderedFields.map((field) => {
-        const value = (row as any)[field];
+        const rowObj = row as Record<string, unknown>;
+        const value = rowObj[field];
         return value ?? '';
       });
       worksheet.addRow(rowData);
@@ -83,7 +84,8 @@ const AdminAuthPage: React.FC = () => {
       // 데이터 최대 길이
       const maxDataLength = Math.max(
         ...data.map((row) => {
-          const value = (row as any)[field];
+          const rowObj = row as Record<string, unknown>;
+          const value = rowObj[field];
           return String(value ?? '').length;
         }),
         0,
@@ -130,7 +132,7 @@ const AdminAuthPage: React.FC = () => {
       <EditableList
         columns={listColumns}
         fetcher={async () => await adminAuthMockDb.listAll()}
-        rowIdGetter={(r) => (r as any).id}
+        rowIdGetter={(r: RowItem) => r.id}
         defaultPageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         onRowClick={handleRowClick}

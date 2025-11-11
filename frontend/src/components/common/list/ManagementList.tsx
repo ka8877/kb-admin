@@ -4,14 +4,15 @@ import type {
   GridPaginationModel,
   GridRowSelectionModel,
   GridValidRowModel,
+  GridRowId,
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
-import { useListState } from '../../../hooks/useListState';
+import { useListState } from '@/hooks/useListState';
 import ExcelJS from 'exceljs';
-import { formatDateForDisplay } from '../../../utils/dateUtils';
+import { formatDateForDisplay } from '@/utils/dateUtils';
 
 export type SelectFieldOption = {
   label: string;
@@ -42,9 +43,12 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
 const defaultGetRowId =
   <T extends GridValidRowModel>(getter: ManagementListProps<T>['rowIdGetter']) =>
   (row: T) => {
-    if (!getter) return (row as any).id ?? (row as any).id_str ?? '';
+    if (!getter) {
+      const rowObj = row as Record<string, unknown>;
+      return (rowObj.id ?? rowObj.id_str ?? '') as string | number;
+    }
     if (typeof getter === 'function') return getter(row);
-    return (row as any)[getter as string];
+    return row[getter as keyof T] as string | number;
   };
 
 const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
@@ -115,7 +119,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           v == null ? false : String(v).toLowerCase().includes(q),
         );
       }
-      const value = (row as any)[searchField];
+      const rowObj = row as Record<string, unknown>;
+      const value = rowObj[searchField];
       return value == null ? false : String(value).toLowerCase().includes(q);
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
@@ -130,7 +135,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       if (isDateField) {
         return {
           ...col,
-          valueFormatter: (params: any) => formatDateForDisplay(params.value, dateFormat),
+          valueFormatter: (params: { value: string }) =>
+            formatDateForDisplay(params.value, dateFormat),
         };
       }
 
@@ -138,7 +144,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       if (isSelectField) {
         return {
           ...col,
-          valueFormatter: (params: any) => {
+          valueFormatter: (params: { value: string }) => {
             const option = isSelectField.find((opt) => opt.value === params.value);
             return option ? option.label : (params.value ?? '');
           },
@@ -197,17 +203,25 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         const column = processedColumnsForExport.find((col) => col.field === field);
         if (!column) return '';
 
-        // valueGetter가 있으면 사용
-        if (column.valueGetter) {
-          const value = column.valueGetter({ row, field } as any);
-          return value ?? '';
+        const rowObj = row as Record<string, unknown>;
+        const rawValue = rowObj[field];
+
+        // valueFormatter가 있으면 사용 (날짜, 셀렉트 필드 포맷팅)
+        if (column.valueFormatter && typeof column.valueFormatter === 'function') {
+          try {
+            return column.valueFormatter({ value: rawValue } as never) ?? '';
+          } catch {
+            return rawValue ?? '';
+          }
         }
 
-        // valueFormatter가 있으면 사용
-        const rawValue = (row as any)[field];
-        if (column.valueFormatter) {
-          const formattedValue = column.valueFormatter({ value: rawValue } as any);
-          return formattedValue ?? '';
+        // valueGetter가 있으면 사용
+        if (column.valueGetter && typeof column.valueGetter === 'function') {
+          try {
+            return column.valueGetter({ row, field } as never) ?? '';
+          } catch {
+            return rawValue ?? '';
+          }
         }
 
         // 기본값
@@ -223,7 +237,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       // 데이터 최대 길이
       const maxDataLength = Math.max(
         ...filteredRows.map((row) => {
-          const value = (row as any)[field];
+          const rowObj = row as Record<string, unknown>;
+          const value = rowObj[field];
           return String(value ?? '').length;
         }),
         0,
@@ -304,7 +319,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   }, []);
 
   const handleRowClick = useCallback(
-    (params: any) => {
+    (params: { id: GridRowId; row: T }) => {
       if (onRowClick) {
         onRowClick({ id: params.id, row: params.row });
       }
@@ -366,10 +381,10 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       />
 
       <Box sx={{ height: 420, width: '100%' }}>
-        <DataGrid
+        <DataGrid<T>
           rows={filteredRows}
-          columns={processedColumns as any}
-          getRowId={(r) => getRowId(r) as any}
+          columns={processedColumns}
+          getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}
           onRowSelectionModelChange={setSelectionModel}

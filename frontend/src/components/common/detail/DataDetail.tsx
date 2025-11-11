@@ -5,20 +5,20 @@ import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import DetailEditActions from '../actions/DetailEditActions';
 import DataDetailActions from '../actions/DataDetailActions';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage } from '../../../utils/dateUtils';
+import { formatDateForDisplay, formatDateForStorage } from '@/utils/dateUtils';
 import {
   CONFIRM_TITLES,
   CONFIRM_MESSAGES,
   TOAST_MESSAGES,
   ALERT_TITLES,
-} from '../../../constants/message';
+} from '@/constants/message';
 
 export type SelectFieldOption = {
   label: string;
@@ -50,9 +50,12 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
 const defaultGetRowId =
   <T extends GridValidRowModel>(getter: DataDetailProps<T>['rowIdGetter']) =>
   (row: T) => {
-    if (!getter) return (row as any).id ?? (row as any).id_str ?? '';
+    if (!getter) {
+      const rowObj = row as Record<string, unknown>;
+      return (rowObj.id ?? rowObj.id_str ?? '') as string | number;
+    }
     if (typeof getter === 'function') return getter(row);
-    return (row as any)[getter as string];
+    return row[getter as keyof T] as string | number;
   };
 
 const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
@@ -182,7 +185,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           return {
             ...col,
             editable: isEditMode && !readOnlyFields.includes(col.field),
-            valueFormatter: (params: any) => {
+            valueFormatter: (params: { value: string }) => {
               return formatDateForDisplay(params.value, dateFormat);
             },
             renderEditCell: (params: GridRenderEditCellParams) => {

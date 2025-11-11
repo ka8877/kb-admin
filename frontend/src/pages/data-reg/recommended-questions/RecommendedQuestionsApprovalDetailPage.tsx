@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
-import EditableList from '../../../components/common/list/EditableList';
-import PageHeader from '../../../components/common/PageHeader';
-import { ROUTES } from '../../../routes/menu';
+import EditableList from '@/components/common/list/EditableList';
+import PageHeader from '@/components/common/PageHeader';
+import { ROUTES } from '@/routes/menu';
 import {
   ageGroupOptions,
   mockApprovalDetailQuestions,
@@ -15,9 +15,9 @@ import {
   statusOptions,
   under17Options,
 } from './data';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '../../../constants/message';
-import { RecommendedQuestionValidator } from './validation';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 
 // 결재 요청에 포함된 추천 질문 데이터를 가져오는 API
 const approvalDetailApi = {
@@ -151,8 +151,10 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
-  const handleValidate = (data: RecommendedQuestionItem) =>
-    RecommendedQuestionValidator.validateAll(data as any);
+  // Validation 함수
+  const handleValidate = (data: RecommendedQuestionItem) => {
+    return RecommendedQuestionValidator.validateAll(data);
+  };
 
   return (
     <Box>

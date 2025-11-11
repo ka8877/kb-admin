@@ -4,7 +4,9 @@ declare module '@mui/material/styles' {
   interface Components {
     MuiDataGrid?: {
       styleOverrides?: {
-        root?: any;
+        root?: React.CSSProperties & {
+          [key: string]: React.CSSProperties | string | number | undefined;
+        };
       };
     };
   }

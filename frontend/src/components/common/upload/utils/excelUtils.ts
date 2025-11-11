@@ -56,10 +56,10 @@ export const loadWorkbookFromFile = async (file: File): Promise<ExcelJS.Workbook
 };
 
 /**
- * 워크시트의 행 데이터를 객체로 변환
+ * 행 데이터를 파싱
  */
-export const parseRowData = (row: ExcelJS.Row, columnFields: string[]): Record<string, any> => {
-  const rowData: any = {};
+export const parseRowData = (row: ExcelJS.Row, columnFields: string[]): Record<string, unknown> => {
+  const rowData: Record<string, unknown> = {};
 
   columnFields.forEach((field, colIndex) => {
     const cellValue = row.getCell(colIndex + 1).value;
@@ -72,7 +72,7 @@ export const parseRowData = (row: ExcelJS.Row, columnFields: string[]): Record<s
 /**
  * 행에 데이터가 있는지 확인
  */
-export const hasRowData = (rowData: Record<string, any>, columnFields: string[]): boolean => {
+export const hasRowData = (rowData: Record<string, unknown>, columnFields: string[]): boolean => {
   return columnFields.some((field) => {
     const value = rowData[field];
     return value !== null && value !== undefined && String(value).trim() !== '';
@@ -82,7 +82,7 @@ export const hasRowData = (rowData: Record<string, any>, columnFields: string[])
 /**
  * CSV 셀 값을 이스케이프 처리
  */
-export const escapeCSVValue = (value: any): string => {
+export const escapeCSVValue = (value: unknown): string => {
   const strValue = String(value ?? '');
 
   // 쉼표, 따옴표, 줄바꿈이 있으면 따옴표로 감싸기

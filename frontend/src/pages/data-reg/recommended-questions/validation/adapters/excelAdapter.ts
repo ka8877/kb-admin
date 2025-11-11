@@ -1,7 +1,10 @@
 // frontend/src/pages/data-reg/recommended-questions/validation/adapters/excelAdapter.ts
 
-import { RecommendedQuestionValidator } from '../recommendedQuestionValidation';
-import { isValidDate, toISOString } from '../../../../../utils/dateUtils';
+import {
+  RecommendedQuestionValidator,
+  RecommendedQuestionData,
+} from '../recommendedQuestionValidation';
+import { isValidDate, toISOString } from '@/utils/dateUtils';
 
 // 엑셀 validation 함수 타입 정의
 export type ValidationResult = {
@@ -9,7 +12,10 @@ export type ValidationResult = {
   errorMessage?: string;
 };
 
-export type ValidationFunction = (value: any, row?: any) => ValidationResult;
+export type ValidationFunction = (
+  value: string | number | Date | null | undefined,
+  row?: RecommendedQuestionData,
+) => ValidationResult;
 
 /**
  * 엑셀 전용 validation 규칙
@@ -29,7 +35,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
     // qst_ctnt: 공통과 같음
     qst_ctnt: (value, row) => {
-      const result = RecommendedQuestionValidator.validateQuestionContent(value);
+      const stringValue = value != null ? String(value) : null;
+      const result = RecommendedQuestionValidator.validateQuestionContent(stringValue);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
@@ -49,7 +56,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
     // qst_style: 공통과 같음
     qst_style: (value, row) => {
-      const result = RecommendedQuestionValidator.validateQuestionStyle(value);
+      const stringValue = value != null ? String(value) : null;
+      const result = RecommendedQuestionValidator.validateQuestionStyle(stringValue);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
@@ -58,7 +66,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
     // parent_id: 공통과 같음
     parent_id: (value, row) => {
-      const result = RecommendedQuestionValidator.validateParentId(value, row);
+      const stringValue = value != null ? String(value) : null;
+      const result = RecommendedQuestionValidator.validateParentId(stringValue, row);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
@@ -67,7 +76,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
     // parent_nm: 공통과 같음
     parent_nm: (value, row) => {
-      const result = RecommendedQuestionValidator.validateParentIdName(value, row);
+      const stringValue = value != null ? String(value) : null;
+      const result = RecommendedQuestionValidator.validateParentIdName(stringValue, row);
       return {
         isValid: result.isValid,
         errorMessage: result.message,
@@ -77,7 +87,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // age_grp: 조건부 필수, 숫자형태
     age_grp: (value, row) => {
       // service_cd가 ai_calc인 경우 필수
-      const serviceCode = row?.service_cd;
+      const rowData = row as Record<string, unknown>;
+      const serviceCode = rowData?.service_cd;
       const isRequired = serviceCode === 'ai_calc';
 
       if (isRequired) {
@@ -119,7 +130,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       }
 
       // 날짜 형태 검증
-      if (!isValidDate(value)) {
+      if (!isValidDate(value as string | Date | null)) {
         return {
           isValid: false,
           errorMessage: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
@@ -127,7 +138,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       }
 
       // 현재 일시 체크
-      const startDate = toISOString(value);
+      const startDate = toISOString(value as string | Date | null);
       const now = new Date().toISOString();
 
       if (startDate && startDate < now) {
@@ -147,7 +158,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       }
 
       // 날짜 형태 검증
-      if (!isValidDate(value)) {
+      if (!isValidDate(value as string | Date | null)) {
         return {
           isValid: false,
           errorMessage: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
@@ -155,9 +166,10 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       }
 
       // 시작일과 비교
-      if (row?.imp_start_date) {
-        const startDate = toISOString(row.imp_start_date);
-        const endDate = toISOString(value);
+      const rowData = row as Record<string, unknown>;
+      if (rowData?.imp_start_date) {
+        const startDate = toISOString(rowData.imp_start_date as string | Date | null);
+        const endDate = toISOString(value as string | Date | null);
 
         if (startDate && endDate && endDate <= startDate) {
           return {
@@ -171,11 +183,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     status: (value, row) => {
-      const result = RecommendedQuestionValidator.validateStatus(value);
-      return {
-        isValid: result.isValid,
-        errorMessage: result.message,
-      };
+      if (value && !['in_service', 'out_of_service'].includes(String(value))) {
+        return {
+          isValid: false,
+          errorMessage: 'status는 in_service 또는 out_of_service를 입력 가능합니다',
+        };
+      }
+      return { isValid: true };
     },
   };
 };

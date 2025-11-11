@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
-import ManagementList from '../../../components/common/list/ManagementList';
-import PageHeader from '../../../components/common/PageHeader';
-import { ROUTES } from '../../../routes/menu';
+import ManagementList from '@/components/common/list/ManagementList';
+import PageHeader from '@/components/common/PageHeader';
+import { ROUTES } from '@/routes/menu';
 import {
   mockRecommendedQuestions,
   serviceOptions,

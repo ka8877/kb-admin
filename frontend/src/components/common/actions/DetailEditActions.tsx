@@ -2,8 +2,8 @@
 import React from 'react';
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import MediumButton from '../button/MediumButton';
-import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
-import { CONFIRM_TITLES, getDeleteConfirmMessage } from '../../../constants/message';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { CONFIRM_TITLES, getDeleteConfirmMessage } from '@/constants/message';
 
 export type DetailEditActionsProps = {
   open: boolean;

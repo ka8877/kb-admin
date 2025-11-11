@@ -32,7 +32,7 @@ export class AdminAuthValidator {
   }
 
   // 사용자명 validation
-  static validateUserName(value: any): ValidationResult {
+  static validateUserName(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '사용자명은 필수입니다' };
     }
@@ -54,7 +54,7 @@ export class AdminAuthValidator {
   }
 
   // 직책 validation
-  static validatePosition(value: any): ValidationResult {
+  static validatePosition(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '직책은 필수입니다' };
     }
@@ -76,7 +76,7 @@ export class AdminAuthValidator {
   }
 
   // 1차팀 validation
-  static validateTeam1st(value: any): ValidationResult {
+  static validateTeam1st(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '1차팀은 필수입니다' };
     }
@@ -98,7 +98,7 @@ export class AdminAuthValidator {
   }
 
   // 2차팀 validation
-  static validateTeam2nd(value: any): ValidationResult {
+  static validateTeam2nd(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '2차팀은 필수입니다' };
     }
@@ -120,7 +120,7 @@ export class AdminAuthValidator {
   }
 
   // 이용권한 validation
-  static validateUsePermission(value: any): ValidationResult {
+  static validateUsePermission(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '이용권한은 필수입니다' };
     }
@@ -134,7 +134,7 @@ export class AdminAuthValidator {
   }
 
   // 결재권한 validation
-  static validateApprovalPermission(value: any): ValidationResult {
+  static validateApprovalPermission(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '결재권한은 필수입니다' };
     }
@@ -148,7 +148,7 @@ export class AdminAuthValidator {
   }
 
   // 활성여부 validation
-  static validateStatus(value: any): ValidationResult {
+  static validateStatus(value: string | null | undefined): ValidationResult {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '활성여부는 필수입니다' };
     }
