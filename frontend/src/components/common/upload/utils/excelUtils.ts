@@ -1,6 +1,5 @@
 // frontend/src/components/common/upload/utils/excelUtils.ts
 import ExcelJS from 'exceljs';
-import type { GridColDef } from '@mui/x-data-grid';
 
 /**
  * CSV 라인을 파싱하여 배열로 변환

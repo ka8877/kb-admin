@@ -8,7 +8,7 @@ import DataDetailActions from '../actions/DataDetailActions';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog';
 import { useAlertDialog } from '../../../hooks/useAlertDialog';
 import { toast } from 'react-toastify';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';

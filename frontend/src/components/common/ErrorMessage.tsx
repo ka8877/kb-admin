@@ -1,21 +1,21 @@
-import type React from 'react'
-import { Alert, AlertTitle } from '@mui/material'
+import type React from 'react';
+import { Alert, AlertTitle } from '@mui/material';
 
 export type ErrorMessageProps = {
-  title?: string
-  error: unknown
-}
+  title?: string;
+  error: unknown;
+};
 
 const getMessage = (error: unknown): string => {
-  if (!error) return 'Unknown error'
-  if (typeof error === 'string') return error
-  if (error instanceof Error) return error.message
+  if (!error) return 'Unknown error';
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
   try {
-    return JSON.stringify(error)
+    return JSON.stringify(error);
   } catch {
-    return String(error)
+    return String(error);
   }
-}
+};
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ title = 'Error', error }) => {
   return (
@@ -23,7 +23,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ title = 'Error', error }) =
       <AlertTitle>{title}</AlertTitle>
       {getMessage(error)}
     </Alert>
-  )
-}
+  );
+};
 
-export default ErrorMessage
+export default ErrorMessage;

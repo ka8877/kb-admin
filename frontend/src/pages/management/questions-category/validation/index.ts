@@ -5,7 +5,4 @@
  */
 
 export { QuestionsCategoryValidator } from './questionsCategoryValidation';
-export type {
-  ValidationResult,
-  QuestionsCategoryData,
-} from './questionsCategoryValidation';
+export type { ValidationResult, QuestionsCategoryData } from './questionsCategoryValidation';

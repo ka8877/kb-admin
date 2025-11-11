@@ -52,7 +52,11 @@ const toApiError = (err: unknown): ApiError => {
 // Request interceptor: inject Authorization header if token exists
 axiosClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // global loading start
-  try { useLoadingStore.getState().start() } catch { /* no-op */ }
+  try {
+    useLoadingStore.getState().start();
+  } catch {
+    /* no-op */
+  }
   const token = getAccessToken();
   if (token) {
     config.headers = config.headers || {};
@@ -67,13 +71,21 @@ axiosClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 axiosClient.interceptors.response.use(
   (response) => {
     // global loading stop
-    try { useLoadingStore.getState().stop() } catch { /* no-op */ }
-    return response
+    try {
+      useLoadingStore.getState().stop();
+    } catch {
+      /* no-op */
+    }
+    return response;
   },
   (error) => {
     // global loading stop on error too
-    try { useLoadingStore.getState().stop() } catch { /* no-op */ }
-    return Promise.reject(toApiError(error))
+    try {
+      useLoadingStore.getState().stop();
+    } catch {
+      /* no-op */
+    }
+    return Promise.reject(toApiError(error));
   },
 );
 

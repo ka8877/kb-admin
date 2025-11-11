@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState } from 'react';
 
 /**
  * useDisclosure
@@ -12,32 +12,32 @@ import { useCallback, useState } from 'react'
  * <Dialog open={open} onClose={onClose}>...</Dialog>
  */
 export type UseDisclosureOptions = {
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-}
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
 
 export type UseDisclosureReturn = {
-  open: boolean
-  onOpen: () => void
-  onClose: () => void
-  onToggle: () => void
-  setOpen: (next: boolean) => void
-}
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onToggle: () => void;
+  setOpen: (next: boolean) => void;
+};
 
 export const useDisclosure = (options?: UseDisclosureOptions): UseDisclosureReturn => {
-  const [openState, _setOpenState] = useState<boolean>(options?.defaultOpen ?? false)
+  const [openState, _setOpenState] = useState<boolean>(options?.defaultOpen ?? false);
 
   const setOpen = useCallback(
     (next: boolean) => {
-      _setOpenState(next)
-      options?.onOpenChange?.(next)
+      _setOpenState(next);
+      options?.onOpenChange?.(next);
     },
     [options?.onOpenChange],
-  )
+  );
 
-  const onOpen = useCallback(() => setOpen(true), [setOpen])
-  const onClose = useCallback(() => setOpen(false), [setOpen])
-  const onToggle = useCallback(() => setOpen(!openState), [openState, setOpen])
+  const onOpen = useCallback(() => setOpen(true), [setOpen]);
+  const onClose = useCallback(() => setOpen(false), [setOpen]);
+  const onToggle = useCallback(() => setOpen(!openState), [openState, setOpen]);
 
   return {
     open: openState,
@@ -45,5 +45,5 @@ export const useDisclosure = (options?: UseDisclosureOptions): UseDisclosureRetu
     onClose,
     onToggle,
     setOpen,
-  }
-}
+  };
+};

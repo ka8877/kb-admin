@@ -13,7 +13,6 @@ import { adminAuthMockDb } from '../../../mocks/adminAuthDb';
 import type { RowItem } from './types';
 import { ROUTES } from '../../../routes/menu';
 import EmployeeSearchCell from './components/EmployeeSearchCell';
-import { employeeMockDb } from '../../../mocks/employeeDb';
 import { AdminAuthValidator } from './validation';
 import { useAlertDialog } from '../../../hooks/useAlertDialog';
 
@@ -47,7 +46,7 @@ const AdminAuthEditPage: React.FC = () => {
               if (employee && apiRef.current) {
                 // 먼저 편집 모드 종료
                 apiRef.current.stopCellEditMode({ id: params.id, field: params.field });
-                
+
                 // 행 데이터 직접 업데이트
                 setTimeout(() => {
                   setRows((prevRows) =>
@@ -214,9 +213,7 @@ const AdminAuthEditPage: React.FC = () => {
           });
 
           if (!validationResult.isValid) {
-            validationErrors.push(
-              `${row.no}번 행: ${validationResult.errors.join(', ')}`,
-            );
+            validationErrors.push(`${row.no}번 행: ${validationResult.errors.join(', ')}`);
           }
         });
 

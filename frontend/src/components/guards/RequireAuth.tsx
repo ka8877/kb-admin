@@ -1,6 +1,6 @@
-import type { PropsWithChildren } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../../store/auth'
+import type { PropsWithChildren } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../store/auth';
 
 /**
  * RequireAuth guard
@@ -9,14 +9,14 @@ import { useAuthStore } from '../../store/auth'
  * - 라우팅 적용 예시는 App.tsx 내부에 주석으로 안내합니다.
  */
 const RequireAuth = ({ children }: PropsWithChildren) => {
-  const token = useAuthStore((s) => s.accessToken)
-  const location = useLocation()
+  const token = useAuthStore((s) => s.accessToken);
+  const location = useLocation();
 
   if (!token) {
     // 로그인 페이지가 준비되면 '/login'으로 변경하세요.
-    return <Navigate to="/" replace state={{ from: location }} />
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
-export default RequireAuth
+export default RequireAuth;

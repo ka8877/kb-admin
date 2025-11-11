@@ -20,7 +20,7 @@
     //   주의) Vite 번들러에도 동일 별칭을 vite.config.ts(resolve.alias)에 지정해야 합니다.
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],               // 루트 별칭: '@/…' → 'src/…'
+      "@/*": ["src/*"], // 루트 별칭: '@/…' → 'src/…'
       "@api/*": ["src/api/*"],
       "@components/*": ["src/components/*"],
       "@pages/*": ["src/pages/*"],

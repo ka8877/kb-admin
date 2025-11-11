@@ -4,7 +4,6 @@ import { Box } from '@mui/material';
 import PageHeader from '../../../components/common/PageHeader';
 import EditableList from '../../../components/common/list/EditableList';
 
-import type { RowItem } from './types';
 import { listColumns } from './components/columns';
 import { ROUTES } from '../../../routes/menu';
 import { questionsCategoryMockDb } from '../../../mocks/questionsCategoryDb';

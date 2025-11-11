@@ -1,6 +1,5 @@
 // frontend/src/pages/management/admin-auth/components/columns.tsx
 import { GridColDef } from '@mui/x-data-grid';
-import type { RowItem } from '../types';
 
 export const listColumns: GridColDef[] = [
   { field: 'no', headerName: 'No', width: 80 },

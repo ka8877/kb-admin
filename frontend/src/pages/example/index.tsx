@@ -61,14 +61,13 @@ const ExamplePage: React.FC = () => {
       <Button
         variant="contained"
         onClick={() => {
-          const { start, stop } = useLoadingStore.getState()
-          start()
-          setTimeout(() => stop(), 1500)
+          const { start, stop } = useLoadingStore.getState();
+          start();
+          setTimeout(() => stop(), 1500);
         }}
       >
         전역 로딩바 생성
       </Button>
-   
 
       {/* 생성폼 + 그리드 같은 라인 */}
       <Grid container spacing={3}>
