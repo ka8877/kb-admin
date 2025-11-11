@@ -1,4 +1,5 @@
 {
+  // TypeScript compiler options for Vite + React project
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
@@ -11,7 +12,23 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+
+    // 경로 별칭 설정: 복잡한 상대경로(../../../) 대신 간단한 별칭을 사용합니다.
+    // - baseUrl: 상대 기준을 프로젝트 루트(.)로 설정
+    // - paths: TypeScript가 별칭을 실제 폴더로 해석하도록 매핑
+    //   주의) Vite 번들러에도 동일 별칭을 vite.config.ts(resolve.alias)에 지정해야 합니다.
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],               // 루트 별칭: '@/…' → 'src/…'
+      "@api/*": ["src/api/*"],
+      "@components/*": ["src/components/*"],
+      "@pages/*": ["src/pages/*"],
+      "@routes/*": ["src/routes/*"],
+      "@lib/*": ["src/lib/*"],
+      "@store/*": ["src/store/*"],
+      "@config/*": ["src/config/*"]
+    }
   },
   "include": ["src"]
 }

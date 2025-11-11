@@ -1,9 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import * as path from 'node:path'
+
+// Node 내장 모듈 'path'는 export = 형태이므로 default import 시 TS1259 오류가 발생합니다.
+// esModuleInterop 없이 사용하기 위해 네임스페이스 임포트(import * as path)로 사용합니다.
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // 경로 별칭 설정: import 경로를 짧고 일관되게 사용합니다. (tsconfig.json의 paths와 동일하게 유지)
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@api': path.resolve(__dirname, 'src/api'),
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@pages': path.resolve(__dirname, 'src/pages'),
+      '@routes': path.resolve(__dirname, 'src/routes'),
+      '@lib': path.resolve(__dirname, 'src/lib'),
+      '@store': path.resolve(__dirname, 'src/store'),
+      '@config': path.resolve(__dirname, 'src/config'),
+    },
+  },
   server: {
     port: 5173,
     strictPort: true,
@@ -18,6 +35,7 @@ export default defineConfig({
       clientPort: 5173,
     },
     proxy: {
+      // Frontend → Backend API proxy for local dev only
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
