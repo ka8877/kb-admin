@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   GridColDef,
   GridPaginationModel,
@@ -120,12 +120,9 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
 
-  const handleExportAll = async () => {
-    if (onExportAll) return onExportAll(filteredRows);
-    if (!filteredRows.length) return;
-
-    // processedColumns 생성 (포맷터 적용)
-    const processedColumnsForExport = columns.map((col) => {
+  // 컬럼 처리 로직 공통화 (DRY 원칙)
+  const applyColumnFormatters = useCallback(
+    (col: GridColDef<T>) => {
       const isSelectField = selectFields && selectFields[col.field];
       const isDateField = dateFields && dateFields.includes(col.field);
 
@@ -133,9 +130,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       if (isDateField) {
         return {
           ...col,
-          valueFormatter: (params: any) => {
-            return formatDateForDisplay(params.value, dateFormat);
-          },
+          valueFormatter: (params: any) => formatDateForDisplay(params.value, dateFormat),
         };
       }
 
@@ -144,7 +139,6 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         return {
           ...col,
           valueFormatter: (params: any) => {
-            // value를 label로 변환
             const option = isSelectField.find((opt) => opt.value === params.value);
             return option ? option.label : (params.value ?? '');
           },
@@ -152,7 +146,16 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       }
 
       return col;
-    });
+    },
+    [selectFields, dateFields, dateFormat],
+  );
+
+  const handleExportAll = useCallback(async () => {
+    if (onExportAll) return onExportAll(filteredRows);
+    if (!filteredRows.length) return;
+
+    // 포맷터 적용된 컬럼 생성
+    const processedColumnsForExport = columns.map(applyColumnFormatters);
 
     // columns의 field와 headerName 매핑 생성
     const columnMap = new Map<string, string>();
@@ -247,83 +250,96 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [onExportAll, filteredRows, columns, applyColumnFormatters, exportFileName]);
 
-  const handleDeleteConfirm = (ids: (string | number)[]) => {
-    if (onDeleteConfirm) onDeleteConfirm(ids);
-    setSelectionModel([]);
-    setSelectionMode(false);
-  };
-
-  const handleSearch = (p: { field?: string; query: string }) => {
-    // 검색 시 삭제 모드 해제
-    if (selectionMode) {
-      setSelectionMode(false);
+  const handleDeleteConfirm = useCallback(
+    (ids: (string | number)[]) => {
+      if (onDeleteConfirm) onDeleteConfirm(ids);
       setSelectionModel([]);
-    }
+      setSelectionMode(false);
+    },
+    [onDeleteConfirm],
+  );
 
-    if (enableStatePreservation) {
-      updateListState({
-        searchField: p.field,
-        searchQuery: p.query,
-        page: 0, // 검색 시 첫 페이지로
-      });
-    } else {
-      setLocalSearchField(p.field);
-      setLocalSearchQuery(p.query);
-      setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
-    }
-  };
+  const handleSearch = useCallback(
+    (p: { field?: string; query: string }) => {
+      // 검색 시 삭제 모드 해제
+      if (selectionMode) {
+        setSelectionMode(false);
+        setSelectionModel([]);
+      }
 
-  const handlePaginationChange = (model: GridPaginationModel) => {
-    if (enableStatePreservation) {
-      updateListState({
-        page: model.page,
-        pageSize: model.pageSize,
-      });
-    } else {
-      setLocalPaginationModel(model);
-    }
-  };
+      if (enableStatePreservation) {
+        updateListState({
+          searchField: p.field,
+          searchQuery: p.query,
+          page: 0, // 검색 시 첫 페이지로
+        });
+      } else {
+        setLocalSearchField(p.field);
+        setLocalSearchQuery(p.query);
+        setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+      }
+    },
+    [selectionMode, enableStatePreservation, updateListState],
+  );
 
-  // 컬럼에 셀렉트 필드와 날짜 필드 적용
+  const handlePaginationChange = useCallback(
+    (model: GridPaginationModel) => {
+      if (enableStatePreservation) {
+        updateListState({
+          page: model.page,
+          pageSize: model.pageSize,
+        });
+      } else {
+        setLocalPaginationModel(model);
+      }
+    },
+    [enableStatePreservation, updateListState],
+  );
+
+  const handleToggleSelectionMode = useCallback((next: boolean) => {
+    setSelectionMode(next);
+    if (!next) setSelectionModel([]);
+  }, []);
+
+  const handleRowClick = useCallback(
+    (params: any) => {
+      if (onRowClick) {
+        onRowClick({ id: params.id, row: params.row });
+      }
+    },
+    [onRowClick],
+  );
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectionModel([]);
+  }, []);
+
+  // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
   const processedColumns = useMemo(() => {
     if (!selectFields && !dateFields) return columns;
 
     return columns.map((col) => {
       const isSelectField = selectFields && selectFields[col.field];
-      const isDateField = dateFields && dateFields.includes(col.field);
+      const formattedCol = applyColumnFormatters(col);
 
-      // 날짜 필드인 경우
-      if (isDateField) {
-        return {
-          ...col,
-          valueFormatter: (params: any) => {
-            return formatDateForDisplay(params.value, dateFormat);
-          },
-        };
-      }
-
-      // 셀렉트 필드인 경우
+      // 셀렉트 필드인 경우 type과 valueOptions 추가 (DataGrid 편집용)
       if (isSelectField) {
         return {
-          ...col,
+          ...formattedCol,
           type: 'singleSelect',
           valueOptions: isSelectField.map((opt) => ({
             value: opt.value,
             label: opt.label,
           })),
-          valueFormatter: (params: any) => {
-            // value를 label로 변환
-            const option = isSelectField.find((opt) => opt.value === params.value);
-            return option ? option.label : (params.value ?? '');
-          },
         };
       }
 
-      return col;
+      return formattedCol;
     });
-  }, [columns, selectFields, dateFields, dateFormat]);
+  }, [columns, selectFields, dateFields, applyColumnFormatters]);
 
   return (
     <Box>
@@ -338,17 +354,14 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
       <ListActions
         selectionMode={selectionMode}
-        onToggleSelectionMode={(next) => {
-          setSelectionMode(next);
-          if (!next) setSelectionModel([]);
-        }}
+        onToggleSelectionMode={handleToggleSelectionMode}
         selectedIds={
           Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
         }
         onCreate={onCreate}
         onRequestApproval={onRequestApproval}
-        onDeleteConfirm={(ids) => handleDeleteConfirm(ids)}
-        onDownloadAll={() => handleExportAll()}
+        onDeleteConfirm={handleDeleteConfirm}
+        onDownloadAll={handleExportAll}
         size={size}
       />
 
@@ -359,7 +372,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={(r) => getRowId(r) as any}
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}
-          onRowSelectionModelChange={(newModel) => setSelectionModel(newModel)}
+          onRowSelectionModelChange={setSelectionModel}
           pagination
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
@@ -367,9 +380,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           disableRowSelectionOnClick
           density="standard"
           autoHeight={false}
-          onRowClick={
-            onRowClick ? (params) => onRowClick({ id: params.id, row: params.row }) : undefined
-          }
+          onRowClick={onRowClick ? handleRowClick : undefined}
         />
       </Box>
 
@@ -378,11 +389,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         selectedIds={
           Array.isArray(selectionModel) ? selectionModel : selectionModel ? selectionModel : []
         }
-        onConfirm={(ids) => handleDeleteConfirm(ids)}
-        onCancel={() => {
-          setSelectionMode(false);
-          setSelectionModel([]);
-        }}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleCancelSelection}
         size={size}
       />
     </Box>

@@ -1,5 +1,5 @@
 // frontend/src/components/common/upload/ExcelUpload.refactored.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
 import type { GridColDef } from '@mui/x-data-grid';
 import CreateDataActions from '../actions/CreateDataActions';
@@ -68,107 +68,122 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const isValidFileFormat = (file: File): boolean => {
-    const fileName = file.name.toLowerCase();
-    return acceptedFormats.some((format) => fileName.endsWith(format.toLowerCase()));
-  };
+  const isValidFileFormat = useCallback(
+    (file: File): boolean => {
+      const fileName = file.name.toLowerCase();
+      return acceptedFormats.some((format) => fileName.endsWith(format.toLowerCase()));
+    },
+    [acceptedFormats],
+  );
 
-  const validateFile = async (file: File): Promise<boolean> => {
-    if (!validationRules || !columns) return true;
+  const validateFile = useCallback(
+    async (file: File): Promise<boolean> => {
+      if (!validationRules || !columns) return true;
 
-    try {
-      const workbook = await loadWorkbookFromFile(file);
-      const worksheet = workbook.getWorksheet(1);
+      try {
+        const workbook = await loadWorkbookFromFile(file);
+        const worksheet = workbook.getWorksheet(1);
 
-      if (!worksheet) {
+        if (!worksheet) {
+          showAlert({
+            title: ALERT_MESSAGES.VALIDATION_ERROR,
+            message: ALERT_MESSAGES.WORKSHEET_NOT_FOUND,
+            severity: 'error',
+          });
+          return false;
+        }
+
+        const error = validateWorksheetData(worksheet, columns, validationRules);
+
+        if (error) {
+          const message =
+            error.rowNumber > 0 ? `${error.rowNumber}행: ${error.message}` : error.message;
+          showAlert({
+            title: ALERT_MESSAGES.VALIDATION_ERROR,
+            message,
+            severity: 'error',
+          });
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('파일 validation 오류:', error);
         showAlert({
           title: ALERT_MESSAGES.VALIDATION_ERROR,
-          message: ALERT_MESSAGES.WORKSHEET_NOT_FOUND,
+          message: ALERT_MESSAGES.FILE_READ_ERROR,
           severity: 'error',
         });
         return false;
       }
+    },
+    [validationRules, columns, showAlert],
+  );
 
-      const error = validateWorksheetData(worksheet, columns, validationRules);
-
-      if (error) {
-        const message =
-          error.rowNumber > 0 ? `${error.rowNumber}행: ${error.message}` : error.message;
+  const processFile = useCallback(
+    async (file: File, clearInput?: () => void): Promise<void> => {
+      if (!isValidFileFormat(file)) {
         showAlert({
-          title: ALERT_MESSAGES.VALIDATION_ERROR,
-          message,
+          title: ALERT_MESSAGES.FILE_FORMAT_ERROR,
+          message: getFileFormatErrorMessage(acceptedFormats),
           severity: 'error',
         });
-        return false;
+        clearInput?.();
+        return;
       }
 
-      return true;
-    } catch (error) {
-      console.error('파일 validation 오류:', error);
+      const isValid = await validateFile(file);
+      if (!isValid) {
+        clearInput?.();
+        return;
+      }
+
+      setSelectedFile(file);
       showAlert({
-        title: ALERT_MESSAGES.VALIDATION_ERROR,
-        message: ALERT_MESSAGES.FILE_READ_ERROR,
-        severity: 'error',
+        title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
+        message: ALERT_MESSAGES.FILE_UPLOAD_SUCCESS,
+        severity: 'success',
       });
-      return false;
-    }
-  };
+    },
+    [isValidFileFormat, validateFile, acceptedFormats, showAlert],
+  );
 
-  const processFile = async (file: File, clearInput?: () => void): Promise<void> => {
-    if (!isValidFileFormat(file)) {
-      showAlert({
-        title: ALERT_MESSAGES.FILE_FORMAT_ERROR,
-        message: getFileFormatErrorMessage(acceptedFormats),
-        severity: 'error',
-      });
-      clearInput?.();
-      return;
-    }
+  const handleFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        await processFile(file, () => {
+          event.target.value = '';
+        });
+      }
+    },
+    [processFile],
+  );
 
-    const isValid = await validateFile(file);
-    if (!isValid) {
-      clearInput?.();
-      return;
-    }
-
-    setSelectedFile(file);
-    showAlert({
-      title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
-      message: ALERT_MESSAGES.FILE_UPLOAD_SUCCESS,
-      severity: 'success',
-    });
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      await processFile(file, () => {
-        event.target.value = '';
-      });
-    }
-  };
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(true);
-  };
+  }, []);
 
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(false);
-  };
+  }, []);
 
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragOver(false);
+  const handleDrop = useCallback(
+    async (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragOver(false);
 
-    const file = event.dataTransfer.files?.[0];
-    if (file) {
-      await processFile(file);
-    }
-  };
+      const file = event.dataTransfer.files?.[0];
+      if (file) {
+        await processFile(file);
+      }
+    },
+    [processFile],
+  );
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!selectedFile) {
       showAlert({
         title: ALERT_MESSAGES.FILE_SELECT_REQUIRED,
@@ -198,9 +213,9 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         }
       },
     });
-  };
+  }, [selectedFile, showAlert, showConfirm, onSave]);
 
-  const handleTemplateDownloadCSV = () => {
+  const handleTemplateDownloadCSV = useCallback(() => {
     if (!columns || columns.length === 0) {
       showAlert({
         title: ALERT_MESSAGES.TEMPLATE_GENERATION_ERROR,
@@ -221,9 +236,9 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         severity: 'error',
       });
     }
-  };
+  }, [columns, fieldGuides, exampleData, referenceData, templateFileName, showAlert]);
 
-  const handleTemplateDownload = async () => {
+  const handleTemplateDownload = useCallback(async () => {
     if (onTemplateDownload) {
       onTemplateDownload();
       return;
@@ -254,10 +269,21 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         severity: 'error',
       });
     }
-  };
+  }, [
+    onTemplateDownload,
+    columns,
+    fieldGuides,
+    exampleData,
+    referenceData,
+    templateFileName,
+    showAlert,
+  ]);
 
-  const acceptString = acceptedFormats.join(',');
-  const formatDisplayText = `지원하는 파일 양식: ${acceptedFormats.map((f) => f.replace('.', '')).join(', ')}`;
+  const acceptString = useMemo(() => acceptedFormats.join(','), [acceptedFormats]);
+  const formatDisplayText = useMemo(
+    () => `지원하는 파일 양식: ${acceptedFormats.map((f) => f.replace('.', '')).join(', ')}`,
+    [acceptedFormats],
+  );
 
   return (
     <Card>

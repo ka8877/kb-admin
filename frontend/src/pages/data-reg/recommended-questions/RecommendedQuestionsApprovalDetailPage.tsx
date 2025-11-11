@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-
+import React, { useCallback, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import EditableList from '../../../components/common/list/EditableList';
+import PageHeader from '../../../components/common/PageHeader';
 import { ROUTES } from '../../../routes/menu';
 import {
   ageGroupOptions,
@@ -38,124 +40,140 @@ const approvalDetailApi = {
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showConfirm } = useConfirmDialog();
-  const [data, setData] = useState<RecommendedQuestionItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  useEffect(() => {
-    if (!id) {
-      navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const result = await approvalDetailApi.getRecommendedQuestions(id);
-        setData(result);
-      } catch (error) {
-        console.error('데이터 로딩 실패:', error);
-      } finally {
-        setIsLoading(false);
+  // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
+  const { data = [] } = useQuery({
+    queryKey: ['approvalDetail', id],
+    queryFn: () => {
+      if (!id) {
+        navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+        return Promise.reject('Invalid ID');
       }
-    };
+      return approvalDetailApi.getRecommendedQuestions(id);
+    },
+    enabled: !!id,
+  });
 
-    fetchData();
-  }, [id, navigate]);
+  // sessionStorage 접근 최적화 (useMemo로 한 번만 읽기)
+  const savedApprovalState = useMemo(() => sessionStorage.getItem('approval_page_state'), []);
 
-  const handleBack = () => {
-    // ApprovalPage의 저장된 상태로 돌아가기
-    const savedApprovalState = sessionStorage.getItem('approval_page_state');
+  // Mutation for reject (삭제)
+  const rejectMutation = useMutation({
+    mutationFn: (selectedIds: (string | number)[]) => {
+      if (!id) return Promise.reject('Invalid ID');
+      return approvalDetailApi.reject(id, selectedIds);
+    },
+    onSuccess: () => {
+      // React Query 캐시 무효화하여 데이터 자동 refetch
+      queryClient.invalidateQueries({ queryKey: ['approvalDetail', id] });
+      console.log('선택된 항목들이 거부되었습니다.');
+    },
+    onError: (error) => {
+      console.error('거부 처리 실패:', error);
+    },
+  });
+
+  // Mutation for approve all
+  const approveMutation = useMutation({
+    mutationFn: () => {
+      if (!id) return Promise.reject('Invalid ID');
+      const allIds = data.map((item) => item.qst_id);
+      return approvalDetailApi.approve(id, allIds);
+    },
+    onSuccess: () => {
+      console.log('모든 항목이 승인되었습니다.');
+      handleBack();
+    },
+    onError: (error) => {
+      console.error('승인 처리 실패:', error);
+    },
+  });
+
+  const handleBack = useCallback(() => {
     console.log('🔍 DetailPage handleBack - savedApprovalState:', savedApprovalState);
 
     if (savedApprovalState) {
-      // ApprovalPage의 이전 상태(검색조건 포함)로 복원
       console.log(
         '🔍 DetailPage handleBack - navigating to saved approval state:',
         savedApprovalState,
       );
-      sessionStorage.removeItem('approval_page_state'); // 사용 후 정리
+      sessionStorage.removeItem('approval_page_state');
       navigate(savedApprovalState);
     } else {
-      // 저장된 상태가 없으면 기본 결재 요청 목록으로
       console.log('🔍 DetailPage handleBack - no saved state, going to default approval page');
       navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
     }
-  };
+  }, [savedApprovalState, navigate]);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setIsEditMode(true);
-  };
+  }, []);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditMode(false);
-  };
+  }, []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     showConfirm({
       title: CONFIRM_TITLES.APPROVAL_REQUEST,
       message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
       onConfirm: () => {
-        // 편집 모드 저장 처리
         console.log('편집 내용 저장 및 결재 요청');
         setIsEditMode(false);
         // TODO: 실제 저장 및 결재 요청 API 호출
       },
     });
+  }, [showConfirm]);
+
+  const handleDeleteConfirm = useCallback(
+    async (selectedIds: (string | number)[]) => {
+      rejectMutation.mutate(selectedIds);
+    },
+    [rejectMutation],
+  );
+
+  const handleApproveAll = useCallback(() => {
+    approveMutation.mutate();
+  }, [approveMutation]);
+
+  const selectFieldsConfig = {
+    service_nm: serviceOptions,
+    age_grp: ageGroupOptions,
+    under_17_yn: under17Options,
+    status: statusOptions,
+    qst_ctgr: questionCategoryOptions,
   };
 
-  const handleDeleteConfirm = async (selectedIds: (string | number)[]) => {
-    if (!id) return;
+  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
 
-    try {
-      await approvalDetailApi.reject(id, selectedIds);
-      console.log('선택된 항목들이 거부되었습니다:', selectedIds);
-      // 목록 새로고침 또는 상태 업데이트
-      const updatedData = data.filter((item) => !selectedIds.includes(item.qst_id));
-      setData(updatedData);
-    } catch (error) {
-      console.error('거부 처리 실패:', error);
-    }
-  };
+  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
-  const handleApproveAll = async () => {
-    if (!id) return;
-
-    try {
-      const allIds = data.map((item) => item.qst_id);
-      await approvalDetailApi.approve(id, allIds);
-      console.log('모든 항목이 승인되었습니다.');
-      handleBack();
-    } catch (error) {
-      console.error('승인 처리 실패:', error);
-    }
-  };
+  const handleValidate = (data: RecommendedQuestionItem) =>
+    RecommendedQuestionValidator.validateAll(data as any);
 
   return (
-    <EditableList<RecommendedQuestionItem>
-      rows={data}
-      columns={recommendedQuestionColumns}
-      rowIdGetter="qst_id"
-      onBack={handleBack}
-      onEdit={handleEdit}
-      isEditMode={isEditMode}
-      onSave={handleSave}
-      onCancel={handleCancelEdit}
-      onDeleteConfirm={handleDeleteConfirm}
-      readOnlyFields={['no', 'qst_id', 'updatedAt', 'registeredAt']}
-      selectFields={{
-        service_nm: serviceOptions,
-        age_grp: ageGroupOptions,
-        under_17_yn: under17Options,
-        status: statusOptions,
-        qst_ctgr: questionCategoryOptions,
-      }}
-      dateFields={['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt']}
-      dateFormat="YYYYMMDDHHmmss"
-      validator={(data) => RecommendedQuestionValidator.validateAll(data as any)}
-    />
+    <Box>
+      <PageHeader title="추천질문 결재 상세" />
+      <EditableList<RecommendedQuestionItem>
+        rows={data}
+        columns={recommendedQuestionColumns}
+        rowIdGetter="qst_id"
+        onBack={handleBack}
+        onEdit={handleEdit}
+        isEditMode={isEditMode}
+        onSave={handleSave}
+        onCancel={handleCancelEdit}
+        onDeleteConfirm={handleDeleteConfirm}
+        readOnlyFields={readOnlyFieldsConfig}
+        selectFields={selectFieldsConfig}
+        dateFields={dateFieldsConfig}
+        dateFormat="YYYYMMDDHHmmss"
+        validator={handleValidate}
+      />
+    </Box>
   );
 };
 export default RecommendedQuestionsApprovalDetailPage;

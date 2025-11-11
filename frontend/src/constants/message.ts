@@ -18,20 +18,32 @@ export const CONFIRM_TITLES = {
 // ========== 확인 다이얼로그 메시지 ==========
 export const CONFIRM_MESSAGES = {
   SAVE: '저장 하시겠습니까?',
-  DELETE: '삭제 하시겠습니까?',
+  SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
+  DELETE: '정말로 삭제하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
 } as const;
 
-// ========== 알림 메시지 ==========
-export const ALERT_MESSAGES = {
+// ========== 토스트 메시지 ==========
+export const TOAST_MESSAGES = {
   // 성공 메시지
+  UPDATE_REQUESTED: '수정을 요청하였습니다.',
+  DELETE_APPROVAL_REQUESTED: '결재를 요청하였습니다.',
   SAVE_SUCCESS: '저장되었습니다.',
   DELETE_SUCCESS: '삭제되었습니다.',
 
   // 실패 메시지
+  UPDATE_FAILED: '수정을 실패하였습니다.',
   SAVE_FAILED: '저장에 실패했습니다.',
   DELETE_FAILED: '삭제에 실패했습니다.',
+} as const;
 
+// ========== 알림 다이얼로그 제목 ==========
+export const ALERT_TITLES = {
+  VALIDATION_CHECK: '입력값 확인',
+} as const;
+
+// ========== 알림 메시지 ==========
+export const ALERT_MESSAGES = {
   // 경고 메시지
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
 

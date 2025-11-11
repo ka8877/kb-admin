@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GridColDef, GridPaginationModel, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
@@ -91,30 +91,45 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
 
-  const handleSearch = (p: { field?: string; query: string }) => {
-    if (enableStatePreservation) {
-      updateListState({
-        searchField: p.field,
-        searchQuery: p.query,
-        page: 0, // 검색 시 첫 페이지로
-      });
-    } else {
-      setLocalSearchField(p.field);
-      setLocalSearchQuery(p.query);
-      setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
-    }
-  };
+  const handleSearch = useCallback(
+    (p: { field?: string; query: string }) => {
+      if (enableStatePreservation) {
+        updateListState({
+          searchField: p.field,
+          searchQuery: p.query,
+          page: 0, // 검색 시 첫 페이지로
+        });
+      } else {
+        setLocalSearchField(p.field);
+        setLocalSearchQuery(p.query);
+        setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+      }
+    },
+    [enableStatePreservation, updateListState],
+  );
 
-  const handlePaginationChange = (model: GridPaginationModel) => {
-    if (enableStatePreservation) {
-      updateListState({
-        page: model.page,
-        pageSize: model.pageSize,
-      });
-    } else {
-      setLocalPaginationModel(model);
-    }
-  };
+  const handlePaginationChange = useCallback(
+    (model: GridPaginationModel) => {
+      if (enableStatePreservation) {
+        updateListState({
+          page: model.page,
+          pageSize: model.pageSize,
+        });
+      } else {
+        setLocalPaginationModel(model);
+      }
+    },
+    [enableStatePreservation, updateListState],
+  );
+
+  const handleRowClick = useCallback(
+    (params: any) => {
+      if (onRowClick) {
+        onRowClick({ id: params.id, row: params.row });
+      }
+    },
+    [onRowClick],
+  );
 
   return (
     <Box>
@@ -141,9 +156,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           disableRowSelectionOnClick
           density="standard"
           autoHeight={false}
-          onRowClick={
-            onRowClick ? (params) => onRowClick({ id: params.id, row: params.row }) : undefined
-          }
+          onRowClick={onRowClick ? handleRowClick : undefined}
         />
       </Box>
     </Box>

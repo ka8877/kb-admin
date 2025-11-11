@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   GridColDef,
   GridPaginationModel,
@@ -172,19 +172,22 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     }
   }, [fetcher, rows]);
 
-  const handlePaginationChange = (model: GridPaginationModel) => {
+  const handlePaginationChange = useCallback((model: GridPaginationModel) => {
     setPaginationModel(model);
-  };
+  }, []);
 
   // 행 업데이트 처리 (셀 편집 시)
-  const handleProcessRowUpdate = (newRow: T, oldRow: T) => {
-    const updatedData = data.map((row) => (getRowId(row) === getRowId(newRow) ? newRow : row));
-    setData(updatedData);
-    return newRow;
-  };
+  const handleProcessRowUpdate = useCallback(
+    (newRow: T, oldRow: T) => {
+      const updatedData = data.map((row) => (getRowId(row) === getRowId(newRow) ? newRow : row));
+      setData(updatedData);
+      return newRow;
+    },
+    [data, getRowId],
+  );
 
   // Validation을 포함한 저장 처리
-  const handleSaveClick = () => {
+  const handleSaveClick = useCallback(() => {
     console.log('🔍 handleSaveClick 호출됨');
     console.log('🔍 validator 존재:', !!validator);
     console.log('🔍 data.length:', data.length);
@@ -225,7 +228,35 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       console.log('🔍 onSave 호출');
       onSave();
     }
-  };
+  }, [validator, data, columns, showAlert, onSave]);
+
+  const handleRowClick = useCallback(
+    (params: any) => {
+      if (onRowClick) {
+        onRowClick({ id: params.id, row: params.row });
+      }
+    },
+    [onRowClick],
+  );
+
+  const handleDeleteClick = useCallback(() => {
+    if (onDeleteConfirm && selectionModel.length > 0) {
+      onDeleteConfirm(selectionModel);
+      setSelectionModel([]);
+    }
+  }, [onDeleteConfirm, selectionModel]);
+
+  // selectedRowNumbers 계산 (useMemo로 최적화)
+  const selectedRowNumbers = useMemo(
+    () =>
+      selectionModel
+        .map((id) => {
+          const row = data.find((r) => getRowId(r) === id);
+          return row ? (row as any).no : null;
+        })
+        .filter((num): num is number => num !== null),
+    [selectionModel, data, getRowId],
+  );
 
   return (
     <Box>
@@ -248,9 +279,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           density="standard"
           autoHeight={false}
           processRowUpdate={handleProcessRowUpdate}
-          onRowClick={
-            onRowClick ? (params) => onRowClick({ id: params.id, row: params.row }) : undefined
-          }
+          onRowClick={onRowClick ? handleRowClick : undefined}
         />
       </Box>
 
@@ -264,18 +293,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           isLoading={false}
           showDelete={!!onDeleteConfirm}
           selectedCount={selectionModel.length}
-          selectedRowNumbers={selectionModel
-            .map((id) => {
-              const row = data.find((r) => getRowId(r) === id);
-              return row ? (row as any).no : null;
-            })
-            .filter((num): num is number => num !== null)}
-          onDelete={() => {
-            if (onDeleteConfirm && selectionModel.length > 0) {
-              onDeleteConfirm(selectionModel);
-              setSelectionModel([]);
-            }
-          }}
+          selectedRowNumbers={selectedRowNumbers}
+          onDelete={handleDeleteClick}
         />
       )}
     </Box>

@@ -1,5 +1,5 @@
 // frontend/src/components/common/detail/DataDetail.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import type { GridColDef, GridValidRowModel, GridRenderEditCellParams } from '@mui/x-data-grid';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
@@ -13,6 +13,12 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { formatDateForDisplay, formatDateForStorage } from '../../../utils/dateUtils';
+import {
+  CONFIRM_TITLES,
+  CONFIRM_MESSAGES,
+  TOAST_MESSAGES,
+  ALERT_TITLES,
+} from '../../../constants/message';
 
 export type SelectFieldOption = {
   label: string;
@@ -65,7 +71,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   dateFormat = 'YYYYMMDDHHmmss',
   validator,
 }: DataDetailProps<T>): JSX.Element => {
-  const getRowId = defaultGetRowId<T>(rowIdGetter);
+  const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
   const { showConfirm } = useConfirmDialog();
   const { showAlert } = useAlertDialog();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -73,11 +79,11 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   const dataGridRef = useGridApiRef();
 
   // 수정 모드로 전환
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setIsEditMode(true);
     setEditedData(data);
     // onEdit는 화면 이동용이므로 호출하지 않음
-  };
+  }, [data]);
 
   // 수정 모드 진입 시에만 첫 번째 편집 가능한 셀에 포커싱 및 편집 모드 진입
   const [hasInitialFocus, setHasInitialFocus] = useState(false);
@@ -115,14 +121,14 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   }, [isEditMode, hasInitialFocus, editedData, columns, readOnlyFields, getRowId]);
 
   // 수정 취소
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditMode(false);
     setEditedData(data);
     setHasInitialFocus(false);
-  };
+  }, [data]);
 
   // 저장 확인
-  const handleSaveClick = () => {
+  const handleSaveClick = useCallback(() => {
     // Validation 체크 (컬럼 순서대로 검증, 첫 번째 에러에서 중단)
     if (validator && editedData) {
       const validationResults = validator(editedData);
@@ -136,7 +142,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           // 첫 번째 에러 발견 시 즉시 alert 표시하고 return
           const errorMessage = `1행: ${result.message}`;
           showAlert({
-            title: '입력값 확인',
+            title: ALERT_TITLES.VALIDATION_CHECK,
             message: errorMessage,
             severity: 'error',
           });
@@ -146,101 +152,113 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     }
 
     showConfirm({
-      title: '저장 확인',
-      message: '변경사항을 저장하시겠습니까?',
+      title: CONFIRM_TITLES.SAVE,
+      message: CONFIRM_MESSAGES.SAVE_CHANGES,
       onConfirm: async () => {
         if (editedData && onSave) {
           try {
             await onSave(editedData);
-            toast.success('수정을 요청하였습니다.');
+            toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
             setIsEditMode(false);
             setHasInitialFocus(false);
           } catch (error) {
-            toast.error('수정을 실패하였습니다.');
+            toast.error(TOAST_MESSAGES.UPDATE_FAILED);
             console.error('저장 실패:', error);
           }
         }
       },
     });
-  };
+  }, [validator, editedData, columns, showAlert, showConfirm, onSave]);
 
   // 컬럼을 수정 모드에 맞게 변환
-  const processedColumns = columns.map((col) => {
-    const isSelectField = selectFields && selectFields[col.field];
-    const isDateField = dateFields && dateFields.includes(col.field);
+  const processedColumns = useMemo(
+    () =>
+      columns.map((col) => {
+        const isSelectField = selectFields && selectFields[col.field];
+        const isDateField = dateFields && dateFields.includes(col.field);
 
-    // 날짜 필드인 경우
-    if (isDateField) {
-      return {
-        ...col,
-        editable: isEditMode && !readOnlyFields.includes(col.field),
-        valueFormatter: (params: any) => {
-          return formatDateForDisplay(params.value, dateFormat);
-        },
-        renderEditCell: (params: GridRenderEditCellParams) => {
-          const handleDateChange = (newValue: dayjs.Dayjs | null) => {
-            const dateObj = newValue ? newValue.toDate() : null;
-            const formattedValue = formatDateForStorage(dateObj, dateFormat);
-            params.api.setEditCellValue({
-              id: params.id,
-              field: params.field,
-              value: formattedValue,
-            });
+        // 날짜 필드인 경우
+        if (isDateField) {
+          return {
+            ...col,
+            editable: isEditMode && !readOnlyFields.includes(col.field),
+            valueFormatter: (params: any) => {
+              return formatDateForDisplay(params.value, dateFormat);
+            },
+            renderEditCell: (params: GridRenderEditCellParams) => {
+              const handleDateChange = (newValue: dayjs.Dayjs | null) => {
+                const dateObj = newValue ? newValue.toDate() : null;
+                const formattedValue = formatDateForStorage(dateObj, dateFormat);
+                params.api.setEditCellValue({
+                  id: params.id,
+                  field: params.field,
+                  value: formattedValue,
+                });
+              };
+
+              const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
+
+              return (
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DateTimePicker
+                    value={currentValue}
+                    onChange={handleDateChange}
+                    format="YYYY-MM-DD HH:mm"
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              );
+            },
           };
+        }
 
-          const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
+        // 셀렉트 필드인 경우 (읽기/수정 모드 모두)
+        if (isSelectField) {
+          return {
+            ...col,
+            type: 'singleSelect',
+            valueOptions: isSelectField.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            })),
+            editable: isEditMode && !readOnlyFields.includes(col.field),
+          };
+        }
 
-          return (
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DateTimePicker
-                value={currentValue}
-                onChange={handleDateChange}
-                format="YYYY-MM-DD HH:mm"
-                slotProps={{
-                  textField: {
-                    size: 'small',
-                    fullWidth: true,
-                  },
-                }}
-              />
-            </LocalizationProvider>
-          );
-        },
-      };
-    }
+        // 일반 필드
+        if (isEditMode && !readOnlyFields.includes(col.field)) {
+          return {
+            ...col,
+            editable: true,
+          };
+        }
 
-    // 셀렉트 필드인 경우 (읽기/수정 모드 모두)
-    if (isSelectField) {
-      return {
-        ...col,
-        type: 'singleSelect',
-        valueOptions: isSelectField.map((opt) => ({
-          value: opt.value,
-          label: opt.label,
-        })),
-        editable: isEditMode && !readOnlyFields.includes(col.field),
-      };
-    }
-
-    // 일반 필드
-    if (isEditMode && !readOnlyFields.includes(col.field)) {
-      return {
-        ...col,
-        editable: true,
-      };
-    }
-
-    return {
-      ...col,
-      editable: false,
-    };
-  });
+        return {
+          ...col,
+          editable: false,
+        };
+      }),
+    [columns, selectFields, dateFields, isEditMode, readOnlyFields, dateFormat],
+  );
 
   // 행 업데이트 처리
-  const processRowUpdate = (newRow: T, oldRow: T) => {
+  const processRowUpdate = useCallback((newRow: T, oldRow: T) => {
     setEditedData(newRow);
     return newRow;
-  };
+  }, []);
+
+  // DataGrid rows 메모이제이션
+  const rows = useMemo(() => (editedData ? [editedData] : data ? [data] : []), [editedData, data]);
+
+  // 에러 핸들러 메모이제이션
+  const handleProcessRowUpdateError = useCallback((error: Error) => {
+    console.error('Row update error:', error);
+  }, []);
 
   return (
     <Box>
@@ -258,7 +276,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
       <Box sx={{ width: '100%' }}>
         <DataGrid
           apiRef={dataGridRef}
-          rows={editedData ? [editedData] : data ? [data] : []}
+          rows={rows}
           columns={processedColumns}
           getRowId={getRowId}
           hideFooter
@@ -267,9 +285,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           autoHeight
           loading={isLoading}
           processRowUpdate={processRowUpdate}
-          onProcessRowUpdateError={(error) => {
-            console.error('Row update error:', error);
-          }}
+          onProcessRowUpdateError={handleProcessRowUpdateError}
           sx={{
             '& .MuiDataGrid-cell': {
               whiteSpace: 'normal',
