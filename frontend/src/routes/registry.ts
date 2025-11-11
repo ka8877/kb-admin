@@ -1,23 +1,45 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import HomePage from '../pages';
-import DashboardPage from '../pages/dashboard';
-import ExamplePage from '../pages/example';
-
-import RecommendedQuestionsPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsPage';
-import RecommendedQuestionDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage';
-import ServiceNamePage from '../pages/management/service-name/ServiceNamePage';
-import ServiceNameEditPage from '../pages/management/service-name/ServiceNameEditPage';
-import QuestionsCategoryPage from '../pages/management/questions-category/QuestionsCategoryPage';
-import QuestionsCategoryEditPage from '../pages/management/questions-category/QuestionsCategoryEditPage';
-import AgeGroupPage from '../pages/management/age-group/AgeGroupPage';
-import AgeGroupEditPage from '../pages/management/age-group/AgeGroupEditPage';
-import AdminAuthPage from '../pages/management/admin-auth/AdminAuthPage';
-import AdminAuthEditPage from '../pages/management/admin-auth/AdminAuthEditPage';
-import RecommendedQuestionsCreatePage from '../pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage';
-import RecommendedQuestionsApprovalPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage';
-import RecommendedQuestionsApprovalDetailPage from '../pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage';
 import { ROUTES } from './menu';
+
+const HomePage = React.lazy(() => import('@pages/index'));
+const DashboardPage = React.lazy(() => import('@pages/dashboard'));
+const ExamplePage = React.lazy(() => import('@pages/example'));
+
+// === 데이터 등록/노출 - 추천 질문 ===
+const RecommendedQuestionsPage = React.lazy(
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsPage'),
+);
+const RecommendedQuestionDetailPage = React.lazy(
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage'),
+);
+const RecommendedQuestionsCreatePage = React.lazy(
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage'),
+);
+const RecommendedQuestionsApprovalPage = React.lazy(
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsApprovalPage'),
+);
+const RecommendedQuestionsApprovalDetailPage = React.lazy(
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage'),
+);
+
+// === 관리 ===
+const ServiceNamePage = React.lazy(() => import('@pages/management/service-name/ServiceNamePage'));
+const ServiceNameEditPage = React.lazy(
+  () => import('@pages/management/service-name/ServiceNameEditPage'),
+);
+const QuestionsCategoryPage = React.lazy(
+  () => import('@pages/management/questions-category/QuestionsCategoryPage'),
+);
+const QuestionsCategoryEditPage = React.lazy(
+  () => import('@pages/management/questions-category/QuestionsCategoryEditPage'),
+);
+const AgeGroupPage = React.lazy(() => import('@pages/management/age-group/AgeGroupPage'));
+const AgeGroupEditPage = React.lazy(() => import('@pages/management/age-group/AgeGroupEditPage'));
+const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/AdminAuthPage'));
+const AdminAuthEditPage = React.lazy(
+  () => import('@pages/management/admin-auth/AdminAuthEditPage'),
+);
 
 export type AppRoute = {
   path: string;
