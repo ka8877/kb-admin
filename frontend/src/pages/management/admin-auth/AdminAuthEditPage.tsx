@@ -3,6 +3,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
 import { GridColDef, useGridApiRef, GridRenderEditCellParams } from '@mui/x-data-grid';
+import type { RowItem } from './types';
+import { AdminAuthValidator } from './validation/adminAuthValidation';
+import EmployeeSearchCell from './components/EmployeeSearchCell';
 import PageHeader from '@/components/common/PageHeader';
 import AddDataButton from '@/components/common/actions/AddDataButton';
 import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
@@ -12,16 +15,14 @@ import CategoryList from '@/components/common/list/CategoryList';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { adminAuthMockDb } from '@/mocks/adminAuthDb';
-import { AdminAuthValidator } from './validation/adminAuthValidation';
-import EmployeeSearchCell from './components/EmployeeSearchCell';
-import type { RowItem } from './types';
+import { ALERT_MESSAGES } from '@/constants/message';
+
+type LocalRow = RowItem & { isNew?: boolean };
 
 const AdminAuthEditPage: React.FC = () => {
   const navigate = useNavigate();
   const apiRef = useGridApiRef();
   const { showAlert } = useAlertDialog();
-
-  type LocalRow = RowItem & { isNew?: boolean };
 
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -225,12 +226,9 @@ const AdminAuthEditPage: React.FC = () => {
           const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
           if (hasControlChar) {
-            await showAlert({
-              message:
-                '알 수 없는 제어 문자가 포함되어 있습니다. 입력 문자 점검 후 다시 시도해주세요.',
-            });
+            await showAlert({ message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR });
           } else if (hasMissingField) {
-            await showAlert({ message: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.' });
+            await showAlert({ message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED });
           } else {
             await showAlert({ message: validationErrors.join('\n') });
           }
@@ -265,7 +263,7 @@ const AdminAuthEditPage: React.FC = () => {
       navigate(ROUTES.ADMIN_AUTH);
     } catch (error) {
       console.error('Save error:', error);
-      await showAlert({ message: '에러가 발생하였습니다. 다시 시도해주세요.' });
+      await showAlert({ message: ALERT_MESSAGES.ERROR_OCCURRED });
     } finally {
       setLoading(false);
     }

@@ -47,6 +47,14 @@ export const ALERT_MESSAGES = {
   // 경고 메시지
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
 
+  // Validation 관련
+  VALIDATION_MISSING_REQUIRED: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.',
+  VALIDATION_CONTROL_CHAR:
+    '알 수 없는 제어 문자가 포함되어 있습니다. 입력 문자 점검 후 다시 시도해주세요.',
+
+  // 에러 메시지
+  ERROR_OCCURRED: '에러가 발생하였습니다. 다시 시도해주세요.',
+
   // 파일 업로드 관련
   FILE_VALIDATION_COMPLETE: '파일 검증 완료',
   FILE_UPLOAD_SUCCESS: '등록이 완료되었습니다',

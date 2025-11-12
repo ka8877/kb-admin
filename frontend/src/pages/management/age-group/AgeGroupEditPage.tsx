@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
+import type { RowItem } from './types';
+import { AgeGroupValidator } from './validation';
 import PageHeader from '@/components/common/PageHeader';
 import AddDataButton from '@/components/common/actions/AddDataButton';
 import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
@@ -12,16 +14,16 @@ import { ManagedCategoryList } from '@/components/common/list/CategoryList';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { ageGroupMockDb } from '@/mocks/ageGroupDb';
-import { AgeGroupValidator } from './validation';
-import type { RowItem } from './types';
+import { ALERT_MESSAGES } from '@/constants/message';
+
+type LocalRow = RowItem & { isNew?: boolean };
+type CategoryRowGeneric = Record<string, unknown>;
 
 const AgeGroupEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiRef = useGridApiRef();
   const { showAlert } = useAlertDialog();
-
-  type LocalRow = RowItem & { isNew?: boolean };
 
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -198,12 +200,9 @@ const AgeGroupEditPage: React.FC = () => {
           const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
           if (hasControlChar) {
-            await showAlert({
-              message:
-                '알 수 없는 제어 문자가 포함되어 있습니다. 입력 문자 점검 후 다시 시도해주세요.',
-            });
+            await showAlert({ message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR });
           } else if (hasMissingField) {
-            await showAlert({ message: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.' });
+            await showAlert({ message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED });
           } else {
             await showAlert({ message: validationErrors.join('\n') });
           }
@@ -262,7 +261,7 @@ const AgeGroupEditPage: React.FC = () => {
       navigate(ROUTES.AGE_GROUP);
     } catch (error) {
       console.error('Save error:', error);
-      await showAlert({ message: '에러가 발생하였습니다. 다시 시도해주세요.' });
+      await showAlert({ message: ALERT_MESSAGES.ERROR_OCCURRED });
       setLoading(false);
     }
   }, [rows, navigate, showAlert]);
@@ -339,16 +338,25 @@ const AgeGroupEditPage: React.FC = () => {
 
       <ManagedCategoryList
         apiRef={apiRef}
-        rows={rows}
-        setRows={setRows}
-        getRowId={(r: LocalRow) => r.no}
-        columns={columns}
+        rows={rows as CategoryRowGeneric[]}
+        setRows={
+          setRows as (
+            updater: CategoryRowGeneric[] | ((prev: CategoryRowGeneric[]) => CategoryRowGeneric[]),
+          ) => void
+        }
+        getRowId={(r) => (r as LocalRow).no}
+        columns={columns as GridColDef<CategoryRowGeneric>[]}
         loading={loading}
-        processRowUpdate={processRowUpdate}
+        processRowUpdate={
+          processRowUpdate as unknown as (
+            newRow: CategoryRowGeneric,
+            oldRow: CategoryRowGeneric,
+          ) => CategoryRowGeneric | Promise<CategoryRowGeneric>
+        }
         selectionMode={selectionMode}
         selectionModel={selectionModel}
         onSelectionModelChange={handleSelectionModelChange}
-        onDragOrderChange={handleDragOrderChange}
+        onDragOrderChange={handleDragOrderChange as (newRows: CategoryRowGeneric[]) => void}
       />
 
       <DeleteConfirmBar
