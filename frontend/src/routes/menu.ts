@@ -9,8 +9,6 @@ export type MenuItem = {
 export const ROUTES = {
   // === 기본 페이지 ===
   HOME: '/',
-  DASHBOARD: '/dashboard',
-  EXAMPLE: '/example',
 
   // === 데이터 등록/노출 ===
   DATA_REG: '/data-reg',
@@ -34,10 +32,6 @@ export const ROUTES = {
 } as const;
 
 export const frontMenus: MenuItem[] = [
-  {
-    label: '대시보드',
-    path: ROUTES.DASHBOARD,
-  },
   {
     label: '데이터 등록/노출',
     path: ROUTES.DATA_REG,
@@ -79,9 +73,5 @@ export const frontMenus: MenuItem[] = [
         path: ROUTES.ADMIN_AUTH,
       },
     ],
-  },
-  {
-    label: '예제',
-    path: ROUTES.EXAMPLE,
   },
 ];

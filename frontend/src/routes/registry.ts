@@ -3,8 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { ROUTES } from './menu';
 
 const HomePage = React.lazy(() => import('@pages/index'));
-const DashboardPage = React.lazy(() => import('@pages/dashboard'));
-const ExamplePage = React.lazy(() => import('@pages/example'));
 
 // === 데이터 등록/노출 - 추천 질문 ===
 const RecommendedQuestionsPage = React.lazy(
@@ -50,8 +48,6 @@ export type AppRoute = {
 export const frontRoutes: AppRoute[] = [
   // === 기본 페이지 ===
   { path: ROUTES.HOME, Component: HomePage },
-  { path: ROUTES.DASHBOARD, Component: DashboardPage },
-  { path: ROUTES.EXAMPLE, Component: ExamplePage },
 
   // === 데이터 등록/노출 ===
   {
