@@ -2,19 +2,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
-import PageHeader from '../../../components/common/PageHeader';
-import AddDataButton from '../../../components/common/actions/AddDataButton';
-import SelectionDeleteButton from '../../../components/common/actions/SelectionDeleteButton';
-import { DeleteConfirmBar } from '../../../components/common/actions/ListActions';
-import MediumButton from '../../../components/common/button/MediumButton';
 import { GridColDef, useGridApiRef, GridRenderEditCellParams } from '@mui/x-data-grid';
-import CategoryList from '../../../components/common/list/CategoryList';
-import { adminAuthMockDb } from '../../../mocks/adminAuthDb';
-import type { RowItem } from './types';
-import { ROUTES } from '../../../routes/menu';
-import EmployeeSearchCell from './components/EmployeeSearchCell';
+import PageHeader from '@/components/common/PageHeader';
+import AddDataButton from '@/components/common/actions/AddDataButton';
+import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
+import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
+import MediumButton from '@/components/common/button/MediumButton';
+import CategoryList from '@/components/common/list/CategoryList';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { ROUTES } from '@/routes/menu';
+import { adminAuthMockDb } from '@/mocks/adminAuthDb';
 import { AdminAuthValidator } from './validation/adminAuthValidation';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import EmployeeSearchCell from './components/EmployeeSearchCell';
+import type { RowItem } from './types';
 
 const AdminAuthEditPage: React.FC = () => {
   const navigate = useNavigate();

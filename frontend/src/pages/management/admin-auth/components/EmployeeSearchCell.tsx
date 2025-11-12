@@ -1,7 +1,7 @@
 // frontend/src/pages/management/admin-auth/components/EmployeeSearchCell.tsx
 import React, { useState, useEffect } from 'react';
 import { Autocomplete, TextField, Box, Typography } from '@mui/material';
-import { employeeMockDb, EmployeeInfo } from '../../../../mocks/employeeDb';
+import { employeeMockDb, EmployeeInfo } from '@/mocks/employeeDb';
 
 interface EmployeeSearchCellProps {
   value: string;

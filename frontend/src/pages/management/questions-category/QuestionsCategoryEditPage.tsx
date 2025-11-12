@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
-import PageHeader from '../../../components/common/PageHeader';
-import AddDataButton from '../../../components/common/actions/AddDataButton';
-import SelectionDeleteButton from '../../../components/common/actions/SelectionDeleteButton';
-import { DeleteConfirmBar } from '../../../components/common/actions/ListActions';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import CreateDataActions from '../../../components/common/actions/CreateDataActions';
 import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
-import { ManagedCategoryList } from '../../../components/common/list/CategoryList';
-import { questionsCategoryMockDb } from '../../../mocks/questionsCategoryDb';
-import type { RowItem } from './types';
-import { ROUTES } from '../../../routes/menu';
+import PageHeader from '@/components/common/PageHeader';
+import AddDataButton from '@/components/common/actions/AddDataButton';
+import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
+import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
+import CreateDataActions from '@/components/common/actions/CreateDataActions';
+import { ManagedCategoryList } from '@/components/common/list/CategoryList';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { ROUTES } from '@/routes/menu';
+import { questionsCategoryMockDb } from '@/mocks/questionsCategoryDb';
 import { QuestionsCategoryValidator } from './validation';
-import { useAlertDialog } from '../../../hooks/useAlertDialog';
+import type { RowItem } from './types';
 
 const QuestionsCategoryEditPage: React.FC = () => {
   const navigate = useNavigate();

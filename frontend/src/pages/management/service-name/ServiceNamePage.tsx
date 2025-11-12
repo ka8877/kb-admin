@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
-import PageHeader from '../../../components/common/PageHeader';
-import EditableList from '../../../components/common/list/EditableList';
-
+import PageHeader from '@/components/common/PageHeader';
+import EditableList from '@/components/common/list/EditableList';
+import { ROUTES } from '@/routes/menu';
+import { serviceNameMockDb } from '@/mocks/serviceNameDb';
 import { listColumns } from './components/columns';
-import { ROUTES } from '../../../routes/menu';
-import { serviceNameMockDb } from '../../../mocks/serviceNameDb';
 import type { RowItem } from './types';
 
 const ServiceNamePage: React.FC = () => {

@@ -2,14 +2,14 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack } from '@mui/material';
-import PageHeader from '../../../components/common/PageHeader';
-import EditableList from '../../../components/common/list/EditableList';
-import MediumButton from '../../../components/common/button/MediumButton';
-import { listColumns } from './components/columns';
-import { ROUTES } from '../../../routes/menu';
-import { adminAuthMockDb } from '../../../mocks/adminAuthDb';
-import type { RowItem } from './types';
 import ExcelJS from 'exceljs';
+import PageHeader from '@/components/common/PageHeader';
+import EditableList from '@/components/common/list/EditableList';
+import MediumButton from '@/components/common/button/MediumButton';
+import { ROUTES } from '@/routes/menu';
+import { adminAuthMockDb } from '@/mocks/adminAuthDb';
+import { listColumns } from './components/columns';
+import type { RowItem } from './types';
 
 const AdminAuthPage: React.FC = () => {
   const navigate = useNavigate();
