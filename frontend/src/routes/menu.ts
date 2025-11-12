@@ -37,12 +37,18 @@ export const frontMenus: MenuItem[] = [
     path: ROUTES.DATA_REG,
     children: [
       {
-        label: '추천 질문',
-        path: ROUTES.RECOMMENDED_QUESTIONS,
-      },
-      {
-        label: '앱스킴',
-        path: ROUTES.APP_SKIM,
+        label: '데이터 등록',
+        path: ROUTES.DATA_REG,
+        children: [
+          {
+            label: '추천 질문',
+            path: ROUTES.RECOMMENDED_QUESTIONS,
+          },
+          {
+            label: '앱스킴',
+            path: ROUTES.APP_SKIM,
+          },
+        ],
       },
     ],
   },

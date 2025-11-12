@@ -100,7 +100,7 @@ const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
       {/* Push below AppBar */}
       <Toolbar />
       <Box sx={{ overflow: 'auto', px: 2, py: 2 }}>
-        {/* Category Title */}
+        {/* Category Title (1depth) */}
         {shownTop && (
           <Typography
             variant="caption"
@@ -119,7 +119,7 @@ const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
           </Typography>
         )}
 
-        {/* Menu Items */}
+        {/* Menu Items (2depth with expand/collapse) */}
         <List disablePadding>
           {twoDepthItems.map((item) => {
             const selected = pathname === item.path || pathname.startsWith(item.path + '/');
