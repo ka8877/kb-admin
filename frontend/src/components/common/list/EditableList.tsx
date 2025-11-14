@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   GridColDef,
   GridPaginationModel,
@@ -7,6 +7,9 @@ import type {
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
@@ -72,6 +75,68 @@ const defaultGetRowId =
     return row[getter as keyof T] as string | number;
   };
 
+type SelectEditCellProps = {
+  params: GridRenderEditCellParams;
+  options: SelectFieldOption[];
+};
+
+const SelectEditCell: React.FC<SelectEditCellProps> = ({ params, options }) => {
+  const [open, setOpen] = useState(true);
+  const committedRef = useRef(false);
+
+  const handleChange = useCallback(
+    async (event: SelectChangeEvent<string>) => {
+      setOpen(false);
+      committedRef.current = true;
+      await params.api.setEditCellValue({
+        id: params.id,
+        field: params.field,
+        value: event.target.value,
+      });
+      params.api.stopCellEditMode({
+        id: params.id,
+        field: params.field,
+      });
+    },
+    [params],
+  );
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    params.api.stopCellEditMode({
+      id: params.id,
+      field: params.field,
+      ignoreModifications: !committedRef.current,
+    });
+    committedRef.current = false;
+  }, [params]);
+
+  return (
+    <Select
+      value={params.value ?? ''}
+      onChange={handleChange}
+      onClose={handleClose}
+      open={open}
+      fullWidth
+      autoFocus
+      size="small"
+      MenuProps={{
+        PaperProps: {
+          sx: {
+            maxHeight: 240,
+          },
+        },
+      }}
+    >
+      {options.map((option) => (
+        <MenuItem key={option.value} value={option.value}>
+          {option.label}
+        </MenuItem>
+      ))}
+    </Select>
+  );
+};
+
 const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
   fetcher,
@@ -106,6 +171,13 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   const { showAlert } = useAlertDialog();
 
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
+
+  const renderSelectEditCell = useCallback(
+    (params: GridRenderEditCellParams, options: SelectFieldOption[]) => {
+      return <SelectEditCell params={params} options={options} />;
+    },
+    [],
+  );
 
   // 편집 모드에 따라 컬럼 처리 (selectFields, dateFields 포함)
   const processedColumns = useMemo(() => {
@@ -163,6 +235,11 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
             return row ? getDynamicSelectOptions(row) : [];
           },
           editable: isEditMode && !readOnlyFields.includes(col.field),
+          renderEditCell: (params: GridRenderEditCellParams) => {
+            const row = data.find((r) => getRowId(r) === params.id);
+            const options = row ? getDynamicSelectOptions(row) : [];
+            return renderSelectEditCell(params, options);
+          },
         };
       }
 
@@ -176,6 +253,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
             label: opt.label,
           })),
           editable: isEditMode && !readOnlyFields.includes(col.field),
+          renderEditCell: (params: GridRenderEditCellParams) =>
+            renderSelectEditCell(params, isSelectField),
         };
       }
 
@@ -194,6 +273,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     dateFormat,
     getDynamicSelectOptions,
     data,
+    renderSelectEditCell,
+    getRowId,
   ]);
 
   useEffect(() => {
@@ -326,7 +407,19 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       {/* 상단 버튼들 - 일반 모드일 때만 */}
       {!isEditMode && <DetailNavigationActions onBack={onBack} onEdit={onEdit} />}
 
-      <Box sx={{ height: 420, width: '100%' }}>
+      <Box
+        sx={{
+          height: 420,
+          width: '100%',
+          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#1976d2 !important',
+          },
+          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+            outline: '2px solid #1976d2',
+            outlineOffset: '-2px',
+          },
+        }}
+      >
         <DataGrid
           key={JSON.stringify(data)}
           rows={data}

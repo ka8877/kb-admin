@@ -11,12 +11,15 @@ import {
   Typography,
   FormHelperText,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import type { RowItem } from './types';
 import { listColumns } from './components/columns';
 import { CODE_TYPE_LABELS } from './components/columns';
 import EditableList from '@/components/common/list/EditableList';
 import DetailNavigationActions from '@/components/common/actions/DetailNavigationActions';
 import PageHeader from '@/components/common/PageHeader';
+import MediumButton from '@/components/common/button/MediumButton';
+import CodeTypeManagementDialog from './components/CodeTypeManagementDialog';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
 
@@ -25,6 +28,7 @@ const CommonCodePage: React.FC = () => {
   const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>('');
   const [showError, setShowError] = useState(false);
   const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // 코드 타입 옵션 로드
   React.useEffect(() => {
@@ -64,11 +68,31 @@ const CommonCodePage: React.FC = () => {
     setShowError(false);
   }, []);
 
+  const handleAddCodeType = useCallback(() => {
+    setDialogOpen(true);
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    setDialogOpen(false);
+  }, []);
+
+  const handleSaveCodeTypes = useCallback(async (newCodeTypes: CodeTypeOption[]) => {
+    try {
+      const savedCodeTypes = await commonCodeMockDb.saveCodeTypes(newCodeTypes);
+      setCodeTypeOptions(savedCodeTypes);
+    } catch (error) {
+      console.error('Failed to save code types:', error);
+    }
+  }, []);
+
   return (
     <Box>
       <PageHeader title="공통 코드 관리" />
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center">
+          <MediumButton variant="outlined" startIcon={<AddIcon />} onClick={handleAddCodeType}>
+            코드 타입 추가
+          </MediumButton>
           <FormControl size="small" sx={{ minWidth: 200 }} error={showError}>
             <InputLabel id="code-type-select-label">코드 타입</InputLabel>
             <Select
@@ -126,6 +150,13 @@ const CommonCodePage: React.FC = () => {
           />
         </Box>
       )}
+
+      <CodeTypeManagementDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        codeTypes={codeTypeOptions}
+        onSave={handleSaveCodeTypes}
+      />
     </Box>
   );
 };
