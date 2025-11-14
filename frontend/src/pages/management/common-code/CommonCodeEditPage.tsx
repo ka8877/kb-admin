@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Stack } from '@mui/material';
+import {
+  Box,
+  Stack,
+  FormControl,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  InputLabel,
+  Typography,
+} from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
 import type { RowItem } from './types';
@@ -14,7 +23,7 @@ import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
-import { commonCodeMockDb } from '@/mocks/commonCodeDb';
+import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
 import { ALERT_MESSAGES } from '@/constants/message';
 
 type LocalRow = RowItem & { isNew?: boolean };
@@ -26,14 +35,39 @@ const CommonCodeEditPage: React.FC = () => {
   const apiRef = useGridApiRef();
   const { showAlert } = useAlertDialog();
 
+  // location.state에서 codeType 가져오기
+  const initialCodeType = (location.state as { codeType?: CodeType })?.codeType || '';
+
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
+  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>(initialCodeType);
+  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
 
   const modifiedRef = useRef<Set<number>>(new Set());
   const orderModifiedRef = useRef(false);
   const hasFocusedRef = useRef(false);
+
+  // 코드 타입 옵션 로드
+  React.useEffect(() => {
+    commonCodeMockDb.getCodeTypes().then((options) => {
+      setCodeTypeOptions(options);
+    });
+  }, []);
+
+  // 필터링된 rows (코드 타입별로 NO 재계산)
+  const filteredRows = useMemo(() => {
+    if (!selectedCodeType) {
+      return [];
+    }
+    const filtered = rows.filter((row) => row.code_type === selectedCodeType);
+    // 필터링된 결과에서 NO를 1번부터 재계산
+    return filtered.map((row, index) => ({
+      ...row,
+      display_no: index + 1,
+    }));
+  }, [rows, selectedCodeType]);
 
   const columns: GridColDef<LocalRow>[] = useMemo(
     () => [
@@ -53,23 +87,29 @@ const CommonCodeEditPage: React.FC = () => {
           </div>
         ),
       },
-      { field: 'no', headerName: 'No', width: 80, editable: false },
+      {
+        field: 'display_no',
+        headerName: 'No',
+        width: 80,
+        editable: false,
+        valueGetter: (params) => params.row.display_no || params.row.no,
+      },
       {
         field: 'code_type',
         headerName: '코드 타입',
-        width: 180,
+        width: 150,
         editable: true,
         type: 'singleSelect',
         valueOptions: ['SERVICE_NAME', 'QUESTION_CATEGORY', 'AGE_GROUP'],
         valueFormatter: (params) =>
           CODE_TYPE_LABELS[params.value as keyof typeof CODE_TYPE_LABELS] || params.value,
       },
-      { field: 'category_nm', headerName: '카테고리명', flex: 1, editable: true },
-      { field: 'service_cd', headerName: '서비스코드', width: 200, editable: true },
+      { field: 'category_nm', headerName: '카테고리명', width: 200, editable: true },
+      { field: 'service_cd', headerName: '코드', width: 250, editable: true },
       {
         field: 'status_code',
-        headerName: '활성상태',
-        width: 140,
+        headerName: '활성여부',
+        width: 120,
         editable: true,
         type: 'singleSelect',
         valueOptions: ['Y', 'N'],
@@ -277,12 +317,34 @@ const CommonCodeEditPage: React.FC = () => {
     }
   }, [selectionModel, rows, showAlert]);
 
+  const handleCodeTypeChange = useCallback((event: SelectChangeEvent<CodeType | ''>) => {
+    setSelectedCodeType(event.target.value as CodeType | '');
+  }, []);
+
   return (
     <Box>
       <PageHeader title="공통 코드 관리" />
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="code-type-select-label-edit">코드 타입</InputLabel>
+            <Select
+              labelId="code-type-select-label-edit"
+              value={selectedCodeType}
+              onChange={handleCodeTypeChange}
+              label="코드 타입"
+            >
+              <MenuItem value="" disabled>
+                선택하세요
+              </MenuItem>
+              {codeTypeOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
           <SelectionDeleteButton
             selectionMode={selectionMode}
@@ -306,7 +368,7 @@ const CommonCodeEditPage: React.FC = () => {
 
       <ManagedCategoryList
         apiRef={apiRef}
-        rows={rows as any}
+        rows={filteredRows as any}
         setRows={setRows as any}
         getRowId={(row: any) => row.no}
         columns={columns as any}

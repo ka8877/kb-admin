@@ -1,6 +1,11 @@
 // Temporary in-memory mock DB for Common Code management
 export type CodeType = 'SERVICE_NAME' | 'QUESTION_CATEGORY' | 'AGE_GROUP';
 
+export interface CodeTypeOption {
+  value: CodeType;
+  label: string;
+}
+
 export interface CommonCodeItem extends Record<string, unknown> {
   no: number;
   code_type: CodeType;
@@ -227,6 +232,15 @@ export const commonCodeMockDb = {
       .map((no) => items.find((it) => it.no === no))
       .filter(Boolean) as CommonCodeItem[];
     items = sorted.map((it, idx) => ({ ...it, no: idx + 1 }));
-    return [...items];
+    return items;
+  },
+
+  async getCodeTypes(): Promise<CodeTypeOption[]> {
+    await delay(100);
+    return [
+      { value: 'SERVICE_NAME', label: '서비스명' },
+      { value: 'QUESTION_CATEGORY', label: '질문 카테고리' },
+      { value: 'AGE_GROUP', label: '연령대' },
+    ];
   },
 };

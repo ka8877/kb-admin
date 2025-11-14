@@ -10,29 +10,29 @@ export const CODE_TYPE_LABELS: Record<string, string> = {
 
 export const listColumns: GridColDef<RowItem>[] = [
   {
-    field: 'no',
+    field: 'display_no',
     headerName: 'No',
     width: 80,
     sortable: true,
+    valueGetter: (params) => params.row.display_no || params.row.no,
   },
   {
     field: 'code_type',
     headerName: '코드 타입',
-    width: 150,
+    width: 250,
     sortable: true,
     renderCell: (params) => CODE_TYPE_LABELS[params.value] || params.value,
   },
   {
     field: 'category_nm',
     headerName: '카테고리명',
-    flex: 1,
-    minWidth: 150,
+    width: 250,
     sortable: true,
   },
   {
     field: 'service_cd',
     headerName: '코드',
-    width: 200,
+    width: 280,
     sortable: true,
   },
   {
