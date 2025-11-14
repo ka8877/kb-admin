@@ -1,3 +1,5 @@
+import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -7,6 +9,9 @@ import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
 import { mockApprovalRequests } from './data';
+import { Approval } from '@mui/icons-material';
+import ApprovalListActions from './components/approval/ApprovalListActions';
+import { ApprovalConfirmBar } from './components/approval/ApprovalConfirmBar';
 
 const listApi = {
   list: async (): Promise<ApprovalRequestItem[]> => {
@@ -53,15 +58,46 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
     [location.pathname, location.search, navigate],
   );
 
+  // 결재 선택 토글 상태 및 핸들러
+  const [approveSelectionMode, setApproveSelectionMode] = React.useState(false);
+  const handleApproveSelect = useCallback((next: boolean) => {
+    setApproveSelectionMode(next);
+  }, []);
+
   return (
     <Box>
       <PageHeader title="추천질문 결재 요청" />
       <SimpleList<ApprovalRequestItem>
         columns={approvalRequestColumns}
         fetcher={listApi.list}
+        actionsNode={({ toggleSelectionMode }) => (
+          <ApprovalListActions
+            onBack={handleBack}
+            onApproveSelect={() => toggleSelectionMode()}
+            approveSelectLabel={approveSelectionMode ? '선택 취소' : '결재 선택'}
+            approveSelectActive={approveSelectionMode}
+          />
+        )}
+        confirmBarNode={({ selectedIds, toggleSelectionMode }) => (
+          <ApprovalConfirmBar
+            open={approveSelectionMode}
+            selectedIds={selectedIds as (string | number)[]}
+            onConfirm={(ids: (string | number)[]) => {
+              toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
+              handleApproveSelect(false);
+              toggleSelectionMode(false);
+              // 실제 결재 처리 로직 연결 가능
+            }}
+            onCancel={() => {
+              handleApproveSelect(false);
+              toggleSelectionMode(false);
+            }}
+          />
+        )}
         onBack={handleBack}
         onRowClick={handleRowClick}
-        enableStatePreservation={true} // URL 기반 상태 보존 활성화
+        enableStatePreservation={true}
+        onApproveSelect={handleApproveSelect}
       />
     </Box>
   );

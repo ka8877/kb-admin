@@ -12,7 +12,8 @@
 export const CONFIRM_TITLES = {
   SAVE: '저장 확인',
   DELETE: '삭제 확인',
-  APPROVAL_REQUEST: '결재 요청 확인',
+  APPROVAL_REQUEST: '결재 요청',
+  FINAL_APPROVAL: '최종 결재 요청',
 } as const;
 
 // ========== 확인 다이얼로그 메시지 ==========
@@ -21,6 +22,7 @@ export const CONFIRM_MESSAGES = {
   SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
   DELETE: '정말로 삭제하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
+  FINAL_APPROVAL: '최종 결재를 넘기시겠습니까?',
 } as const;
 
 // ========== 토스트 메시지 ==========
@@ -30,6 +32,7 @@ export const TOAST_MESSAGES = {
   DELETE_APPROVAL_REQUESTED: '결재를 요청하였습니다.',
   SAVE_SUCCESS: '저장되었습니다.',
   DELETE_SUCCESS: '삭제되었습니다.',
+  FINAL_APPROVAL_SUCCESS: '최종 결재가 완료되었습니다.',
 
   // 실패 메시지
   UPDATE_FAILED: '수정을 실패하였습니다.',
@@ -46,6 +49,7 @@ export const ALERT_TITLES = {
 export const ALERT_MESSAGES = {
   // 경고 메시지
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
+  NO_ITEMS_TO_APPROVE: '최종 결재할 항목이 없습니다.',
 
   // Validation 관련
   VALIDATION_MISSING_REQUIRED: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.',
