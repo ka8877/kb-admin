@@ -4,6 +4,7 @@ import type { CodeType } from '@/mocks/commonCodeDb';
 export interface RowItem extends Record<string, unknown> {
   no: number;
   id?: number;
+  display_no?: number;
   code_type: CodeType;
   category_nm: string;
   service_cd: string;
