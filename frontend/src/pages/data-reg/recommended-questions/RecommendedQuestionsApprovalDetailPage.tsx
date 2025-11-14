@@ -10,6 +10,7 @@ import { ROUTES } from '@/routes/menu';
 import {
   ageGroupOptions,
   mockApprovalDetailQuestions,
+  questionCategoryGroupedOptions,
   questionCategoryOptions,
   serviceOptions,
   statusOptions,
@@ -139,12 +140,49 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     approveMutation.mutate();
   }, [approveMutation]);
 
+  const questionCategoryOptionsByService = useMemo(() => {
+    return questionCategoryGroupedOptions.reduce<
+      Record<string, { label: string; value: string }[]>
+    >((acc, group) => {
+      acc[group.groupValue] = group.options;
+      return acc;
+    }, {});
+  }, []);
+
+  const getQuestionCategoryOptionsByService = useCallback(
+    (serviceCode: string | undefined) => {
+      if (!serviceCode) return [];
+      return questionCategoryOptionsByService[serviceCode] ?? [];
+    },
+    [questionCategoryOptionsByService],
+  );
+
+  const dynamicQuestionCategoryOptionsGetter = useMemo(() => {
+    if (!isEditMode) {
+      return undefined;
+    }
+    return (row: RecommendedQuestionItem) => getQuestionCategoryOptionsByService(row.service_nm);
+  }, [getQuestionCategoryOptionsByService, isEditMode]);
+
+  const handleRowSanitizer = useCallback(
+    (newRow: RecommendedQuestionItem, oldRow: RecommendedQuestionItem) => {
+      if (newRow.service_nm !== oldRow.service_nm) {
+        return {
+          ...newRow,
+          qst_ctgr: '',
+        };
+      }
+      return newRow;
+    },
+    [],
+  );
+
   const selectFieldsConfig = {
     service_nm: serviceOptions,
     age_grp: ageGroupOptions,
     under_17_yn: under17Options,
     status: statusOptions,
-    qst_ctgr: questionCategoryOptions,
+    qst_ctgr: isEditMode ? [] : questionCategoryOptions,
   };
 
   const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
@@ -174,6 +212,9 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
+        getDynamicSelectOptions={dynamicQuestionCategoryOptionsGetter}
+        onProcessRowUpdate={handleRowSanitizer}
+        externalRows={data}
       />
     </Box>
   );

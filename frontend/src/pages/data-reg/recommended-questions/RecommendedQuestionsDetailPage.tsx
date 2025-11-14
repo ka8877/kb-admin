@@ -16,6 +16,7 @@ import {
   under17Options,
   questionCategoryOptions,
 } from './data';
+import { useFilteredQuestionCategories } from './hooks';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
@@ -91,8 +92,24 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     age_grp: ageGroupOptions,
     under_17_yn: under17Options,
     status: statusOptions,
-    qst_ctgr: questionCategoryOptions,
   };
+
+  // 현재 행의 service_nm 기준으로 카테고리 옵션 필터링 (최상위에서 훅 호출)
+  const filteredGroups = useFilteredQuestionCategories(data?.service_nm);
+  const dynamicSelectFieldsConfig = React.useMemo(
+    () => ({
+      qst_ctgr: () => filteredGroups.flatMap((group) => group.options),
+    }),
+    [filteredGroups],
+  );
+
+  // 동적 셀렉트 필드의 의존성 설정: qst_ctgr는 service_nm에 의존
+  const dynamicSelectFieldDependenciesConfig = React.useMemo(
+    () => ({
+      qst_ctgr: ['service_nm'], // qst_ctgr 필드는 service_nm 필드에 의존
+    }),
+    [],
+  );
 
   const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
 
@@ -129,6 +146,8 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         onSave={handleSave}
         readOnlyFields={readOnlyFieldsConfig}
         selectFields={selectFieldsConfig}
+        dynamicSelectFields={dynamicSelectFieldsConfig}
+        dynamicSelectFieldDependencies={dynamicSelectFieldDependenciesConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}

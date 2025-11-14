@@ -45,6 +45,8 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
   validator?: (data: T) => Record<string, ValidationResult>; // validation 함수
+  dynamicSelectFields?: Record<string, (data: T | undefined) => SelectFieldOption[]>; // 동적 셀렉트 필드 (데이터에 따라 옵션이 변경됨)
+  dynamicSelectFieldDependencies?: Record<string, string[]>; // 동적 셀렉트 필드가 의존하는 필드들 (예: { qst_ctgr: ['service_nm'] })
 };
 
 const defaultGetRowId =
@@ -73,6 +75,8 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
   validator,
+  dynamicSelectFields,
+  dynamicSelectFieldDependencies,
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
   const { showConfirm } = useConfirmDialog();
@@ -178,6 +182,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     () =>
       columns.map((col) => {
         const isSelectField = selectFields && selectFields[col.field];
+        const isDynamicSelectField = dynamicSelectFields && dynamicSelectFields[col.field];
         const isDateField = dateFields && dateFields.includes(col.field);
 
         // 날짜 필드인 경우
@@ -220,6 +225,35 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           };
         }
 
+        // service_nm 필드: 값 변경 시 qst_ctgr도 즉시 비움
+        if (col.field === 'service_nm') {
+          return {
+            ...col,
+            type: 'singleSelect',
+            valueOptions:
+              selectFields?.service_nm?.map((opt) => ({
+                value: opt.value,
+                label: opt.label,
+              })) ?? [],
+            editable: isEditMode && !readOnlyFields.includes(col.field),
+            // renderEditCell 완전히 제거 (DataGrid 기본 렌더 사용)
+          };
+        }
+
+        // 동적 셀렉트 필드인 경우 (데이터에 따라 옵션이 변경됨)
+        if (isDynamicSelectField) {
+          const dynamicOptions = isDynamicSelectField(editedData);
+          return {
+            ...col,
+            type: 'singleSelect',
+            valueOptions: dynamicOptions.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            })),
+            editable: isEditMode && !readOnlyFields.includes(col.field),
+          };
+        }
+
         // 셀렉트 필드인 경우 (읽기/수정 모드 모두)
         if (isSelectField) {
           return {
@@ -246,16 +280,61 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           editable: false,
         };
       }),
-    [columns, selectFields, dateFields, isEditMode, readOnlyFields, dateFormat],
+    [
+      columns,
+      selectFields,
+      dynamicSelectFields,
+      dateFields,
+      isEditMode,
+      readOnlyFields,
+      dateFormat,
+      editedData,
+    ],
   );
 
-  // 행 업데이트 처리
-  const processRowUpdate = useCallback((newRow: T, oldRow: T) => {
-    setEditedData(newRow);
-    return newRow;
-  }, []);
+  // 행 업데이트 처리 (셀 값 변경 시 즉시 호출됨)
+  const processRowUpdate = useCallback(
+    (newRow: T, oldRow: T) => {
+      console.log('=== processRowUpdate ===');
+      console.log('oldRow:', oldRow);
+      console.log('newRow:', newRow);
 
-  // DataGrid rows 메모이제이션
+      const updatedRow = { ...newRow };
+
+      // dynamicSelectFields와 의존성이 정의된 경우
+      if (dynamicSelectFields && dynamicSelectFieldDependencies) {
+        console.log('Has dynamic config');
+
+        // 각 동적 필드에 대해 체크
+        Object.keys(dynamicSelectFieldDependencies).forEach((dynamicField) => {
+          const dependencies = dynamicSelectFieldDependencies[dynamicField];
+          console.log(`Dynamic field: ${dynamicField}, dependencies:`, dependencies);
+
+          if (dependencies && dependencies.length > 0) {
+            // 의존 필드 중 하나라도 변경되었는지 확인
+            const dependencyChanged = dependencies.some((depField) => {
+              const oldVal = (oldRow as Record<string, unknown>)[depField];
+              const newVal = (newRow as Record<string, unknown>)[depField];
+              const changed = oldVal !== newVal;
+              console.log(`  ${depField}: "${oldVal}" -> "${newVal}" (changed: ${changed})`);
+              return changed;
+            });
+
+            if (dependencyChanged) {
+              console.log(`  ✓ Clearing ${dynamicField}`);
+              // 의존 필드가 변경되었으면 동적 필드 값을 초기화
+              (updatedRow as Record<string, unknown>)[dynamicField] = '';
+            }
+          }
+        });
+      }
+
+      console.log('updatedRow:', updatedRow);
+      setEditedData(updatedRow);
+      return updatedRow;
+    },
+    [dynamicSelectFields, dynamicSelectFieldDependencies],
+  ); // DataGrid rows 메모이제이션
   const rows = useMemo(() => (editedData ? [editedData] : data ? [data] : []), [editedData, data]);
 
   // 에러 핸들러 메모이제이션
@@ -294,6 +373,17 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
               whiteSpace: 'normal',
               lineHeight: '1.5',
               py: 1,
+            },
+            // 셀렉트 박스 UI 깨짐 방지
+            '& .MuiInputBase-root, & .MuiSelect-root': {
+              minWidth: 120,
+              boxSizing: 'border-box',
+              width: '100%',
+              maxWidth: '100%',
+            },
+            '& .MuiSelect-select': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             },
           }}
         />

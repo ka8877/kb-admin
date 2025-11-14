@@ -17,6 +17,7 @@ export interface GroupedSelectOption {
 
 export interface SelectOptionGroup {
   groupLabel: string;
+  groupValue: string;
   options: GroupedSelectOption[];
 }
 

@@ -33,7 +33,8 @@ export const statusOptions = [
 // 질문 카테고리 옵션 데이터 (그룹화된 버전 - ManagementList에서 사용)
 export const questionCategoryGroupedOptions = [
   {
-    groupLabel: 'AI검색',
+    groupLabel: 'AI 검색',
+    groupValue: 'ai_search',
     options: [
       { label: 'mid (엔어드민아이디)', value: 'ai_search_mid' },
       { label: 'story (돈이뭔놈이야기)', value: 'ai_search_story' },
@@ -43,7 +44,8 @@ export const questionCategoryGroupedOptions = [
     ],
   },
   {
-    groupLabel: 'AI금융계산기',
+    groupLabel: 'AI 금융계산기',
+    groupValue: 'ai_calc',
     options: [
       { label: 'save (저축)', value: 'ai_calc_save' },
       { label: 'loan (대출)', value: 'ai_calc_loan' },
@@ -51,7 +53,8 @@ export const questionCategoryGroupedOptions = [
     ],
   },
   {
-    groupLabel: 'AI이체',
+    groupLabel: 'AI 이체',
+    groupValue: 'ai_transfer',
     options: [
       { label: 'svc_intro', value: 'ai_transfer_svc_intro' },
       { label: 'trn_nick', value: 'ai_transfer_trn_nick' },
@@ -60,7 +63,8 @@ export const questionCategoryGroupedOptions = [
     ],
   },
   {
-    groupLabel: 'AI모임총무',
+    groupLabel: 'AI 모임총무',
+    groupValue: 'ai_shared_account',
     options: [
       { label: 'DUES_STATUS', value: 'ai_shared_dues_status' },
       { label: 'DUES_RECORD', value: 'ai_shared_dues_record' },
@@ -177,12 +181,12 @@ export const mockApprovalDetailQuestions: RecommendedQuestionItem[] = [
   {
     no: 1,
     qst_id: 'Q001',
-    service_nm: 'ai_search',
-    qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-    qst_ctgr: 'ai_search_mid',
-    qst_style: '적금, 금리',
-    parent_id: 'M020011',
-    parent_nm: '대출 문의',
+    service_nm: 'ai_transfer',
+    qst_ctnt: 'AI 이체 보안 인증은 어떻게 진행돼?',
+    qst_ctgr: 'ai_transfer_sec_auth',
+    qst_style: '이체, 보안',
+    parent_id: 'TRN_001',
+    parent_nm: 'AI 이체 안내',
     age_grp: '30',
     under_17_yn: 'N',
     imp_start_date: '2025.06.17. 00:00:00',

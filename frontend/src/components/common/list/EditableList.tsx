@@ -47,6 +47,18 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
   validator?: (data: T) => Record<string, ValidationResult>; // validation 함수
+  /**
+   * (선택) 행별로 qst_ctgr 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
+   */
+  getDynamicSelectOptions?: (row: T) => SelectFieldOption[];
+  /**
+   * (선택) 행 업데이트 직전에 newRow를 가공하거나 의존 필드를 초기화할 때 사용
+   */
+  onProcessRowUpdate?: (newRow: T, oldRow: T) => T;
+  /**
+   * (선택) 외부에서 데이터 변경을 감지하고 초기화하고 싶을 때 전달
+   */
+  externalRows?: T[];
 };
 
 const defaultGetRowId =
@@ -81,6 +93,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
   validator,
+  getDynamicSelectOptions,
+  onProcessRowUpdate,
+  externalRows,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -138,6 +153,19 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         };
       }
 
+      // qst_ctgr 필드: 편집 모드에서 행별로 옵션 다르게 (getDynamicSelectOptions 사용)
+      if (col.field === 'qst_ctgr' && isEditMode && typeof getDynamicSelectOptions === 'function') {
+        return {
+          ...col,
+          type: 'singleSelect',
+          valueOptions: (params: GridRenderEditCellParams) => {
+            const row = data.find((r) => getRowId(r) === params.id);
+            return row ? getDynamicSelectOptions(row) : [];
+          },
+          editable: isEditMode && !readOnlyFields.includes(col.field),
+        };
+      }
+
       // 셀렉트 필드인 경우
       if (isSelectField) {
         return {
@@ -157,7 +185,16 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         editable: isEditMode && !readOnlyFields.includes(col.field),
       };
     });
-  }, [columns, isEditMode, readOnlyFields, selectFields, dateFields, dateFormat]);
+  }, [
+    columns,
+    isEditMode,
+    readOnlyFields,
+    selectFields,
+    dateFields,
+    dateFormat,
+    getDynamicSelectOptions,
+    data,
+  ]);
 
   useEffect(() => {
     if (rows) {
@@ -175,6 +212,24 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     }
   }, [fetcher, rows]);
 
+  useEffect(() => {
+    if (Array.isArray(externalRows)) {
+      setData(externalRows);
+    }
+  }, [externalRows]);
+
+  useEffect(() => {
+    if (!isEditMode) {
+      if (Array.isArray(externalRows)) {
+        setData(externalRows);
+        return;
+      }
+      if (rows) {
+        setData(rows);
+      }
+    }
+  }, [isEditMode, externalRows, rows]);
+
   const handlePaginationChange = useCallback((model: GridPaginationModel) => {
     setPaginationModel(model);
   }, []);
@@ -182,11 +237,14 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   // 행 업데이트 처리 (셀 편집 시)
   const handleProcessRowUpdate = useCallback(
     (newRow: T, oldRow: T) => {
-      const updatedData = data.map((row) => (getRowId(row) === getRowId(newRow) ? newRow : row));
+      const processedRow = onProcessRowUpdate ? onProcessRowUpdate(newRow, oldRow) : newRow;
+      const updatedData = data.map((row) =>
+        getRowId(row) === getRowId(processedRow) ? processedRow : row,
+      );
       setData(updatedData);
-      return newRow;
+      return processedRow;
     },
-    [data, getRowId],
+    [data, getRowId, onProcessRowUpdate],
   );
 
   // Validation을 포함한 저장 처리
@@ -270,6 +328,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid
+          key={JSON.stringify(data)}
           rows={data}
           columns={processedColumns}
           getRowId={getRowId}

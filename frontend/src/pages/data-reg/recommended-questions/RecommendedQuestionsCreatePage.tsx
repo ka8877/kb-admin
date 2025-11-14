@@ -14,17 +14,12 @@ import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
 import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
-import {
-  serviceOptions,
-  ageGroupOptions,
-  under17Options,
-  questionCategoryOptions,
-  questionCategoryGroupedOptions,
-} from './data';
+import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from './data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { createRecommendedQuestionYupSchema, createExcelValidationRules } from './validation';
+import { useFilteredQuestionCategories } from './hooks';
 
 const RecommendedQuestionsCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -108,6 +103,9 @@ const ManualInputComponent: React.FC = () => {
     name: 'service_nm',
   });
 
+  // 선택된 서비스에 따라 필터링된 질문 카테고리 옵션 생성 (커스텀 훅 사용)
+  const filteredQuestionCategoryOptions = useFilteredQuestionCategories(watchedServiceNm);
+
   // mid 또는 story인 경우 부모 ID 필수
   const isParentIdRequired =
     watchedQstCtgr === 'ai_search_mid' || watchedQstCtgr === 'ai_search_story';
@@ -115,19 +113,22 @@ const ManualInputComponent: React.FC = () => {
   // ai_calc인 경우 연령대 필수
   const isAgeGroupRequired = watchedServiceNm === 'ai_calc';
 
+  // service_nm 변경 시 qst_ctgr 초기화 및 validation 재실행
+  React.useEffect(() => {
+    // 서비스명이 변경되면 질문 카테고리 초기화
+    setValue('qst_ctgr', '');
+
+    if (hasTriedSubmit) {
+      trigger(['age_grp', 'qst_ctgr']);
+    }
+  }, [watchedServiceNm, hasTriedSubmit, trigger, setValue]);
+
   // qst_ctgr 변경 시 부모 ID 관련 필드 validation 재실행
   React.useEffect(() => {
     if (hasTriedSubmit) {
       trigger(['parentId', 'parentIdName']);
     }
   }, [watchedQstCtgr, hasTriedSubmit, trigger]);
-
-  // service_nm 변경 시 연령대 필드 validation 재실행
-  React.useEffect(() => {
-    if (hasTriedSubmit) {
-      trigger(['age_grp']);
-    }
-  }, [watchedServiceNm, hasTriedSubmit, trigger]);
 
   const onSubmit = useCallback((data: FormData) => {
     // TODO: 폼 데이터 검증 및 저장 로직
@@ -205,11 +206,18 @@ const ManualInputComponent: React.FC = () => {
                 <GroupedSelectInput
                   label="질문 카테고리"
                   value={field.value}
-                  optionGroups={questionCategoryGroupedOptions}
+                  optionGroups={filteredQuestionCategoryOptions}
                   onChange={field.onChange}
                   required
+                  disabled={!watchedServiceNm}
                   error={hasTriedSubmit && !!errors.qst_ctgr}
-                  helperText={hasTriedSubmit ? errors.qst_ctgr?.message : undefined}
+                  helperText={
+                    hasTriedSubmit
+                      ? errors.qst_ctgr?.message
+                      : !watchedServiceNm
+                        ? '서비스명을 먼저 선택해주세요'
+                        : undefined
+                  }
                   placeholder="선택"
                 />
               )}
