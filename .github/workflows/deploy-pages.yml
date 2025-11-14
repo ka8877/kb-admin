@@ -34,7 +34,7 @@ jobs:
 
       - name: Build with GitHub Pages base
         working-directory: frontend
-        run: npm run build -- --base=/kabang-admin/
+        run: npm run build -- --base=/kb-admin/
 
       - name: Add SPA fallback (404.html)
         run: cp frontend/dist/index.html frontend/dist/404.html
