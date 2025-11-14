@@ -4,12 +4,20 @@ import type {
   GridPaginationModel,
   GridValidRowModel,
   GridRowId,
+  GridRowSelectionModel,
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import { useListState } from '@/hooks/useListState';
+
+export type SimpleListRenderProps = {
+  selectionMode: boolean;
+  selectedIds: GridRowSelectionModel;
+  toggleSelectionMode: (next?: boolean) => void;
+  onBack?: () => void;
+};
 
 export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -22,7 +30,24 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   enableClientSearch?: boolean;
   onRowClick?: (params: { id: string | number; row: T }) => void;
   onBack?: () => void; // 목록으로 돌아가기 버튼
+  /**
+   * (선택) 목록 상단에 표시할 사용자 정의 액션 노드(컴포넌트)
+   * ReactNode 또는 렌더 함수 전달 가능. 렌더 함수에는 selectionMode 제어 객체 제공
+   * 제공하지 않으면 onBack이 있을 때 기본 DetailNavigationActions 렌더링
+   */
+  actionsNode?: React.ReactNode | ((props: SimpleListRenderProps) => React.ReactNode);
   enableStatePreservation?: boolean; // URL 상태 저장 활성화 (기본: true)
+  /**
+   * (선택) 체크박스 선택 모드 토글 시 호출
+   * next: 활성화 여부 (true: 활성화, false: 비활성화)
+   */
+  onApproveSelect?: (next: boolean) => void;
+
+  /**
+   * (선택) 하단 컨펌 바(ApprovalConfirmBar 등) 커스텀 노드
+   * DataGrid 하단에 렌더링됨
+   */
+  confirmBarNode?: React.ReactNode | ((props: SimpleListRenderProps) => React.ReactNode);
 };
 
 const defaultGetRowId =
@@ -47,10 +72,16 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   enableClientSearch = true,
   onRowClick,
   onBack,
+  actionsNode,
   enableStatePreservation = true,
+  onApproveSelect,
+  confirmBarNode,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
+  // 체크박스 동적화 상태 추가
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
 
   // URL 상태를 사용하거나 로컬 상태 사용
   const [localPaginationModel, setLocalPaginationModel] = useState<GridPaginationModel>({
@@ -100,8 +131,28 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
 
+  const toggleSelectionMode = useCallback(
+    (next?: boolean) => {
+      setSelectionMode((prev) => {
+        const target = typeof next === 'boolean' ? next : !prev;
+        if (!target) {
+          setSelectionModel([]);
+        }
+        if (typeof onApproveSelect === 'function') {
+          onApproveSelect(target);
+        }
+        return target;
+      });
+    },
+    [onApproveSelect],
+  );
+
   const handleSearch = useCallback(
     (p: { field?: string; query: string }) => {
+      if (selectionMode) {
+        toggleSelectionMode(false);
+      }
+
       if (enableStatePreservation) {
         updateListState({
           searchField: p.field,
@@ -114,7 +165,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
-    [enableStatePreservation, updateListState],
+    [selectionMode, toggleSelectionMode, enableStatePreservation, updateListState],
   );
 
   const handlePaginationChange = useCallback(
@@ -140,6 +191,33 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     [onRowClick],
   );
 
+  // actionsNode가 없고 onBack이 있으면 기본 액션 노드 제공
+  const resolvedActionsNode = useMemo(() => {
+    if (typeof actionsNode === 'function') {
+      return actionsNode({
+        selectionMode,
+        selectedIds: selectionModel,
+        toggleSelectionMode,
+        onBack,
+      });
+    }
+    if (actionsNode) return actionsNode;
+    if (onBack) return <DetailNavigationActions onBack={onBack} />;
+    return null;
+  }, [actionsNode, selectionMode, selectionModel, toggleSelectionMode, onBack]);
+
+  const resolvedConfirmBarNode = useMemo(() => {
+    if (typeof confirmBarNode === 'function') {
+      return confirmBarNode({
+        selectionMode,
+        selectedIds: selectionModel,
+        toggleSelectionMode,
+        onBack,
+      });
+    }
+    return confirmBarNode ?? null;
+  }, [confirmBarNode, selectionMode, selectionModel, toggleSelectionMode, onBack]);
+
   return (
     <Box>
       <ListSearch
@@ -151,13 +229,28 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         size={size}
       />
 
-      <DetailNavigationActions onBack={onBack} />
+      {resolvedActionsNode}
 
-      <Box sx={{ height: 420, width: '100%' }}>
+      <Box
+        sx={{
+          height: 420,
+          width: '100%',
+          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#1976d2 !important',
+          },
+          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+            outline: '2px solid #1976d2',
+            outlineOffset: '-2px',
+          },
+        }}
+      >
         <DataGrid<T>
           rows={filteredRows}
           columns={columns}
           getRowId={(r) => getRowId(r) as GridRowId}
+          checkboxSelection={selectionMode}
+          rowSelectionModel={selectionModel}
+          onRowSelectionModelChange={setSelectionModel}
           pagination
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
@@ -168,6 +261,9 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           onRowClick={onRowClick ? handleRowClick : undefined}
         />
       </Box>
+
+      {/* 컨펌 바가 있으면 DataGrid 하단에 렌더링 */}
+      {resolvedConfirmBarNode}
     </Box>
   );
 };
