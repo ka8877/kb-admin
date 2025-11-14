@@ -1,5 +1,5 @@
 // frontend/src/pages/management/admin-auth/components/EmployeeSearchCell.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Autocomplete, TextField, Box, Typography } from '@mui/material';
 import { employeeMockDb, EmployeeInfo } from '@/mocks/employeeDb';
 
@@ -10,52 +10,91 @@ interface EmployeeSearchCellProps {
 }
 
 const EmployeeSearchCell: React.FC<EmployeeSearchCellProps> = ({ value, onChange, onClose }) => {
-  const [open, setOpen] = useState(true);
   const [options, setOptions] = useState<EmployeeInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
+  const [selectedValue, setSelectedValue] = useState<EmployeeInfo | null>(null);
+  const initializedRef = useRef(false);
+  const lastValueRef = useRef(value);
 
+  // 초기 데이터 로드
   useEffect(() => {
-    let active = true;
-
-    (async () => {
-      setLoading(true);
-      const results = await employeeMockDb.search(inputValue);
-      if (active) {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      employeeMockDb.search('').then((results) => {
         setOptions(results);
-        setLoading(false);
+        // 초기 value에 해당하는 직원 찾기
+        if (value) {
+          const found = results.find((opt) => opt.user_name === value);
+          if (found) {
+            setSelectedValue(found);
+            setInputValue(value);
+          }
+        }
+      });
+    }
+  }, []);
+
+  // value prop이 외부에서 변경되면 내부 상태도 업데이트
+  useEffect(() => {
+    if (value !== lastValueRef.current && options.length > 0) {
+      lastValueRef.current = value;
+      const found = options.find((opt) => opt.user_name === value);
+      if (found) {
+        setSelectedValue(found);
+        setInputValue(value);
+      } else if (!value) {
+        setSelectedValue(null);
+        setInputValue('');
       }
-    })();
+    }
+  }, [value, options]);
+
+  // 검색어가 변경될 때만 검색
+  useEffect(() => {
+    if (!initializedRef.current) return;
+
+    let active = true;
+    const timer = setTimeout(() => {
+      (async () => {
+        setLoading(true);
+        const results = await employeeMockDb.search(inputValue);
+        if (active) {
+          setOptions(results);
+          setLoading(false);
+        }
+      })();
+    }, 300);
 
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [inputValue]);
 
   return (
-    <Autocomplete
-      open={open}
-      onOpen={() => setOpen(true)}
-      onClose={() => {
-        setOpen(false);
-      }}
-      value={options.find((opt) => opt.user_name === value) || null}
+    <Autocomplete<EmployeeInfo>
+      value={selectedValue}
       onChange={(_, newValue) => {
-        if (newValue) {
+        if (newValue && typeof newValue === 'object') {
+          setSelectedValue(newValue);
+          setInputValue(newValue.user_name);
           onChange(newValue);
-        }
-        setOpen(false);
-        if (onClose) {
-          setTimeout(() => onClose(), 0);
         }
       }}
       inputValue={inputValue}
-      onInputChange={(_, newInputValue) => {
-        setInputValue(newInputValue);
+      onInputChange={(_, newInputValue, reason) => {
+        if (reason === 'input' || reason === 'clear') {
+          setInputValue(newInputValue);
+        }
       }}
       options={options}
-      getOptionLabel={(option) => `${option.user_name} (${option.id})`}
+      getOptionLabel={(option) => {
+        if (typeof option === 'string') return option;
+        return option.user_name;
+      }}
       loading={loading}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
       renderOption={(props, option) => (
         <Box component="li" {...props} key={option.id}>
           <Box>

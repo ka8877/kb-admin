@@ -200,11 +200,20 @@ const ServiceNameEditPage: React.FC = () => {
           const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
           if (hasControlChar) {
-            await showAlert({ message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR });
+            await showAlert({
+              message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR,
+              severity: 'error',
+            });
           } else if (hasMissingField) {
-            await showAlert({ message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED });
+            await showAlert({
+              message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED,
+              severity: 'error',
+            });
           } else {
-            await showAlert({ message: validationErrors.join('\n') });
+            await showAlert({
+              message: validationErrors.join('\n'),
+              severity: 'error',
+            });
           }
           setLoading(false);
           return;
@@ -261,7 +270,10 @@ const ServiceNameEditPage: React.FC = () => {
       navigate(ROUTES.SERVICE_NAME);
     } catch (error) {
       console.error('Save error:', error);
-      await showAlert({ message: ALERT_MESSAGES.ERROR_OCCURRED });
+      await showAlert({
+        message: ALERT_MESSAGES.ERROR_OCCURRED,
+        severity: 'error',
+      });
       setLoading(false);
     }
   }, [rows, navigate, showAlert]);

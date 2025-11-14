@@ -24,6 +24,8 @@ export const ROUTES = {
   // === 관리 ===
   MANAGEMENT: '/management',
   MANAGEMENT_CATEGORY: '/management/category',
+  COMMON_CODE: '/management/category/common-code',
+  COMMON_CODE_EDIT: '/management/category/common-code/edit',
   SERVICE_NAME: '/management/category/service-name',
   SERVICE_NAME_EDIT: '/management/category/service-name/edit',
   QUESTIONS_CATEGORY: '/management/category/questions-category',
@@ -57,22 +59,8 @@ export const frontMenus: MenuItem[] = [
     path: ROUTES.MANAGEMENT,
     children: [
       {
-        label: '카테고리 관리',
-        path: ROUTES.MANAGEMENT_CATEGORY,
-        children: [
-          {
-            label: '서비스명',
-            path: ROUTES.SERVICE_NAME,
-          },
-          {
-            label: '질문 카테고리',
-            path: ROUTES.QUESTIONS_CATEGORY,
-          },
-          {
-            label: '연령대',
-            path: ROUTES.AGE_GROUP,
-          },
-        ],
+        label: '공통 코드 관리',
+        path: ROUTES.COMMON_CODE,
       },
       {
         label: '어드민 권한관리',

@@ -32,6 +32,45 @@ const AdminAuthEditPage: React.FC = () => {
   const modifiedRef = useRef<Set<number>>(new Set());
   const hasFocusedRef = useRef(false);
 
+  const renderEmployeeSearchCell = useCallback(
+    (params: GridRenderEditCellParams) => (
+      <EmployeeSearchCell
+        key={`${params.id}-${params.field}-${params.value}`}
+        value={params.value as string}
+        onChange={(employee) => {
+          if (employee && apiRef.current) {
+            // 행 데이터 업데이트
+            const updatedRow = {
+              ...params.row,
+              user_name: employee.user_name,
+              position: employee.position,
+              team_1st: employee.team_1st,
+              team_2nd: employee.team_2nd,
+            };
+
+            // DataGrid 내부 상태와 rows state 모두 업데이트
+            apiRef.current.updateRows([updatedRow]);
+            setRows((prevRows) => prevRows.map((r) => (r.no === params.row.no ? updatedRow : r)));
+            modifiedRef.current.add(params.row.no);
+
+            // 편집 모드 종료
+            setTimeout(() => {
+              apiRef.current?.stopCellEditMode({
+                id: params.id,
+                field: params.field,
+                ignoreModifications: true,
+              });
+            }, 0);
+          }
+        }}
+        onClose={() => {
+          // 편집 모드 종료는 onChange에서 처리
+        }}
+      />
+    ),
+    [apiRef],
+  );
+
   const columns: GridColDef<LocalRow>[] = useMemo(
     () => [
       { field: 'no', headerName: 'No', width: 80, editable: false },
@@ -40,48 +79,7 @@ const AdminAuthEditPage: React.FC = () => {
         headerName: '사용자명',
         width: 150,
         editable: true,
-        renderEditCell: (params: GridRenderEditCellParams) => (
-          <EmployeeSearchCell
-            value={params.value as string}
-            onChange={(employee) => {
-              if (employee && apiRef.current) {
-                // 먼저 편집 모드 종료
-                apiRef.current.stopCellEditMode({ id: params.id, field: params.field });
-
-                // 행 데이터 직접 업데이트
-                setTimeout(() => {
-                  setRows((prevRows) =>
-                    prevRows.map((r) =>
-                      r.no === params.row.no
-                        ? {
-                            ...r,
-                            user_name: employee.user_name,
-                            position: employee.position,
-                            team_1st: employee.team_1st,
-                            team_2nd: employee.team_2nd,
-                          }
-                        : r,
-                    ),
-                  );
-                  modifiedRef.current.add(params.row.no);
-                }, 0);
-              }
-            }}
-            onClose={() => {
-              // onChange에서 이미 편집 모드를 종료했으므로 여기서는 안전하게 확인 후 종료
-              if (apiRef.current) {
-                try {
-                  const editMode = apiRef.current.getCellMode(params.id, params.field);
-                  if (editMode === 'edit') {
-                    apiRef.current.stopCellEditMode({ id: params.id, field: params.field });
-                  }
-                } catch (e) {
-                  // 이미 편집 모드가 아닌 경우 무시
-                }
-              }
-            }}
-          />
-        ),
+        renderEditCell: renderEmployeeSearchCell,
       },
       { field: 'position', headerName: '직책', width: 120, editable: true },
       { field: 'team_1st', headerName: '1차팀', width: 150, editable: true },
@@ -111,7 +109,7 @@ const AdminAuthEditPage: React.FC = () => {
         valueOptions: ['활성', '비활성'],
       },
     ],
-    [],
+    [renderEmployeeSearchCell],
   );
 
   // Load data
@@ -226,11 +224,20 @@ const AdminAuthEditPage: React.FC = () => {
           const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
           if (hasControlChar) {
-            await showAlert({ message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR });
+            await showAlert({
+              message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR,
+              severity: 'error',
+            });
           } else if (hasMissingField) {
-            await showAlert({ message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED });
+            await showAlert({
+              message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED,
+              severity: 'error',
+            });
           } else {
-            await showAlert({ message: validationErrors.join('\n') });
+            await showAlert({
+              message: validationErrors.join('\n'),
+              severity: 'error',
+            });
           }
           setLoading(false);
           return;
@@ -263,7 +270,10 @@ const AdminAuthEditPage: React.FC = () => {
       navigate(ROUTES.ADMIN_AUTH);
     } catch (error) {
       console.error('Save error:', error);
-      await showAlert({ message: ALERT_MESSAGES.ERROR_OCCURRED });
+      await showAlert({
+        message: ALERT_MESSAGES.ERROR_OCCURRED,
+        severity: 'error',
+      });
     } finally {
       setLoading(false);
     }

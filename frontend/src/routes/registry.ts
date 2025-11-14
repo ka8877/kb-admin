@@ -22,6 +22,10 @@ const RecommendedQuestionsApprovalDetailPage = React.lazy(
 );
 
 // === 관리 ===
+const CommonCodePage = React.lazy(() => import('@pages/management/common-code/CommonCodePage'));
+const CommonCodeEditPage = React.lazy(
+  () => import('@pages/management/common-code/CommonCodeEditPage'),
+);
 const ServiceNamePage = React.lazy(() => import('@pages/management/service-name/ServiceNamePage'));
 const ServiceNameEditPage = React.lazy(
   () => import('@pages/management/service-name/ServiceNameEditPage'),
@@ -63,10 +67,14 @@ export const frontRoutes: AppRoute[] = [
   // === 관리 ===
   {
     path: ROUTES.MANAGEMENT,
-    Component: () => React.createElement(Navigate, { to: ROUTES.SERVICE_NAME, replace: true }),
+    Component: () => React.createElement(Navigate, { to: ROUTES.COMMON_CODE, replace: true }),
   },
 
-  // 카테고리 관리
+  // 공통 코드 관리
+  { path: ROUTES.COMMON_CODE, Component: CommonCodePage },
+  { path: ROUTES.COMMON_CODE_EDIT, Component: CommonCodeEditPage },
+
+  // 카테고리 관리 (기존 - 유지)
   { path: ROUTES.SERVICE_NAME, Component: ServiceNamePage }, // 서비스명 직접 경로
   { path: ROUTES.MANAGEMENT_CATEGORY, Component: ServiceNamePage }, // 목록
   { path: ROUTES.SERVICE_NAME_EDIT, Component: ServiceNameEditPage }, // 편집 페이지
