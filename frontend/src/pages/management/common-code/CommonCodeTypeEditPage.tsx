@@ -17,14 +17,14 @@ import SearchIcon from '@mui/icons-material/Search';
 import MediumButton from '@/components/common/button/MediumButton';
 import { CodeTypeOption } from '@/mocks/commonCodeDb';
 
-interface CodeTypeManagementDialogProps {
+interface CommonCodeTypeEditPageProps {
   open: boolean;
   onClose: () => void;
   codeTypes: CodeTypeOption[];
   onSave: (codeTypes: CodeTypeOption[]) => void;
 }
 
-const CodeTypeManagementDialog: React.FC<CodeTypeManagementDialogProps> = ({
+const CommonCodeTypeEditPage: React.FC<CommonCodeTypeEditPageProps> = ({
   open,
   onClose,
   codeTypes,
@@ -175,4 +175,4 @@ const CodeTypeManagementDialog: React.FC<CodeTypeManagementDialogProps> = ({
   );
 };
 
-export default CodeTypeManagementDialog;
+export default CommonCodeTypeEditPage;
