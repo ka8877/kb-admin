@@ -267,7 +267,6 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
 
       {/* 컨펌 바가 있으면 DataGrid 하단에 렌더링 */}
       {resolvedConfirmBarNode}
-    </Box>
     </Section>
   );
 };
