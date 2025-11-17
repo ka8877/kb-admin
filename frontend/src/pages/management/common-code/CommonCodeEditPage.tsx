@@ -183,11 +183,16 @@ const CommonCodeEditPage: React.FC = () => {
   }, []);
 
   const handleAddRow = useCallback(() => {
+    if (!selectedCodeType) {
+      showAlert({ message: '코드 타입을 선택해주세요.', severity: 'error' });
+      return;
+    }
+
     const currentMax = rows.reduce((m, r) => Math.max(m, r.no ?? 0), 0);
     const tempNo = currentMax + 1;
     const newRow: LocalRow = {
       no: tempNo,
-      code_type: 'SERVICE_NAME',
+      code_type: selectedCodeType,
       category_nm: '',
       service_cd: '',
       status_code: 'Y',
@@ -198,7 +203,7 @@ const CommonCodeEditPage: React.FC = () => {
 
     setTimeout(() => {
       try {
-        const editableCol = columns.find((c) => c.editable);
+        const editableCol = columns.find((c) => c.editable && c.field !== 'code_type');
         if (editableCol && apiRef.current) {
           apiRef.current.setCellFocus(newRow.no, editableCol.field as string);
           setTimeout(() => {
@@ -218,7 +223,7 @@ const CommonCodeEditPage: React.FC = () => {
         // ignore
       }
     }, 0);
-  }, [rows, apiRef, columns]);
+  }, [rows, selectedCodeType, columns, apiRef, showAlert]);
 
   const handleRowOrderChange = useCallback((reorderedRows: CategoryRowGeneric[]) => {
     const updated = reorderedRows.map((r, i) => ({ ...(r as LocalRow), no: i + 1 }));
