@@ -286,79 +286,75 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
   );
 
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={3}>
-          <Box sx={{ textAlign: 'left' }}>
-            <Typography variant="body1" color="text.primary" sx={{ mb: 1 }}>
-              {description}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              정해진 엑셀 양식에 입력하여 업로드하세요 ({formatDisplayText})
-            </Typography>
-          </Box>
+    <Stack spacing={3}>
+      <Box sx={{ textAlign: 'left' }}>
+        <Typography variant="body1" color="text.primary" sx={{ mb: 1 }}>
+          {description}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          정해진 엑셀 양식에 입력하여 업로드하세요 ({formatDisplayText})
+        </Typography>
+      </Box>
 
-          {(onTemplateDownload || columns) && (
-            <Box sx={{ textAlign: 'center' }}>
-              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 1 }}>
-                {/* <Button variant="text" size="small" onClick={handleTemplateDownload}>
-                  📁 {templateLabel} (Excel)
-                </Button> */}
-                <Button variant="text" size="small" onClick={handleTemplateDownloadCSV}>
-                  📁 {templateLabel} (CSV)
-                </Button>
-              </Stack>
-              <Typography variant="caption" display="block" color="text.secondary">
-                템플릿에 맞춰 데이터를 입력한 후 업로드해주세요
-              </Typography>
-            </Box>
-          )}
-
-          <Box
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            sx={{
-              border: '2px dashed',
-              borderColor: isDragOver ? 'primary.main' : selectedFile ? 'success.main' : 'grey.300',
-              borderRadius: 2,
-              p: 4,
-              textAlign: 'center',
-              width: '100%',
-              bgcolor: isDragOver ? 'primary.50' : selectedFile ? 'success.50' : 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              cursor: 'pointer',
-              '&:hover': {
-                borderColor: selectedFile ? 'success.main' : 'primary.main',
-                bgcolor: selectedFile ? 'success.100' : 'primary.100',
-              },
-            }}
-          >
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {isDragOver
-                ? '파일을 여기에 놓아주세요'
-                : selectedFile
-                  ? `선택된 파일: ${selectedFile.name}`
-                  : '클릭 또는 드래그해서 파일을 선택해주세요'}
-            </Typography>
-            <Button variant="outlined" component="label">
-              파일 선택
-              <input type="file" accept={acceptString} hidden onChange={handleFileChange} />
+      {(onTemplateDownload || columns) && (
+        <Box sx={{ textAlign: 'center' }}>
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 1 }}>
+            {/* <Button variant="text" size="small" onClick={handleTemplateDownload}>
+              📁 {templateLabel} (Excel)
+            </Button> */}
+            <Button variant="text" size="small" onClick={handleTemplateDownloadCSV}>
+              📁 {templateLabel} (CSV)
             </Button>
-          </Box>
+          </Stack>
+          <Typography variant="caption" display="block" color="text.secondary">
+            템플릿에 맞춰 데이터를 입력한 후 업로드해주세요
+          </Typography>
+        </Box>
+      )}
 
-          <CreateDataActions
-            onSave={handleSave}
-            onCancel={onCancel}
-            saveLabel={saveLabel}
-            cancelLabel={cancelLabel}
-            size={size}
-            isLoading={isLoading}
-            disabled={!selectedFile}
-          />
-        </Stack>
-      </CardContent>
-    </Card>
+      <Box
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        sx={{
+          border: '2px dashed',
+          borderColor: isDragOver ? 'primary.main' : selectedFile ? 'success.main' : 'grey.300',
+          borderRadius: 2,
+          p: 4,
+          textAlign: 'center',
+          width: '100%',
+          bgcolor: isDragOver ? 'primary.50' : selectedFile ? 'success.50' : 'grey.50',
+          transition: 'all 0.2s ease-in-out',
+          cursor: 'pointer',
+          '&:hover': {
+            borderColor: selectedFile ? 'success.main' : 'primary.main',
+            bgcolor: selectedFile ? 'success.100' : 'primary.100',
+          },
+        }}
+      >
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          {isDragOver
+            ? '파일을 여기에 놓아주세요'
+            : selectedFile
+              ? `선택된 파일: ${selectedFile.name}`
+              : '클릭 또는 드래그해서 파일을 선택해주세요'}
+        </Typography>
+        <Button variant="outlined" component="label">
+          파일 선택
+          <input type="file" accept={acceptString} hidden onChange={handleFileChange} />
+        </Button>
+      </Box>
+
+      <CreateDataActions
+        onSave={handleSave}
+        onCancel={onCancel}
+        saveLabel={saveLabel}
+        cancelLabel={cancelLabel}
+        size={size}
+        isLoading={isLoading}
+        disabled={!selectedFile}
+      />
+    </Stack>
   );
 };
 

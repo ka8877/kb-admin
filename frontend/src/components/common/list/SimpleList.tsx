@@ -10,6 +10,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
+import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
 
 export type SimpleListRenderProps = {
@@ -219,17 +220,19 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   }, [confirmBarNode, selectionMode, selectionModel, toggleSelectionMode, onBack]);
 
   return (
-    <Box>
-      <ListSearch
-        columns={columns}
-        onSearch={handleSearch}
-        placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
-        size={size}
-      />
+    <Section>
+      <Box sx={{ mb: 2 }}>
+        <ListSearch
+          columns={columns}
+          onSearch={handleSearch}
+          placeholder={searchPlaceholder}
+          defaultField={searchField || 'all'}
+          defaultQuery={searchQuery}
+          size={size}
+        />
 
-      {resolvedActionsNode}
+        <DetailNavigationActions onBack={onBack} />
+      </Box>
 
       <Box
         sx={{
@@ -265,6 +268,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       {/* 컨펌 바가 있으면 DataGrid 하단에 렌더링 */}
       {resolvedConfirmBarNode}
     </Box>
+    </Section>
   );
 };
 

@@ -67,7 +67,7 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   ];
 
   return (
-    <Box display="flex" alignItems="center" gap={1}>
+    <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
       <FormControl size={muiSize} sx={{ minWidth: 140, ...inputStyles }}>
         <InputLabel id="list-search-field-label">검색대상</InputLabel>
         <Select

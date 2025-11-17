@@ -81,10 +81,19 @@ const MainLayout = ({ children }: PropsWithChildren) => {
 
       {showSideNav && <SideNav drawerWidth={DRAWER_WIDTH} items={frontMenus} />}
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          pl: '3rem',
+          pr: '3rem',
+          py: '3rem',
+          width: showSideNav ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
+        }}
+      >
         {/* push content below AppBar height */}
         <Toolbar />
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ maxWidth: '100%', py: 0 }}>
           {/* Breadcrumb / 현재 페이지 설명 텍스트 */}
           {breadcrumb.length > 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -107,7 +116,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
             </Typography>
           )}
           {children}
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

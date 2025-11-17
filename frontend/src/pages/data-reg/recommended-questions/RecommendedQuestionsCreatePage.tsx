@@ -9,6 +9,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import DualTabs from '@/components/common/tabs/DualTabs';
 import PageHeader from '@/components/common/PageHeader';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
+import Section from '@/components/layout/Section';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
@@ -503,20 +504,22 @@ const ExcelUploadComponent: React.FC = () => {
   };
 
   return (
-    <ExcelUpload
-      onSave={handleSave}
-      onCancel={handleCancel}
-      columns={templateColumns}
-      templateFileName="추천질문_업로드템플릿"
-      fieldGuides={fieldGuides}
-      validationRules={validationRules}
-      exampleData={exampleData}
-      referenceData={referenceData}
-      acceptedFormats={['.xlsx', '.csv']}
-      description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
-      templateLabel="엑셀 양식 다운로드"
-      size="medium"
-    />
+    <Section>
+      <ExcelUpload
+        onSave={handleSave}
+        onCancel={handleCancel}
+        columns={templateColumns}
+        templateFileName="추천질문_업로드템플릿"
+        fieldGuides={fieldGuides}
+        validationRules={validationRules}
+        exampleData={exampleData}
+        referenceData={referenceData}
+        acceptedFormats={['.xlsx', '.csv']}
+        description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
+        templateLabel="엑셀 양식 다운로드"
+        size="medium"
+      />
+    </Section>
   );
 };
 

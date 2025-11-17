@@ -10,6 +10,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
+import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
 import ExcelJS from 'exceljs';
 import { formatDateForDisplay } from '@/utils/dateUtils';
@@ -357,28 +358,30 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   }, [columns, selectFields, dateFields, applyColumnFormatters]);
 
   return (
-    <Box>
-      <ListSearch
-        columns={columns}
-        onSearch={handleSearch}
-        placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
-        size={size}
-      />
+    <Section>
+      <Box sx={{ mb: 2 }}>
+        <ListSearch
+          columns={columns}
+          onSearch={handleSearch}
+          placeholder={searchPlaceholder}
+          defaultField={searchField || 'all'}
+          defaultQuery={searchQuery}
+          size={size}
+        />
 
-      <ListActions
-        selectionMode={selectionMode}
-        onToggleSelectionMode={handleToggleSelectionMode}
-        selectedIds={
-          Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
-        }
-        onCreate={onCreate}
-        onRequestApproval={onRequestApproval}
-        onDeleteConfirm={handleDeleteConfirm}
-        onDownloadAll={handleExportAll}
-        size={size}
-      />
+        <ListActions
+          selectionMode={selectionMode}
+          onToggleSelectionMode={handleToggleSelectionMode}
+          selectedIds={
+            Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
+          }
+          onCreate={onCreate}
+          onRequestApproval={onRequestApproval}
+          onDeleteConfirm={handleDeleteConfirm}
+          onDownloadAll={handleExportAll}
+          size={size}
+        />
+      </Box>
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid<T>
@@ -408,7 +411,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         onCancel={handleCancelSelection}
         size={size}
       />
-    </Box>
+    </Section>
   );
 };
 
