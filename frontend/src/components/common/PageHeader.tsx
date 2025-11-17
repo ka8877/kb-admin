@@ -22,7 +22,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, breadcrumbs, r
   const navigate = useNavigate();
 
   return (
-    <Stack spacing={1} sx={{ mb: 3 }}>
+    <Stack spacing={1} sx={{ mb: 2 }}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs separator=">">
           {breadcrumbs.map((item, index) => {

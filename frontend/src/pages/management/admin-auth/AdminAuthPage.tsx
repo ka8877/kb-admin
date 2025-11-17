@@ -117,7 +117,7 @@ const AdminAuthPage: React.FC = () => {
   return (
     <Box>
       <PageHeader title="어드민 권한관리" />
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 1, mb: 1 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1}>
           <MediumButton variant="contained" onClick={handleEdit}>
             편집

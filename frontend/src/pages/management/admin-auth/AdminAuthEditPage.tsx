@@ -316,12 +316,7 @@ const AdminAuthEditPage: React.FC = () => {
     <Box>
       <PageHeader title="어드민 권한관리 편집" />
 
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mt: 2, mb: 1 }}
-      >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center">
           <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
           <SelectionDeleteButton
