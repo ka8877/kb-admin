@@ -19,7 +19,7 @@ import EditableList from '@/components/common/list/EditableList';
 import DetailNavigationActions from '@/components/common/actions/DetailNavigationActions';
 import PageHeader from '@/components/common/PageHeader';
 import MediumButton from '@/components/common/button/MediumButton';
-import CodeTypeManagementDialog from './components/CodeTypeManagementDialog';
+import CommonCodeTypeEditPage from './CommonCodeTypeEditPage';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
 
@@ -151,7 +151,7 @@ const CommonCodePage: React.FC = () => {
         </Box>
       )}
 
-      <CodeTypeManagementDialog
+      <CommonCodeTypeEditPage
         open={dialogOpen}
         onClose={handleCloseDialog}
         codeTypes={codeTypeOptions}
