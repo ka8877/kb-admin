@@ -8,7 +8,7 @@ import type {
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import ListSearch from '../search/ListSearch';
+import ListSearch, { type SearchField } from '../search/ListSearch';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import { useListState } from '@/hooks/useListState';
 import ExcelJS from 'exceljs';
@@ -38,6 +38,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
+  searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
 };
 
 const defaultGetRowId =
@@ -70,6 +71,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   selectFields,
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
+  searchFields,
 }: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -111,6 +113,13 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
   const filteredRows = useMemo(() => {
     if (!enableClientSearch) return data;
+    
+    // searchFields가 있고 여러 필드 검색인 경우
+    // ManagementList는 단일 필드 검색만 지원하므로, 
+    // ListSearch에서 여러 필드 값을 하나의 쿼리로 변환하여 전달하거나
+    // 별도의 검색 상태 관리가 필요할 수 있음
+    // 현재는 기존 로직 유지
+    
     const q = searchQuery.trim().toLowerCase();
     if (!q) return data;
     return data.filter((row) => {
@@ -277,22 +286,46 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleSearch = useCallback(
-    (p: { field?: string; query: string }) => {
+    (payload: Record<string, string | number>) => {
       // 검색 시 삭제 모드 해제
       if (selectionMode) {
         setSelectionMode(false);
         setSelectionModel([]);
       }
 
+      // 여러 필드 검색을 지원하기 위해 payload를 처리
+      // 현재 ManagementList는 단일 필드 검색만 지원하므로
+      // 첫 번째 필드만 사용하거나, 모든 필드를 조합하여 검색
+      const fields = Object.keys(payload);
+      if (fields.length === 0) {
+        // 검색 조건이 없으면 전체 표시
+        if (enableStatePreservation) {
+          updateListState({
+            searchField: undefined,
+            searchQuery: '',
+            page: 0,
+          });
+        } else {
+          setLocalSearchField(undefined);
+          setLocalSearchQuery('');
+          setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+        }
+        return;
+      }
+
+      // 첫 번째 필드와 값을 사용 (향후 여러 필드 검색 지원 시 확장 가능)
+      const firstField = fields[0];
+      const searchQuery = String(payload[firstField]);
+
       if (enableStatePreservation) {
         updateListState({
-          searchField: p.field,
-          searchQuery: p.query,
+          searchField: firstField,
+          searchQuery,
           page: 0, // 검색 시 첫 페이지로
         });
       } else {
-        setLocalSearchField(p.field);
-        setLocalSearchQuery(p.query);
+        setLocalSearchField(firstField);
+        setLocalSearchQuery(searchQuery);
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -360,10 +393,9 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     <Box>
       <ListSearch
         columns={columns}
+        searchFields={searchFields}
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
         size={size}
       />
 

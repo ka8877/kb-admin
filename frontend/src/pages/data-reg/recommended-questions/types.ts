@@ -15,3 +15,6 @@ export type RecommendedQuestionItem = {
   registeredAt: string;
   status: 'in_service' | 'out_of_service';
 };
+
+// SearchField 타입은 ListSearch 컴포넌트에서 재사용
+export type { SearchField, SearchFieldOption } from '@/components/common/search/ListSearch';

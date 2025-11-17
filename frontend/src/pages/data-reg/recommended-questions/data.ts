@@ -1,4 +1,4 @@
-import type { RecommendedQuestionItem } from './types';
+import type { RecommendedQuestionItem, SearchField } from './types';
 import type { ApprovalRequestItem } from '@/types/types';
 
 // 서비스 옵션 데이터
@@ -232,3 +232,21 @@ export const mockRecommendedQuestionDetail: RecommendedQuestionItem = {
   registeredAt: '20250617150000',
   status: 'in_service',
 };
+
+export const searchFields: SearchField[] = [
+  {
+    type: 'textGroup',
+    fields: [
+      { field: 'qst_ctnt', label: '질문내용' },
+      { field: 'qst_style', label: '질문스타일' },
+    ],
+  },
+  { field: 'service_nm', label: '서비스명', type: 'select', options: serviceOptions },
+
+  { field: 'qst_ctgr', label: '질문카테고리', type: 'select', options: questionCategoryOptions },
+  { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
+  { field: 'age_grp', label: '연령대', type: 'select', options: ageGroupOptions },
+  { field: 'under_17_yn', label: '17세 미만 여부', type: 'radio', options: under17Options },
+  { field: 'imp_start_date', label: '노출시작일시', type: 'dateRange', position: 'start' },
+  { field: 'imp_end_date', label: '노출종료일시', type: 'dateRange', position: 'end' },
+];

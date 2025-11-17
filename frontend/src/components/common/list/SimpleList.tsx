@@ -148,20 +148,43 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleSearch = useCallback(
-    (p: { field?: string; query: string }) => {
+    (payload: Record<string, string | number>) => {
       if (selectionMode) {
         toggleSelectionMode(false);
       }
 
+      // 여러 필드 검색을 지원하기 위해 payload를 처리
+      // 현재 SimpleList는 단일 필드 검색만 지원하므로 첫 번째 필드만 사용
+      const fields = Object.keys(payload);
+      if (fields.length === 0) {
+        // 검색 조건이 없으면 전체 표시
+        if (enableStatePreservation) {
+          updateListState({
+            searchField: undefined,
+            searchQuery: '',
+            page: 0,
+          });
+        } else {
+          setLocalSearchField(undefined);
+          setLocalSearchQuery('');
+          setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+        }
+        return;
+      }
+
+      // 첫 번째 필드와 값을 사용
+      const firstField = fields[0];
+      const searchQuery = String(payload[firstField]);
+
       if (enableStatePreservation) {
         updateListState({
-          searchField: p.field,
-          searchQuery: p.query,
+          searchField: firstField,
+          searchQuery,
           page: 0, // 검색 시 첫 페이지로
         });
       } else {
-        setLocalSearchField(p.field);
-        setLocalSearchQuery(p.query);
+        setLocalSearchField(firstField);
+        setLocalSearchQuery(searchQuery);
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -224,8 +247,6 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         columns={columns}
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
         size={size}
       />
 
