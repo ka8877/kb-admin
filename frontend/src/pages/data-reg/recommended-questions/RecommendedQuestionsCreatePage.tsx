@@ -9,6 +9,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import DualTabs from '@/components/common/tabs/DualTabs';
 import PageHeader from '@/components/common/PageHeader';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
+import Section from '@/components/layout/Section';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
@@ -159,180 +160,178 @@ const ManualInputComponent: React.FC = () => {
   }, [navigate]);
 
   return (
-    <Card>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={3}>
-            <Controller
-              name="service_nm"
-              control={control}
-              render={({ field }) => (
-                <SelectInput
-                  label="서비스명"
-                  value={field.value}
-                  options={serviceOptions}
-                  onChange={field.onChange}
-                  required
-                  error={hasTriedSubmit && !!errors.service_nm}
-                  helperText={hasTriedSubmit ? errors.service_nm?.message : undefined}
-                  placeholder="선택"
-                />
-              )}
-            />
+    <Section>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={3}>
+          <Controller
+            name="service_nm"
+            control={control}
+            render={({ field }) => (
+              <SelectInput
+                label="서비스명"
+                value={field.value}
+                options={serviceOptions}
+                onChange={field.onChange}
+                required
+                error={hasTriedSubmit && !!errors.service_nm}
+                helperText={hasTriedSubmit ? errors.service_nm?.message : undefined}
+                placeholder="선택"
+              />
+            )}
+          />
 
-            <Controller
-              name="qst_ctnt"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="질문 내용"
-                  placeholder="질문 내용을 입력하세요"
-                  multiline
-                  rows={4}
-                  fullWidth
-                  required
-                  error={hasTriedSubmit && !!errors.qst_ctnt}
-                  helperText={hasTriedSubmit ? errors.qst_ctnt?.message : undefined}
-                />
-              )}
-            />
+          <Controller
+            name="qst_ctnt"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="질문 내용"
+                placeholder="질문 내용을 입력하세요"
+                multiline
+                rows={4}
+                fullWidth
+                required
+                error={hasTriedSubmit && !!errors.qst_ctnt}
+                helperText={hasTriedSubmit ? errors.qst_ctnt?.message : undefined}
+              />
+            )}
+          />
 
-            <Controller
-              name="qst_ctgr"
-              control={control}
-              render={({ field }) => (
-                <GroupedSelectInput
-                  label="질문 카테고리"
-                  value={field.value}
-                  optionGroups={questionCategoryGroupedOptions}
-                  onChange={field.onChange}
-                  required
-                  error={hasTriedSubmit && !!errors.qst_ctgr}
-                  helperText={hasTriedSubmit ? errors.qst_ctgr?.message : undefined}
-                  placeholder="선택"
-                />
-              )}
-            />
+          <Controller
+            name="qst_ctgr"
+            control={control}
+            render={({ field }) => (
+              <GroupedSelectInput
+                label="질문 카테고리"
+                value={field.value}
+                optionGroups={questionCategoryGroupedOptions}
+                onChange={field.onChange}
+                required
+                error={hasTriedSubmit && !!errors.qst_ctgr}
+                helperText={hasTriedSubmit ? errors.qst_ctgr?.message : undefined}
+                placeholder="선택"
+              />
+            )}
+          />
 
-            <Controller
-              name="qst_style"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="질문 태그"
-                  placeholder="질문 태그를 입력하세요"
-                  fullWidth
-                  error={hasTriedSubmit && !!errors.qst_style}
-                  helperText={hasTriedSubmit ? errors.qst_style?.message : undefined}
-                />
-              )}
-            />
+          <Controller
+            name="qst_style"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="질문 태그"
+                placeholder="질문 태그를 입력하세요"
+                fullWidth
+                error={hasTriedSubmit && !!errors.qst_style}
+                helperText={hasTriedSubmit ? errors.qst_style?.message : undefined}
+              />
+            )}
+          />
 
-            <Controller
-              name="parentId"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="부모 ID"
-                  placeholder="부모 ID를 입력하세요"
-                  fullWidth
-                  required={isParentIdRequired}
-                  error={hasTriedSubmit && !!errors.parentId}
-                  helperText={hasTriedSubmit ? errors.parentId?.message : undefined}
-                />
-              )}
-            />
+          <Controller
+            name="parentId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="부모 ID"
+                placeholder="부모 ID를 입력하세요"
+                fullWidth
+                required={isParentIdRequired}
+                error={hasTriedSubmit && !!errors.parentId}
+                helperText={hasTriedSubmit ? errors.parentId?.message : undefined}
+              />
+            )}
+          />
 
-            <Controller
-              name="parentIdName"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="부모 ID명"
-                  placeholder="부모 ID명을 입력하세요"
-                  fullWidth
-                  required={isParentIdRequired}
-                  error={hasTriedSubmit && !!errors.parentIdName}
-                  helperText={hasTriedSubmit ? errors.parentIdName?.message : undefined}
-                />
-              )}
-            />
+          <Controller
+            name="parentIdName"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="부모 ID명"
+                placeholder="부모 ID명을 입력하세요"
+                fullWidth
+                required={isParentIdRequired}
+                error={hasTriedSubmit && !!errors.parentIdName}
+                helperText={hasTriedSubmit ? errors.parentIdName?.message : undefined}
+              />
+            )}
+          />
 
-            <Controller
-              name="age_grp"
-              control={control}
-              render={({ field }) => (
-                <SelectInput
-                  label="연령대"
-                  value={field.value || ''}
-                  options={ageGroupOptions}
-                  onChange={field.onChange}
-                  required={isAgeGroupRequired}
-                  error={hasTriedSubmit && !!errors.age_grp}
-                  helperText={hasTriedSubmit ? errors.age_grp?.message : undefined}
-                  placeholder="선택"
-                />
-              )}
-            />
+          <Controller
+            name="age_grp"
+            control={control}
+            render={({ field }) => (
+              <SelectInput
+                label="연령대"
+                value={field.value || ''}
+                options={ageGroupOptions}
+                onChange={field.onChange}
+                required={isAgeGroupRequired}
+                error={hasTriedSubmit && !!errors.age_grp}
+                helperText={hasTriedSubmit ? errors.age_grp?.message : undefined}
+                placeholder="선택"
+              />
+            )}
+          />
 
-            <Controller
-              name="imp_start_date"
-              control={control}
-              render={({ field }) => (
-                <DateInput
-                  label="노출 시작 일시"
-                  value={field.value}
-                  onChange={field.onChange}
-                  required
-                  error={hasTriedSubmit && !!errors.imp_start_date}
-                  helperText={hasTriedSubmit ? errors.imp_start_date?.message : undefined}
-                  format="YYYY-MM-DD HH:mm"
-                />
-              )}
-            />
+          <Controller
+            name="imp_start_date"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="노출 시작 일시"
+                value={field.value}
+                onChange={field.onChange}
+                required
+                error={hasTriedSubmit && !!errors.imp_start_date}
+                helperText={hasTriedSubmit ? errors.imp_start_date?.message : undefined}
+                format="YYYY-MM-DD HH:mm"
+              />
+            )}
+          />
 
-            <Controller
-              name="imp_end_date"
-              control={control}
-              render={({ field }) => (
-                <DateInput
-                  label="노출 종료 일시"
-                  value={field.value}
-                  onChange={field.onChange}
-                  required
-                  error={hasTriedSubmit && !!errors.imp_end_date}
-                  helperText={hasTriedSubmit ? errors.imp_end_date?.message : undefined}
-                  format="YYYY-MM-DD HH:mm"
-                />
-              )}
-            />
+          <Controller
+            name="imp_end_date"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="노출 종료 일시"
+                value={field.value}
+                onChange={field.onChange}
+                required
+                error={hasTriedSubmit && !!errors.imp_end_date}
+                helperText={hasTriedSubmit ? errors.imp_end_date?.message : undefined}
+                format="YYYY-MM-DD HH:mm"
+              />
+            )}
+          />
 
-            <Controller
-              name="under_17_yn"
-              control={control}
-              render={({ field }) => (
-                <RadioInput
-                  label="17세 미만 노출 여부"
-                  value={field.value || ''}
-                  options={under17Options}
-                  onChange={field.onChange}
-                  required
-                  row
-                  error={hasTriedSubmit && !!errors.under_17_yn}
-                  helperText={hasTriedSubmit ? errors.under_17_yn?.message : undefined}
-                />
-              )}
-            />
+          <Controller
+            name="under_17_yn"
+            control={control}
+            render={({ field }) => (
+              <RadioInput
+                label="17세 미만 노출 여부"
+                value={field.value || ''}
+                options={under17Options}
+                onChange={field.onChange}
+                required
+                row
+                error={hasTriedSubmit && !!errors.under_17_yn}
+                helperText={hasTriedSubmit ? errors.under_17_yn?.message : undefined}
+              />
+            )}
+          />
 
-            <CreateDataActions onSave={handleSaveClick} onCancel={handleCancel} size="medium" />
-          </Stack>
-        </form>
-      </CardContent>
-    </Card>
+          <CreateDataActions onSave={handleSaveClick} onCancel={handleCancel} size="medium" />
+        </Stack>
+      </form>
+    </Section>
   );
 };
 
@@ -495,20 +494,22 @@ const ExcelUploadComponent: React.FC = () => {
   };
 
   return (
-    <ExcelUpload
-      onSave={handleSave}
-      onCancel={handleCancel}
-      columns={templateColumns}
-      templateFileName="추천질문_업로드템플릿"
-      fieldGuides={fieldGuides}
-      validationRules={validationRules}
-      exampleData={exampleData}
-      referenceData={referenceData}
-      acceptedFormats={['.xlsx', '.csv']}
-      description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
-      templateLabel="엑셀 양식 다운로드"
-      size="medium"
-    />
+    <Section>
+      <ExcelUpload
+        onSave={handleSave}
+        onCancel={handleCancel}
+        columns={templateColumns}
+        templateFileName="추천질문_업로드템플릿"
+        fieldGuides={fieldGuides}
+        validationRules={validationRules}
+        exampleData={exampleData}
+        referenceData={referenceData}
+        acceptedFormats={['.xlsx', '.csv']}
+        description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
+        templateLabel="엑셀 양식 다운로드"
+        size="medium"
+      />
+    </Section>
   );
 };
 

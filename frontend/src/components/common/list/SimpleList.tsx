@@ -9,6 +9,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
+import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
 
 export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
@@ -141,17 +142,19 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   return (
-    <Box>
-      <ListSearch
-        columns={columns}
-        onSearch={handleSearch}
-        placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
-        size={size}
-      />
+    <Section>
+      <Box sx={{ mb: 2 }}>
+        <ListSearch
+          columns={columns}
+          onSearch={handleSearch}
+          placeholder={searchPlaceholder}
+          defaultField={searchField || 'all'}
+          defaultQuery={searchQuery}
+          size={size}
+        />
 
-      <DetailNavigationActions onBack={onBack} />
+        <DetailNavigationActions onBack={onBack} />
+      </Box>
 
       <Box sx={{ height: 420, width: '100%' }}>
         <DataGrid<T>
@@ -168,7 +171,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           onRowClick={onRowClick ? handleRowClick : undefined}
         />
       </Box>
-    </Box>
+    </Section>
   );
 };
 

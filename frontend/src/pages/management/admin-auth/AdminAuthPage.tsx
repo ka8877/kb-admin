@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import PageHeader from '@/components/common/PageHeader';
 import EditableList from '@/components/common/list/EditableList';
 import MediumButton from '@/components/common/button/MediumButton';
+import Section from '@/components/layout/Section';
 import { ROUTES } from '@/routes/menu';
 import { adminAuthMockDb } from '@/mocks/adminAuthDb';
 import { listColumns } from './components/columns';
@@ -117,27 +118,29 @@ const AdminAuthPage: React.FC = () => {
   return (
     <Box>
       <PageHeader title="어드민 권한관리" />
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1}>
-          <MediumButton variant="contained" onClick={handleEdit}>
-            편집
-          </MediumButton>
-        </Stack>
-        <Stack direction="row" spacing={1}>
-          <MediumButton variant="outlined" onClick={handleDownloadAll}>
-            전체목록 xlsx 다운로드
-          </MediumButton>
-        </Stack>
-      </Box>
-      <EditableList
-        columns={listColumns}
-        fetcher={async () => await adminAuthMockDb.listAll()}
-        rowIdGetter={(r: RowItem) => r.id}
-        defaultPageSize={25}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onRowClick={handleRowClick}
-        isEditMode={false}
-      />
+      <Section>
+        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1}>
+            <MediumButton variant="contained" onClick={handleEdit}>
+              편집
+            </MediumButton>
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <MediumButton variant="outlined" onClick={handleDownloadAll}>
+              전체목록 xlsx 다운로드
+            </MediumButton>
+          </Stack>
+        </Box>
+        <EditableList
+          columns={listColumns}
+          fetcher={async () => await adminAuthMockDb.listAll()}
+          rowIdGetter={(r: RowItem) => r.id}
+          defaultPageSize={25}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onRowClick={handleRowClick}
+          isEditMode={false}
+        />
+      </Section>
     </Box>
   );
 };
