@@ -11,6 +11,7 @@ import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteBu
 import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
+import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { questionsCategoryMockDb } from '@/mocks/questionsCategoryDb';
@@ -325,59 +326,63 @@ const QuestionsCategoryEditPage: React.FC = () => {
     <Box>
       <PageHeader title="질문 카테고리 관리" />
 
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
-          <SelectionDeleteButton
-            selectionMode={selectionMode}
-            onToggleSelection={handleToggleSelection}
-            size="small"
-          />
+      <Section>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
+            <SelectionDeleteButton
+              selectionMode={selectionMode}
+              onToggleSelection={handleToggleSelection}
+              size="small"
+            />
+          </Stack>
+
+          {!selectionMode && (
+            <CreateDataActions
+              onSave={handleSave}
+              onCancel={handleCancel}
+              size="small"
+              saveVariant="contained"
+              cancelVariant="outlined"
+              spacing={1}
+              sx={{ mb: 0 }}
+            />
+          )}
         </Stack>
 
-        {!selectionMode && (
-          <CreateDataActions
-            onSave={handleSave}
-            onCancel={handleCancel}
-            size="small"
-            saveVariant="contained"
-            cancelVariant="outlined"
-            spacing={1}
-            sx={{ mb: 0 }}
-          />
-        )}
-      </Stack>
+        <ManagedCategoryList
+          apiRef={apiRef}
+          rows={rows as CategoryRowGeneric[]}
+          setRows={
+            setRows as (
+              updater:
+                | CategoryRowGeneric[]
+                | ((prev: CategoryRowGeneric[]) => CategoryRowGeneric[]),
+            ) => void
+          }
+          getRowId={(r) => (r as LocalRow).no}
+          columns={columns as GridColDef<CategoryRowGeneric>[]}
+          loading={loading}
+          processRowUpdate={
+            processRowUpdate as unknown as (
+              newRow: CategoryRowGeneric,
+              oldRow: CategoryRowGeneric,
+            ) => CategoryRowGeneric | Promise<CategoryRowGeneric>
+          }
+          selectionMode={selectionMode}
+          selectionModel={selectionModel}
+          onSelectionModelChange={handleSelectionModelChange}
+          onDragOrderChange={handleDragOrderChange as (newRows: CategoryRowGeneric[]) => void}
+        />
 
-      <ManagedCategoryList
-        apiRef={apiRef}
-        rows={rows as CategoryRowGeneric[]}
-        setRows={
-          setRows as (
-            updater: CategoryRowGeneric[] | ((prev: CategoryRowGeneric[]) => CategoryRowGeneric[]),
-          ) => void
-        }
-        getRowId={(r) => (r as LocalRow).no}
-        columns={columns as GridColDef<CategoryRowGeneric>[]}
-        loading={loading}
-        processRowUpdate={
-          processRowUpdate as unknown as (
-            newRow: CategoryRowGeneric,
-            oldRow: CategoryRowGeneric,
-          ) => CategoryRowGeneric | Promise<CategoryRowGeneric>
-        }
-        selectionMode={selectionMode}
-        selectionModel={selectionModel}
-        onSelectionModelChange={handleSelectionModelChange}
-        onDragOrderChange={handleDragOrderChange as (newRows: CategoryRowGeneric[]) => void}
-      />
-
-      <DeleteConfirmBar
-        open={selectionMode}
-        selectedIds={selectionModel}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        size="small"
-      />
+        <DeleteConfirmBar
+          open={selectionMode}
+          selectedIds={selectionModel}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          size="small"
+        />
+      </Section>
     </Box>
   );
 };

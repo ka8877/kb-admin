@@ -383,7 +383,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         />
       </Box>
 
-      <Box sx={{ height: 420, width: '100%' }}>
+      <Box sx={{ height: 550, width: '100%' }}>
         <DataGrid<T>
           rows={filteredRows}
           columns={processedColumns}
@@ -397,8 +397,16 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           pageSizeOptions={[5, 10, 20, 50]}
           disableRowSelectionOnClick
           density="standard"
+          rowHeight={46}
+          columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          sx={{
+            '& .MuiDataGrid-footerContainer': {
+              minHeight: '46px',
+              maxHeight: '46px',
+            },
+          }}
         />
       </Box>
 

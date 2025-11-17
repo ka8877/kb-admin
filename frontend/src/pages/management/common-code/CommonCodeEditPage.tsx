@@ -21,6 +21,7 @@ import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteBu
 import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
+import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
@@ -330,68 +331,70 @@ const CommonCodeEditPage: React.FC = () => {
     <Box>
       <PageHeader title="공통 코드 관리" />
 
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="code-type-select-label-edit">코드 타입</InputLabel>
-            <Select
-              labelId="code-type-select-label-edit"
-              value={selectedCodeType}
-              onChange={handleCodeTypeChange}
-              label="코드 타입"
-            >
-              <MenuItem value="" disabled>
-                선택하세요
-              </MenuItem>
-              {codeTypeOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+      <Section>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="code-type-select-label-edit">코드 타입</InputLabel>
+              <Select
+                labelId="code-type-select-label-edit"
+                value={selectedCodeType}
+                onChange={handleCodeTypeChange}
+                label="코드 타입"
+              >
+                <MenuItem value="" disabled>
+                  선택하세요
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
-          <SelectionDeleteButton
-            selectionMode={selectionMode}
-            onToggleSelection={setSelectionMode}
-            size="small"
-          />
+                {codeTypeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
+            <SelectionDeleteButton
+              selectionMode={selectionMode}
+              onToggleSelection={setSelectionMode}
+              size="small"
+            />
+          </Stack>
+
+          {!selectionMode && (
+            <CreateDataActions
+              onSave={handleSave}
+              onCancel={handleCancel}
+              size="small"
+              saveVariant="contained"
+              cancelVariant="outlined"
+              spacing={1}
+              sx={{ mb: 0 }}
+            />
+          )}
         </Stack>
 
-        {!selectionMode && (
-          <CreateDataActions
-            onSave={handleSave}
-            onCancel={handleCancel}
-            size="small"
-            saveVariant="contained"
-            cancelVariant="outlined"
-            spacing={1}
-            sx={{ mb: 0 }}
-          />
-        )}
-      </Stack>
+        <ManagedCategoryList
+          apiRef={apiRef}
+          rows={filteredRows as any}
+          setRows={setRows as any}
+          getRowId={(row: any) => row.no}
+          columns={columns as any}
+          loading={loading}
+          processRowUpdate={processRowUpdate as any}
+          selectionMode={selectionMode}
+          selectionModel={selectionModel}
+          onSelectionModelChange={setSelectionModel}
+          onDragOrderChange={handleRowOrderChange}
+        />
 
-      <ManagedCategoryList
-        apiRef={apiRef}
-        rows={filteredRows as any}
-        setRows={setRows as any}
-        getRowId={(row: any) => row.no}
-        columns={columns as any}
-        loading={loading}
-        processRowUpdate={processRowUpdate as any}
-        selectionMode={selectionMode}
-        selectionModel={selectionModel}
-        onSelectionModelChange={setSelectionModel}
-        onDragOrderChange={handleRowOrderChange}
-      />
-
-      <DeleteConfirmBar
-        open={selectionMode}
-        selectedIds={selectionModel}
-        onConfirm={handleDelete}
-        onCancel={() => setSelectionMode(false)}
-        size="small"
-      />
+        <DeleteConfirmBar
+          open={selectionMode}
+          selectedIds={selectionModel}
+          onConfirm={handleDelete}
+          onCancel={() => setSelectionMode(false)}
+          size="small"
+        />
+      </Section>
     </Box>
   );
 };

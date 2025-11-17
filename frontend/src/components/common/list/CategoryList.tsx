@@ -159,7 +159,7 @@ const CategoryList = <T extends GridValidRowModel = CategoryRow>({
   }, [draggingId, rows, getRowId, ghostLabelGetter]);
 
   return (
-    <div style={{ height: 600, width: '100%' }} onMouseDown={handleMouseDown}>
+    <div style={{ height: 550, width: '100%' }} onMouseDown={handleMouseDown}>
       <DataGrid
         rows={rows}
         columns={columns}
@@ -170,6 +170,9 @@ const CategoryList = <T extends GridValidRowModel = CategoryRow>({
         processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={onProcessRowUpdateError}
         disableRowSelectionOnClick
+        density="standard"
+        rowHeight={46}
+        columnHeaderHeight={46}
         checkboxSelection={selectionMode}
         rowSelectionModel={selectionModel}
         onRowSelectionModelChange={onSelectionModelChange}
@@ -181,6 +184,10 @@ const CategoryList = <T extends GridValidRowModel = CategoryRow>({
         sx={{
           '& .drag-over': { bgcolor: 'action.selected' },
           '& .dragging': { opacity: 0.7 },
+          '& .MuiDataGrid-footerContainer': {
+            minHeight: '46px',
+            maxHeight: '46px',
+          },
         }}
         initialState={{ pagination: { paginationModel: { pageSize: defaultPageSize } } }}
       />

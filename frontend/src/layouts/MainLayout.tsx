@@ -87,7 +87,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
           flexGrow: 1,
           pl: '3rem',
           pr: '3rem',
-          py: '3rem',
+          py: '2rem',
           width: showSideNav ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
         }}
       >

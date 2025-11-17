@@ -236,7 +236,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
 
       <Box
         sx={{
-          height: 420,
+          height: 550,
           width: '100%',
           '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
             borderColor: '#1976d2 !important',
@@ -260,8 +260,16 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           pageSizeOptions={[5, 10, 20, 50]}
           disableRowSelectionOnClick
           density="standard"
+          rowHeight={46}
+          columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          sx={{
+            '& .MuiDataGrid-footerContainer': {
+              minHeight: '46px',
+              maxHeight: '46px',
+            },
+          }}
         />
       </Box>
 

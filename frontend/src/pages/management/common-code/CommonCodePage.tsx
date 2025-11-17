@@ -137,17 +137,15 @@ const CommonCodePage: React.FC = () => {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ height: 420, width: '100%' }}>
-            <EditableList<RowItem>
-              key={selectedCodeType}
-              columns={listColumns}
-              fetcher={listApi.list}
-              rowIdGetter={(r: RowItem) => r.service_cd}
-              defaultPageSize={25}
-              pageSizeOptions={[10, 25, 50, 100]}
-              isEditMode={false}
-            />
-          </Box>
+          <EditableList<RowItem>
+            key={selectedCodeType}
+            columns={listColumns}
+            fetcher={listApi.list}
+            rowIdGetter={(r: RowItem) => r.service_cd}
+            defaultPageSize={25}
+            pageSizeOptions={[10, 25, 50, 100]}
+            isEditMode={false}
+          />
         )}
       </Section>
 
