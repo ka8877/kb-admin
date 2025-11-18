@@ -420,7 +420,6 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
   return (
     <Section>
-      <Box sx={{ mb: 2 }}>
       <ListSearch
         columns={columns}
         searchFields={searchFields}
@@ -430,19 +429,18 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         initialValues={initialValues}
       />
 
-        <ListActions
-          selectionMode={selectionMode}
-          onToggleSelectionMode={handleToggleSelectionMode}
-          selectedIds={
-            Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
-          }
-          onCreate={onCreate}
-          onRequestApproval={onRequestApproval}
-          onDeleteConfirm={handleDeleteConfirm}
-          onDownloadAll={handleExportAll}
-          size={size}
-        />
-      </Box>
+      <ListActions
+        selectionMode={selectionMode}
+        onToggleSelectionMode={handleToggleSelectionMode}
+        selectedIds={
+          Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
+        }
+        onCreate={onCreate}
+        onRequestApproval={onRequestApproval}
+        onDeleteConfirm={handleDeleteConfirm}
+        onDownloadAll={handleExportAll}
+        size={size}
+      />
 
       <Box sx={{ height: 550, width: '100%' }}>
         <DataGrid<T>

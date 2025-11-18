@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import AdvancedSearchLayout from '@/components/layout/list/AdvancedSearchLayout';
+import SearchSection from '@/components/layout/SearchSection';
 import SearchSelect from '../select/SearchSelect';
 import SearchRadio from '../radio/SearchRadio';
 import MediumButton from '../button/MediumButton';
@@ -249,38 +249,36 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   }, [searchFields]);
 
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
-      {/* textGroup: full width로 상단에 배치 */}
-      {textGroupFields.map((sf, index) => {
-        const originalIndex = getOriginalIndex(sf);
-        const selectedField =
-          resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
-        const selectOptions = sf.fields.map((f) => ({ value: f.field, label: f.label }));
-        return (
-          <SearchInput
+    <SearchSection>
+      <Box display="flex" flexDirection="column" gap={2}>
+        {/* textGroup: full width로 상단에 배치 */}
+        {textGroupFields.map((sf, index) => {
+          const originalIndex = getOriginalIndex(sf);
+          const selectedField =
+            resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
+          const selectOptions = sf.fields.map((f) => ({ value: f.field, label: f.label }));
+          return (
+            <SearchInput
+              key={`textGroup_${originalIndex}`}
+              label="검색대상"
+              value={selectedField}
+              options={selectOptions}
+              inputValue={fieldValues[`textGroup_${originalIndex}`] || ''}
+              onFieldChange={(val) => {
+                updateTextGroupField(originalIndex, val);
+                updateFieldValue(`textGroup_${originalIndex}`, '');
+              }}
+              onInputChange={(value) => updateFieldValue(`textGroup_${originalIndex}`, value)}
+              onSearch={handleSearch}
+              placeholder={placeholder}
+              size={'small'}
+              inputStyles={inputStyles}
+            />
+          );
+        })}
 
-            key={`textGroup_${originalIndex}`}
-            label="검색대상"
-            value={selectedField}
-            options={selectOptions}
-            inputValue={fieldValues[`textGroup_${originalIndex}`] || ''}
-            onFieldChange={(val) => {
-              updateTextGroupField(originalIndex, val);
-              updateFieldValue(`textGroup_${originalIndex}`, '');
-            }}
-            onInputChange={(value) => updateFieldValue(`textGroup_${originalIndex}`, value)}
-            onSearch={handleSearch}
-            placeholder={placeholder}
-            size={'small'}
-            sx={{ mb: 2 }}
-            inputStyles={inputStyles}
-          />
-        );
-      })}
-
-      {/* 고급 필터: 회색 박스 안에 라벨:입력컴포넌트 형태로 배치 */}
-      {advancedFilterFields.length > 0 && (
-        <AdvancedSearchLayout>
+        {/* 고급 필터: 회색 박스 안에 라벨:입력컴포넌트 형태로 배치 */}
+        {advancedFilterFields.length > 0 && (
           <Box display="flex" flexWrap="wrap" alignItems="center" rowGap={2}>
             {advancedFilterFields.map((sf, filterIndex) => {
               const originalIndex = getOriginalIndex(sf);
@@ -321,48 +319,46 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
               // select 타입
               if (sf.type === 'select') {
                 return (
-                    <SearchSelect
+                  <SearchSelect
                     key={sf.field}
-                      label={sf.label}
-                      value={fieldValues[sf.field] || ''}
-                      options={sf.options}
-                      onChange={(val) => updateFieldValue(sf.field, val)}
-                      size={'small'}
-                      sx={{ minWidth: '200px', marginRight: 2, ...inputStyles }}
-                    />
-                  
+                    label={sf.label}
+                    value={fieldValues[sf.field] || ''}
+                    options={sf.options}
+                    onChange={(val) => updateFieldValue(sf.field, val)}
+                    size={'small'}
+                    sx={{ minWidth: '200px', marginRight: 2, ...inputStyles }}
+                  />
                 );
               }
 
               // radio 타입
               if (sf.type === 'radio') {
                 return (
-                    <SearchRadio
+                  <SearchRadio
                     key={sf.field}
-                      label={sf.label}
-                      value={fieldValues[sf.field] || ''}
-                      options={sf.options}
-                      onChange={(val) => updateFieldValue(sf.field, val)}
-                      size={muiSize}
-                      sx={{ minWidth: '170px',  ...inputStyles }}
-                    />
-                  
+                    label={sf.label}
+                    value={fieldValues[sf.field] || ''}
+                    options={sf.options}
+                    onChange={(val) => updateFieldValue(sf.field, val)}
+                    size={muiSize}
+                    sx={{ minWidth: '170px', ...inputStyles }}
+                  />
                 );
               }
               return null;
             })}
           </Box>
-        </AdvancedSearchLayout>
-      )}
-      {/* textGroup이 없을 때만 검색 버튼 표시 */}
-      {textGroupFields.length === 0 && (
-        <Box display="flex" justifyContent="flex-end">
-          <MediumButton variant="contained" onClick={handleSearch} aria-label="검색" size="small">
-            검색
-          </MediumButton>
-        </Box>
-      )}
-    </Box>
+        )}
+        {/* textGroup이 없을 때만 검색 버튼 표시 */}
+        {textGroupFields.length === 0 && (
+          <Box display="flex" justifyContent="flex-end">
+            <MediumButton variant="contained" onClick={handleSearch} aria-label="검색" size="small">
+              검색
+            </MediumButton>
+          </Box>
+        )}
+      </Box>
+    </SearchSection>
   );
 };
 
