@@ -8,7 +8,8 @@ import type {
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import ListSearch, { type SearchField } from '../search/ListSearch';
+import ListSearch from '../search/ListSearch';
+import { SearchField } from '@/types/types';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import { useListState } from '@/hooks/useListState';
 import ExcelJS from 'exceljs';
@@ -113,13 +114,31 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
   const filteredRows = useMemo(() => {
     if (!enableClientSearch) return data;
-    
-    // searchFields가 있고 여러 필드 검색인 경우
-    // ManagementList는 단일 필드 검색만 지원하므로, 
-    // ListSearch에서 여러 필드 값을 하나의 쿼리로 변환하여 전달하거나
-    // 별도의 검색 상태 관리가 필요할 수 있음
-    // 현재는 기존 로직 유지
-    
+
+    // 다중 조건 검색: searchFieldsState가 있으면 각 필드별로 필터링
+    if (enableStatePreservation && listState.searchFieldsState) {
+      let searchFields: Record<string, string | number> = {};
+      try {
+        searchFields = JSON.parse(listState.searchFieldsState);
+      } catch {}
+      if (Object.keys(searchFields).length === 0) return data;
+      return data.filter((row) => {
+        const rowObj = row as Record<string, unknown>;
+        return Object.entries(searchFields).every(([field, value]) => {
+          // 빈 문자열이면 필터링 조건에서 제외 (즉, 무시)
+          if (value === undefined || value === null || value === '') return true;
+          const rowValue = rowObj[field];
+          if (rowValue === undefined || rowValue === null) return false;
+          // 문자열: 포함 여부, 그 외: 완전일치
+          if (typeof value === 'string' && typeof rowValue === 'string') {
+            return rowValue.toLowerCase().includes(value.toLowerCase());
+          }
+          return String(rowValue) === String(value);
+        });
+      });
+    }
+
+    // 기존 단일 조건 검색 (로컬 상태)
     const q = searchQuery.trim().toLowerCase();
     if (!q) return data;
     return data.filter((row) => {
@@ -132,7 +151,14 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       const value = rowObj[searchField];
       return value == null ? false : String(value).toLowerCase().includes(q);
     });
-  }, [data, searchField, searchQuery, enableClientSearch]);
+  }, [
+    data,
+    searchField,
+    searchQuery,
+    enableClientSearch,
+    enableStatePreservation,
+    listState.searchFieldsState,
+  ]);
 
   // 컬럼 처리 로직 공통화 (DRY 원칙)
   const applyColumnFormatters = useCallback(
@@ -293,16 +319,13 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         setSelectionModel([]);
       }
 
-      // 여러 필드 검색을 지원하기 위해 payload를 처리
-      // 현재 ManagementList는 단일 필드 검색만 지원하므로
-      // 첫 번째 필드만 사용하거나, 모든 필드를 조합하여 검색
       const fields = Object.keys(payload);
       if (fields.length === 0) {
-        // 검색 조건이 없으면 전체 표시
         if (enableStatePreservation) {
           updateListState({
             searchField: undefined,
             searchQuery: '',
+            searchFieldsState: undefined,
             page: 0,
           });
         } else {
@@ -313,19 +336,16 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         return;
       }
 
-      // 첫 번째 필드와 값을 사용 (향후 여러 필드 검색 지원 시 확장 가능)
-      const firstField = fields[0];
-      const searchQuery = String(payload[firstField]);
-
+      // 다중 검색조건 전체를 JSON으로 저장
       if (enableStatePreservation) {
         updateListState({
-          searchField: firstField,
-          searchQuery,
-          page: 0, // 검색 시 첫 페이지로
+          searchFieldsState: JSON.stringify(payload),
+          page: 0,
         });
       } else {
-        setLocalSearchField(firstField);
-        setLocalSearchQuery(searchQuery);
+        // 로컬 상태만 쓸 경우(비 URL)
+        setLocalSearchField(fields[0]);
+        setLocalSearchQuery(String(payload[fields[0]]));
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -389,6 +409,14 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [columns, selectFields, dateFields, applyColumnFormatters]);
 
+  // searchFieldsState에서 초기값 파싱
+  let initialValues: Record<string, string | number> = {};
+  if (enableStatePreservation && listState.searchFieldsState) {
+    try {
+      initialValues = JSON.parse(listState.searchFieldsState);
+    } catch {}
+  }
+
   return (
     <Box>
       <ListSearch
@@ -397,6 +425,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
         size={size}
+        initialValues={initialValues}
       />
 
       <ListActions

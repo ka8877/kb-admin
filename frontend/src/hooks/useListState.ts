@@ -6,6 +6,7 @@ export type ListState = {
   pageSize: number;
   searchField?: string;
   searchQuery?: string;
+  searchFieldsState?: string; // JSON 직렬화된 다중 검색조건
 };
 
 export const useListState = (defaultPageSize: number = 10) => {
@@ -17,6 +18,7 @@ export const useListState = (defaultPageSize: number = 10) => {
       pageSize: parseInt(searchParams.get('pageSize') || String(defaultPageSize), 10),
       searchField: searchParams.get('searchField') || undefined,
       searchQuery: searchParams.get('searchQuery') || undefined,
+      searchFieldsState: searchParams.get('searchFieldsState') || undefined,
     };
   }, [searchParams, defaultPageSize]);
 
@@ -42,6 +44,13 @@ export const useListState = (defaultPageSize: number = 10) => {
           newParams.set('searchQuery', updates.searchQuery);
         } else {
           newParams.delete('searchQuery');
+        }
+      }
+      if (updates.searchFieldsState !== undefined) {
+        if (updates.searchFieldsState) {
+          newParams.set('searchFieldsState', updates.searchFieldsState);
+        } else {
+          newParams.delete('searchFieldsState');
         }
       }
 

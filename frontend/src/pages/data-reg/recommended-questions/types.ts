@@ -16,5 +16,38 @@ export type RecommendedQuestionItem = {
   status: 'in_service' | 'out_of_service';
 };
 
-// SearchField 타입은 ListSearch 컴포넌트에서 재사용
-export type { SearchField, SearchFieldOption } from '@/components/common/search/ListSearch';
+// SearchField 타입 정의
+export type SearchFieldOption = {
+  label: string;
+  value: string | number;
+};
+
+export type SearchField =
+  | {
+      field: string;
+      label: string;
+      type: 'select';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'radio';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'text';
+    }
+  | {
+      type: 'textGroup';
+      fields: Array<{ field: string; label: string }>;
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'dateRange';
+      position: 'start' | 'end';
+      dataField?: string;
+    };

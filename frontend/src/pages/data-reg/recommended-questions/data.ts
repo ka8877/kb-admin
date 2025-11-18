@@ -247,6 +247,56 @@ export const searchFields: SearchField[] = [
   { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
   { field: 'age_grp', label: '연령대', type: 'select', options: ageGroupOptions },
   { field: 'under_17_yn', label: '17세 미만 여부', type: 'radio', options: under17Options },
-  { field: 'imp_start_date', label: '노출시작일시', type: 'dateRange', position: 'start' },
-  { field: 'imp_end_date', label: '노출종료일시', type: 'dateRange', position: 'end' },
+  {
+    field: 'imp_start',
+    dataField: 'imp_start_date',
+    label: '노출시작일시',
+    type: 'dateRange',
+    position: 'start',
+  },
+  {
+    field: 'imp_end',
+    dataField: 'imp_end_date',
+    label: '노출종료일시',
+    type: 'dateRange',
+    position: 'end',
+  },
+];
+
+
+export const approvalSearchFields: SearchField[] = [
+  {
+    type: 'textGroup',
+    fields: [
+      { field: 'title', label: '제목' },
+      { field: 'content', label: '내용' },
+    ],
+  },
+  { field: 'approval_form', label: '결재양식', type: 'select', options: [
+    { label: '데이터 등록', value: 'data_registration' },
+    { label: '데이터 수정', value: 'data_modification' },
+    { label: '데이터 삭제', value: 'data_deletion' },
+  ] },
+  { field: 'status', label: '결재상태', type: 'select', options: [
+    { label: '요청', value: 'request' },
+    { label: '검토중', value: 'review' },
+    { label: '승인완료', value: 'approved' },
+    { label: '거부', value: 'rejected' },
+  ] },
+ 
+
+  {
+    field: 'request_date_start',
+    dataField: 'request_date',
+    label: '요청일시 시작',
+    type: 'dateRange',
+    position: 'start',
+  },
+  {
+    field: 'request_date_end',
+    dataField: 'request_date',
+    label: '요청일시 종료',
+    type: 'dateRange',
+    position: 'end',
+  },
 ];

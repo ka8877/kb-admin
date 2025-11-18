@@ -1,47 +1,13 @@
-// ...existing code...
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
+import AdvancedSearchLayout from '@/components/layout/list/AdvancedSearchLayout';
 import SearchSelect from '../select/SearchSelect';
-import TextField from '@mui/material/TextField';
 import SearchRadio from '../radio/SearchRadio';
 import MediumButton from '../button/MediumButton';
-
-// SearchField 타입 정의
-export type SearchFieldOption = {
-  label: string;
-  value: string | number;
-};
-
-export type SearchField =
-  | {
-      field: string;
-      label: string;
-      type: 'select';
-      options: SearchFieldOption[];
-    }
-  | {
-      field: string;
-      label: string;
-      type: 'radio';
-      options: SearchFieldOption[];
-    }
-  | {
-      field: string;
-      label: string;
-      type: 'text';
-    }
-  | {
-      type: 'textGroup';
-      fields: Array<{ field: string; label: string }>;
-    }
-  | {
-      field: string;
-      label: string;
-      type: 'dateRange';
-      position: 'start' | 'end';
-    };
+import SearchInput from '../input/SearchInput';
+import { SearchField } from '@/types/types';
+import SearchDateRangeInput from '../input/SearchDateRangeInput';
 
 export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns?: GridColDef<T>[];
@@ -49,6 +15,7 @@ export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
   onSearch: (payload: Record<string, string | number>) => void;
   placeholder?: string;
   size?: 'small' | 'medium' | 'large';
+  initialValues?: Record<string, string | number>;
 };
 
 const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
@@ -57,6 +24,7 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   onSearch,
   placeholder = '검색어를 입력하세요',
   size = 'small',
+  initialValues = {},
 }: ListSearchProps<T>): JSX.Element => {
   // 원본 인덱스 찾기 함수
   const getOriginalIndex = (sf: SearchField) => {
@@ -86,13 +54,106 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     );
   }, [searchFields]);
 
-  // 각 필드별 값 관리
-  const [fieldValues, setFieldValues] = useState<Record<string, string | number>>({});
+  // initialValues를 textGroup 형식으로 변환하는 함수
+  const normalizeInitialValues = useMemo(() => {
+    const normalized: Record<string, string | number> = { ...initialValues };
+    const textGroupSelected: Record<string, string> = {};
+
+    // textGroup 필드 처리: 실제 필드명을 textGroup_${originalIndex} 형식으로 변환
+    (searchFields ?? []).forEach((sf, index) => {
+      if (sf.type === 'textGroup') {
+        // 원본 인덱스 찾기
+        const originalIndex = getOriginalIndex(sf);
+        // textGroup의 각 필드명을 확인
+        sf.fields.forEach((field) => {
+          if (
+            initialValues[field.field] !== undefined &&
+            initialValues[field.field] !== null &&
+            initialValues[field.field] !== ''
+          ) {
+            // 실제 필드명을 textGroup_${originalIndex} 형식으로 변환
+            normalized[`textGroup_${originalIndex}`] = initialValues[field.field];
+            // 선택된 필드 저장 (originalIndex 사용)
+            textGroupSelected[originalIndex.toString()] = field.field;
+            // 원본 필드명 제거 (중복 방지)
+            delete normalized[field.field];
+          }
+        });
+      }
+    });
+
+    return { normalized, textGroupSelected };
+  }, [initialValues, searchFields]);
+
+  // 이전 initialValues 추적
+  const prevInitialValuesRef = useRef<string>(JSON.stringify(initialValues || {}));
+  const isInitialMountRef = useRef<boolean>(true);
+
+  // 사용자가 입력한 값 추적 (검색 버튼 클릭 후에도 유지)
+  // 초기 마운트 시 normalized initialValues로 초기화
+  const [userInputValues, setUserInputValues] = useState<Record<string, string | number>>(
+    () => normalizeInitialValues.normalized || {},
+  );
+
+  // initialValues가 변경되었는지 확인
+  const currentInitialValuesStr = JSON.stringify(initialValues || {});
+  const initialValuesChanged = prevInitialValuesRef.current !== currentInitialValuesStr;
 
   // textGroup의 경우 선택된 필드 관리
   const [textGroupSelectedFields, setTextGroupSelectedFields] = useState<Record<string, string>>(
     {},
   );
+
+  // textGroupSelectedFields: normalizeInitialValues의 textGroupSelected와 사용자 선택을 병합
+  // normalizeInitialValues.textGroupSelected가 있으면 우선 사용, 없으면 사용자가 선택한 값 사용
+  const resolvedTextGroupSelectedFields = useMemo(() => {
+    // normalizeInitialValues에 textGroupSelected가 있으면 우선 사용
+    if (Object.keys(normalizeInitialValues.textGroupSelected).length > 0) {
+      return normalizeInitialValues.textGroupSelected;
+    }
+    // 사용자가 선택한 값이 있으면 사용
+    return textGroupSelectedFields;
+  }, [normalizeInitialValues.textGroupSelected, textGroupSelectedFields]);
+
+  // normalizeInitialValues.textGroupSelected가 변경되면 textGroupSelectedFields 상태도 업데이트
+  if (Object.keys(normalizeInitialValues.textGroupSelected).length > 0) {
+    if (
+      JSON.stringify(textGroupSelectedFields) !==
+      JSON.stringify(normalizeInitialValues.textGroupSelected)
+    ) {
+      setTextGroupSelectedFields(normalizeInitialValues.textGroupSelected);
+    }
+  }
+
+  // fieldValues: 사용자 입력값과 normalized initialValues를 병합 (사용자 입력이 우선)
+  const fieldValues = useMemo(() => {
+    const normalized = normalizeInitialValues.normalized;
+
+    // 첫 마운트 시 normalized initialValues 사용
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      prevInitialValuesRef.current = currentInitialValuesStr;
+      return normalized || {};
+    }
+
+    // initialValues가 변경되었을 때 (상세화면에서 돌아왔을 때)
+    if (initialValuesChanged) {
+      // normalized initialValues에 있는 값만 업데이트하고, 사용자가 입력한 다른 값은 유지
+      const merged = { ...userInputValues };
+      Object.keys(normalized).forEach((key) => {
+        if (normalized[key] !== undefined && normalized[key] !== null && normalized[key] !== '') {
+          merged[key] = normalized[key];
+        }
+      });
+      prevInitialValuesRef.current = currentInitialValuesStr;
+      // userInputValues도 업데이트 (다음 렌더링에서 사용)
+      setUserInputValues(merged);
+      return merged;
+    }
+
+    // 사용자 입력값이 있으면 우선 사용, 없으면 normalized initialValues 사용
+    return Object.keys(userInputValues).length > 0 ? userInputValues : normalized || {};
+  }, [userInputValues, normalizeInitialValues, currentInitialValuesStr, initialValuesChanged]);
 
   // MUI에서 지원하는 사이즈로 매핑 ('large' -> 'medium')
   const muiSize = size === 'large' ? 'medium' : (size as 'small' | 'medium');
@@ -112,9 +173,9 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     },
   };
 
-  // 필드 값 업데이트 함수
+  // 필드 값 업데이트 함수 (사용자 입력값에 저장)
   const updateFieldValue = (fieldKey: string, value: string | number) => {
-    setFieldValues((prev) => ({
+    setUserInputValues((prev) => ({
       ...prev,
       [fieldKey]: value,
     }));
@@ -135,27 +196,29 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     (searchFields ?? []).forEach((sf, index) => {
       if (sf.type === 'textGroup') {
         // textGroup의 경우 선택된 필드와 값을 조합
+        const originalIndex = getOriginalIndex(sf);
         const selectedField =
-          textGroupSelectedFields[index.toString()] || sf.fields[0]?.field || '';
+          resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
         if (selectedField) {
-          const value = fieldValues[`textGroup_${index}`] || '';
+          const value = fieldValues[`textGroup_${originalIndex}`] || '';
           if (value) {
             searchPayload[selectedField] = value;
           }
         }
       } else if (sf.type === 'dateRange') {
         // dateRange는 start/end를 하나의 필드로 처리
-        const dateRangeKey = `dateRange_${sf.field}`;
-        const startValue = fieldValues[`${sf.field}_start`] || '';
-        const endValue = fieldValues[`${sf.field}_end`] || '';
+        // dataField가 있으면 dataField 사용, 없으면 field 사용
+        const dateField = 'dataField' in sf && sf.dataField ? sf.dataField : sf.field;
+        const startValue = fieldValues[`${dateField}_start`] || '';
+        const endValue = fieldValues[`${dateField}_end`] || '';
         if (startValue || endValue) {
-          if (startValue) searchPayload[`${sf.field}_start`] = startValue;
-          if (endValue) searchPayload[`${sf.field}_end`] = endValue;
+          if (startValue) searchPayload[`${dateField}_start`] = startValue;
+          if (endValue) searchPayload[`${dateField}_end`] = endValue;
         }
       } else {
-        // 일반 필드
+        // 일반 필드: 빈 문자열은 포함하지 않음
         const value = fieldValues[sf.field];
-        if (value !== undefined && value !== '' && value !== null) {
+        if (value !== undefined && value !== null && value !== '') {
           searchPayload[sf.field] = value;
         }
       }
@@ -164,16 +227,13 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     onSearch(searchPayload);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleSearch();
-  };
-
   // dateRange 필드들을 그룹화
   const dateRangeGroups = useMemo(() => {
     type DateRangeField = Extract<SearchField, { type: 'dateRange' }>;
     const groups: Record<string, { start?: DateRangeField; end?: DateRangeField }> = {};
     (searchFields ?? []).forEach((sf) => {
       if (sf.type === 'dateRange') {
+        // baseField는 field를 기준으로 계산 (그룹화용)
         const baseField = sf.field.replace(/_start$|_end$/, '');
         if (!groups[baseField]) {
           groups[baseField] = {};
@@ -194,61 +254,32 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
       {textGroupFields.map((sf, index) => {
         const originalIndex = getOriginalIndex(sf);
         const selectedField =
-          textGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
+          resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
         const selectOptions = sf.fields.map((f) => ({ value: f.field, label: f.label }));
         return (
-          <Box
+          <SearchInput
             key={`textGroup_${originalIndex}`}
-            display="flex"
-            alignItems="center"
-            gap={1}
-            width="100%"
-          >
-            <SearchSelect
-              label="검색대상"
-              value={selectedField}
-              options={selectOptions}
-              onChange={(val) => {
-                updateTextGroupField(originalIndex, val as string);
-                updateFieldValue(`textGroup_${originalIndex}`, '');
-              }}
-              size={muiSize}
-              sx={{ minWidth: 140, ...inputStyles }}
-            />
-
-            <TextField
-              size={'small'}
-              placeholder={placeholder}
-              value={fieldValues[`textGroup_${originalIndex}`] || ''}
-              onChange={(e) => updateFieldValue(`textGroup_${originalIndex}`, e.target.value)}
-              onKeyDown={handleKeyDown}
-              sx={{ flex: 1, ...inputStyles }}
-            />
-            <MediumButton
-              variant="contained"
-              onClick={handleSearch}
-              aria-label="검색"
-              sx={{ minWidth: '70px', height: '40px', padding: '6px 14px' }}
-            >
-              검색
-            </MediumButton>
-          </Box>
+            label="검색대상"
+            value={selectedField}
+            options={selectOptions}
+            inputValue={fieldValues[`textGroup_${originalIndex}`] || ''}
+            onFieldChange={(val) => {
+              updateTextGroupField(originalIndex, val);
+              updateFieldValue(`textGroup_${originalIndex}`, '');
+            }}
+            onInputChange={(value) => updateFieldValue(`textGroup_${originalIndex}`, value)}
+            onSearch={handleSearch}
+            placeholder={placeholder}
+            size={'small'}
+            inputStyles={inputStyles}
+          />
         );
       })}
 
       {/* 고급 필터: 회색 박스 안에 라벨:입력컴포넌트 형태로 배치 */}
       {advancedFilterFields.length > 0 && (
-        <Box
-          sx={{
-            backgroundColor: '#f5f5f5',
-            borderRadius: '8px',
-            padding: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-          }}
-        >
-          <Box display="flex" flexWrap="wrap" alignItems="center">
+        <AdvancedSearchLayout>
+          <Box display="flex" flexWrap="wrap" alignItems="center" rowGap={2}>
             {advancedFilterFields.map((sf, filterIndex) => {
               const originalIndex = getOriginalIndex(sf);
 
@@ -259,44 +290,27 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
                 if (sf.position === 'start' && group.start && group.end) {
                   const startField = group.start;
                   const endField = group.end;
+                  // dataField가 있으면 dataField 사용, 없으면 field 사용
+                  const startDateField =
+                    'dataField' in startField && startField.dataField
+                      ? startField.dataField
+                      : startField.field;
+                  const endDateField =
+                    'dataField' in endField && endField.dataField
+                      ? endField.dataField
+                      : endField.field;
                   return (
-                    <Box
-                      key={`dateRange_${baseField}`}
-                      display="flex"
-                      alignItems="center"
-                      gap={1}
-                      width="100%"
-                      sx={{ marginLeft: filterIndex === 0 ? 0 : 2 }}
-                    >
-                      <Box
-                        component="span"
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          color: 'text.primary',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {startField.label.split('시작')[0] || startField.label}:
-                      </Box>
-                      <TextField
-                        size={muiSize}
-                        type="datetime-local"
-                        value={fieldValues[startField.field] || ''}
-                        onChange={(e) => updateFieldValue(startField.field, e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        sx={{ minWidth: '200px', ...inputStyles }}
-                      />
-                      <span>~</span>
-                      <TextField
-                        size={muiSize}
-                        type="datetime-local"
-                        value={fieldValues[endField.field] || ''}
-                        onChange={(e) => updateFieldValue(endField.field, e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        sx={{ minWidth: '200px', ...inputStyles }}
-                      />
-                    </Box>
+                    <SearchDateRangeInput
+                      key={`dateRange_row_${baseField}`}
+                      startLabel={startField.label}
+                      endLabel={endField.label}
+                      startValue={fieldValues[`${startDateField}_start`] || ''}
+                      endValue={fieldValues[`${endDateField}_end`] || ''}
+                      onStartChange={(value) => updateFieldValue(`${startDateField}_start`, value)}
+                      onEndChange={(value) => updateFieldValue(`${endDateField}_end`, value)}
+                      size={'small'}
+                      inputStyles={inputStyles}
+                    />
                   );
                 }
                 return null;
@@ -305,57 +319,39 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
               // select 타입
               if (sf.type === 'select') {
                 return (
-                  <Box
-                    key={sf.field}
-                    display="flex"
-                    alignItems="center"
-                    gap={1}
-                    sx={{ marginLeft: filterIndex === 0 ? 0 : 2 }}
-                  >
-                    <Box
-                      component="span"
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        color: 'text.primary',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {sf.label}:
-                    </Box>
                     <SearchSelect
+                    key={sf.field}
                       label={sf.label}
                       value={fieldValues[sf.field] || ''}
                       options={sf.options}
                       onChange={(val) => updateFieldValue(sf.field, val)}
                       size={'small'}
-                      sx={{ minWidth: '200px', ...inputStyles }}
+                      sx={{ minWidth: '200px', marginRight: 2, ...inputStyles }}
                     />
-                  </Box>
+                  
                 );
               }
 
               // radio 타입
               if (sf.type === 'radio') {
                 return (
-                  <SearchRadio
+                    <SearchRadio
                     key={sf.field}
-                    label={sf.label}
-                    value={fieldValues[sf.field] || ''}
-                    options={sf.options}
-                    onChange={(val) => updateFieldValue(sf.field, val)}
-                    size={muiSize}
-                    sx={{ width: '100%', marginLeft: 2 }}
-                  />
+                      label={sf.label}
+                      value={fieldValues[sf.field] || ''}
+                      options={sf.options}
+                      onChange={(val) => updateFieldValue(sf.field, val)}
+                      size={muiSize}
+                      sx={{ minWidth: '170px',  ...inputStyles }}
+                    />
+                  
                 );
               }
-
               return null;
             })}
           </Box>
-        </Box>
+        </AdvancedSearchLayout>
       )}
-
       {/* textGroup이 없을 때만 검색 버튼 표시 */}
       {textGroupFields.length === 0 && (
         <Box display="flex" justifyContent="flex-end">

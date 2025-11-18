@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
+import SearchLabelLayout from '@/components/layout/list/SearchLabelLayout';
 
 export interface SearchRadioOption {
   label: string;
@@ -25,36 +26,30 @@ const SearchRadio: React.FC<SearchRadioProps> = ({
   onChange,
   size = 'small',
   sx = {},
-}) => (
-  <Box display="flex" alignItems="center" gap={1} sx={sx}>
-    <Box
-      component="span"
-      sx={{
-        fontSize: '0.875rem',
-        fontWeight: 500,
-        color: 'text.primary',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}:
-    </Box>
-    <RadioGroup
-      row
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      sx={{ display: 'flex', gap: 1 }}
-    >
-      {options.map((option) => (
-        <FormControlLabel
-          key={option.value}
-          value={option.value}
-          control={<Radio size={size} />}
-          label={option.label}
-          sx={{ margin: 0 }}
-        />
-      ))}
-    </RadioGroup>
-  </Box>
-);
+}) => {
+  // sx에서 marginRight를 추출하여 SearchLabelLayout에 전달
+  const { marginRight, ...radioGroupSx } = sx as { marginRight?: number | string; [key: string]: unknown };
+  
+  return (
+    <SearchLabelLayout label={label} >
+      <RadioGroup
+        row
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        sx={{ display: 'flex', gap: 1, ...radioGroupSx }}
+      >
+        {options.map((option) => (
+          <FormControlLabel
+            key={option.value}
+            value={option.value}
+            control={<Radio size={size} />}
+            label={option.label}
+            sx={{ margin: 0 }}
+          />
+        ))}
+      </RadioGroup>
+    </SearchLabelLayout>
+  );
+};
 
 export default SearchRadio;

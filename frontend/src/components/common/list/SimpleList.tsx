@@ -9,6 +9,7 @@ import type {
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
+import { SearchField } from '@/types/types';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import { useListState } from '@/hooks/useListState';
 
@@ -48,6 +49,7 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    * DataGrid 하단에 렌더링됨
    */
   confirmBarNode?: React.ReactNode | ((props: SimpleListRenderProps) => React.ReactNode);
+  searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
 };
 
 const defaultGetRowId =
@@ -76,6 +78,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   enableStatePreservation = true,
   onApproveSelect,
   confirmBarNode,
+  searchFields,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -153,15 +156,13 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         toggleSelectionMode(false);
       }
 
-      // 여러 필드 검색을 지원하기 위해 payload를 처리
-      // 현재 SimpleList는 단일 필드 검색만 지원하므로 첫 번째 필드만 사용
       const fields = Object.keys(payload);
       if (fields.length === 0) {
-        // 검색 조건이 없으면 전체 표시
         if (enableStatePreservation) {
           updateListState({
             searchField: undefined,
             searchQuery: '',
+            searchFieldsState: undefined,
             page: 0,
           });
         } else {
@@ -172,19 +173,15 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         return;
       }
 
-      // 첫 번째 필드와 값을 사용
-      const firstField = fields[0];
-      const searchQuery = String(payload[firstField]);
-
+      // 다중 검색조건 전체를 JSON으로 저장
       if (enableStatePreservation) {
         updateListState({
-          searchField: firstField,
-          searchQuery,
-          page: 0, // 검색 시 첫 페이지로
+          searchFieldsState: JSON.stringify(payload),
+          page: 0,
         });
       } else {
-        setLocalSearchField(firstField);
-        setLocalSearchQuery(searchQuery);
+        setLocalSearchField(fields[0]);
+        setLocalSearchQuery(String(payload[fields[0]]));
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -241,13 +238,23 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     return confirmBarNode ?? null;
   }, [confirmBarNode, selectionMode, selectionModel, toggleSelectionMode, onBack]);
 
+  // searchFieldsState에서 초기값 파싱
+  let initialValues: Record<string, string | number> = {};
+  if (enableStatePreservation && listState.searchFieldsState) {
+    try {
+      initialValues = JSON.parse(listState.searchFieldsState);
+    } catch {}
+  }
+
   return (
     <Box>
       <ListSearch
         columns={columns}
+        searchFields={searchFields}
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
         size={size}
+        initialValues={initialValues}
       />
 
       {resolvedActionsNode}

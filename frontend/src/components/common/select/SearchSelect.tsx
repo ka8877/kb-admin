@@ -3,6 +3,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import SearchLabelLayout from '@/components/layout/list/SearchLabelLayout';
 
 export interface SearchSelectOption {
   label: string;
@@ -28,6 +29,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
   sx = {},
   placeholder,
 }) => (
+  <SearchLabelLayout label={label}> 
   <FormControl size={size} sx={{ minWidth: 200, ...sx }}>
     <InputLabel>{label}</InputLabel>
     <Select
@@ -48,6 +50,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
       ))}
     </Select>
   </FormControl>
+  </SearchLabelLayout>
 );
 
 export default SearchSelect;
