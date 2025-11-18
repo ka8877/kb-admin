@@ -11,3 +11,38 @@ export type ApprovalRequestItem = {
   status: string; // 처리상태
   process_date: string; // 처리일
 };
+
+export type SearchFieldOption = {
+  label: string;
+  value: string | number;
+};
+
+export type SearchField =
+  | {
+      field: string;
+      label: string;
+      type: 'select';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'radio';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'text';
+    }
+  | {
+      type: 'textGroup';
+      fields: Array<{ field: string; label: string }>;
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'dateRange';
+      position: 'start' | 'end';
+      dataField?: string;
+    };

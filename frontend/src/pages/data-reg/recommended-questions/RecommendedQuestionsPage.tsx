@@ -13,6 +13,7 @@ import {
   under17Options,
   statusOptions,
   questionCategoryOptions,
+  searchFields,
 } from './data';
 
 const listApi = {
@@ -74,6 +75,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
+        searchFields={searchFields}
       />
     </Box>
   );

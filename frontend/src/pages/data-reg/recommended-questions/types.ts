@@ -15,3 +15,39 @@ export type RecommendedQuestionItem = {
   registeredAt: string;
   status: 'in_service' | 'out_of_service';
 };
+
+// SearchField 타입 정의
+export type SearchFieldOption = {
+  label: string;
+  value: string | number;
+};
+
+export type SearchField =
+  | {
+      field: string;
+      label: string;
+      type: 'select';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'radio';
+      options: SearchFieldOption[];
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'text';
+    }
+  | {
+      type: 'textGroup';
+      fields: Array<{ field: string; label: string }>;
+    }
+  | {
+      field: string;
+      label: string;
+      type: 'dateRange';
+      position: 'start' | 'end';
+      dataField?: string;
+    };

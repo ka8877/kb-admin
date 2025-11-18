@@ -8,7 +8,7 @@ import { approvalRequestColumns } from '@/constants/columns';
 import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { mockApprovalRequests } from './data';
+import { approvalSearchFields, mockApprovalRequests } from './data';
 import { Approval } from '@mui/icons-material';
 import ApprovalListActions from './components/approval/ApprovalListActions';
 import { ApprovalConfirmBar } from './components/approval/ApprovalConfirmBar';
@@ -69,6 +69,7 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
       <PageHeader title="추천질문 결재 요청" />
       <SimpleList<ApprovalRequestItem>
         columns={approvalRequestColumns}
+        searchFields={approvalSearchFields}
         fetcher={listApi.list}
         actionsNode={({ toggleSelectionMode }) => (
           <ApprovalListActions
