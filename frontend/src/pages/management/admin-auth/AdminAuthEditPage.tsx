@@ -12,6 +12,7 @@ import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteBu
 import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
 import MediumButton from '@/components/common/button/MediumButton';
 import CategoryList from '@/components/common/list/CategoryList';
+import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { adminAuthMockDb } from '@/mocks/adminAuthDb';
@@ -316,56 +317,53 @@ const AdminAuthEditPage: React.FC = () => {
     <Box>
       <PageHeader title="어드민 권한관리 편집" />
 
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mt: 2, mb: 1 }}
-      >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
-          <SelectionDeleteButton
-            selectionMode={selectionMode}
-            onToggleSelection={handleToggleSelection}
-            size="small"
-          />
+      <Section>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
+            <SelectionDeleteButton
+              selectionMode={selectionMode}
+              onToggleSelection={handleToggleSelection}
+              size="small"
+            />
+          </Stack>
+
+          {!selectionMode && (
+            <Stack direction="row" spacing={1}>
+              <MediumButton variant="outlined" onClick={handleCancel} size="small">
+                취소
+              </MediumButton>
+              <MediumButton variant="contained" onClick={handleSave} size="small">
+                저장
+              </MediumButton>
+            </Stack>
+          )}
         </Stack>
 
-        {!selectionMode && (
-          <Stack direction="row" spacing={1}>
-            <MediumButton variant="outlined" onClick={handleCancel} size="small">
-              취소
-            </MediumButton>
-            <MediumButton variant="contained" onClick={handleSave} size="small">
-              저장
-            </MediumButton>
-          </Stack>
-        )}
-      </Stack>
+        <CategoryList<LocalRow>
+          apiRef={apiRef}
+          columns={columns}
+          rows={rows}
+          setRows={setRows}
+          processRowUpdate={processRowUpdate}
+          onProcessRowUpdateError={(err) => console.error('Row update error', err)}
+          getRowId={(row) => row.no}
+          selectionMode={selectionMode}
+          selectionModel={selectionModel}
+          onSelectionModelChange={handleSelectionModelChange}
+          loading={loading}
+          isCellEditable={(params) => params.field !== 'no'}
+          defaultPageSize={25}
+          ghostLabelGetter={(r) => ({ title: r.user_name, subtitle: r.position })}
+        />
 
-      <CategoryList<LocalRow>
-        apiRef={apiRef}
-        columns={columns}
-        rows={rows}
-        setRows={setRows}
-        processRowUpdate={processRowUpdate}
-        onProcessRowUpdateError={(err) => console.error('Row update error', err)}
-        getRowId={(row) => row.no}
-        selectionMode={selectionMode}
-        selectionModel={selectionModel}
-        onSelectionModelChange={handleSelectionModelChange}
-        loading={loading}
-        isCellEditable={(params) => params.field !== 'no'}
-        defaultPageSize={25}
-        ghostLabelGetter={(r) => ({ title: r.user_name, subtitle: r.position })}
-      />
-
-      <DeleteConfirmBar
-        open={selectionMode}
-        selectedIds={selectionModel}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setSelectionMode(false)}
-      />
+        <DeleteConfirmBar
+          open={selectionMode}
+          selectedIds={selectionModel}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setSelectionMode(false)}
+        />
+      </Section>
     </Box>
   );
 };

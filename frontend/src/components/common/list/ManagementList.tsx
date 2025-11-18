@@ -9,7 +9,9 @@ import type {
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
+import { SearchField } from '@/types/types';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
+import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
 import ExcelJS from 'exceljs';
 import { formatDateForDisplay } from '@/utils/dateUtils';
@@ -38,6 +40,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
+  searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
 };
 
 const defaultGetRowId =
@@ -70,6 +73,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   selectFields,
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
+  searchFields,
 }: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -111,6 +115,31 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
   const filteredRows = useMemo(() => {
     if (!enableClientSearch) return data;
+
+    // 다중 조건 검색: searchFieldsState가 있으면 각 필드별로 필터링
+    if (enableStatePreservation && listState.searchFieldsState) {
+      let searchFields: Record<string, string | number> = {};
+      try {
+        searchFields = JSON.parse(listState.searchFieldsState);
+      } catch {}
+      if (Object.keys(searchFields).length === 0) return data;
+      return data.filter((row) => {
+        const rowObj = row as Record<string, unknown>;
+        return Object.entries(searchFields).every(([field, value]) => {
+          // 빈 문자열이면 필터링 조건에서 제외 (즉, 무시)
+          if (value === undefined || value === null || value === '') return true;
+          const rowValue = rowObj[field];
+          if (rowValue === undefined || rowValue === null) return false;
+          // 문자열: 포함 여부, 그 외: 완전일치
+          if (typeof value === 'string' && typeof rowValue === 'string') {
+            return rowValue.toLowerCase().includes(value.toLowerCase());
+          }
+          return String(rowValue) === String(value);
+        });
+      });
+    }
+
+    // 기존 단일 조건 검색 (로컬 상태)
     const q = searchQuery.trim().toLowerCase();
     if (!q) return data;
     return data.filter((row) => {
@@ -123,7 +152,14 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       const value = rowObj[searchField];
       return value == null ? false : String(value).toLowerCase().includes(q);
     });
-  }, [data, searchField, searchQuery, enableClientSearch]);
+  }, [
+    data,
+    searchField,
+    searchQuery,
+    enableClientSearch,
+    enableStatePreservation,
+    listState.searchFieldsState,
+  ]);
 
   // 컬럼 처리 로직 공통화 (DRY 원칙)
   const applyColumnFormatters = useCallback(
@@ -277,22 +313,40 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleSearch = useCallback(
-    (p: { field?: string; query: string }) => {
+    (payload: Record<string, string | number>) => {
       // 검색 시 삭제 모드 해제
       if (selectionMode) {
         setSelectionMode(false);
         setSelectionModel([]);
       }
 
+      const fields = Object.keys(payload);
+      if (fields.length === 0) {
+        if (enableStatePreservation) {
+          updateListState({
+            searchField: undefined,
+            searchQuery: '',
+            searchFieldsState: undefined,
+            page: 0,
+          });
+        } else {
+          setLocalSearchField(undefined);
+          setLocalSearchQuery('');
+          setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+        }
+        return;
+      }
+
+      // 다중 검색조건 전체를 JSON으로 저장
       if (enableStatePreservation) {
         updateListState({
-          searchField: p.field,
-          searchQuery: p.query,
-          page: 0, // 검색 시 첫 페이지로
+          searchFieldsState: JSON.stringify(payload),
+          page: 0,
         });
       } else {
-        setLocalSearchField(p.field);
-        setLocalSearchQuery(p.query);
+        // 로컬 상태만 쓸 경우(비 URL)
+        setLocalSearchField(fields[0]);
+        setLocalSearchQuery(String(payload[fields[0]]));
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -356,31 +410,41 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [columns, selectFields, dateFields, applyColumnFormatters]);
 
+  // searchFieldsState에서 초기값 파싱
+  let initialValues: Record<string, string | number> = {};
+  if (enableStatePreservation && listState.searchFieldsState) {
+    try {
+      initialValues = JSON.parse(listState.searchFieldsState);
+    } catch {}
+  }
+
   return (
-    <Box>
+    <Section>
+      <Box sx={{ mb: 2 }}>
       <ListSearch
         columns={columns}
+        searchFields={searchFields}
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
         size={size}
+        initialValues={initialValues}
       />
 
-      <ListActions
-        selectionMode={selectionMode}
-        onToggleSelectionMode={handleToggleSelectionMode}
-        selectedIds={
-          Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
-        }
-        onCreate={onCreate}
-        onRequestApproval={onRequestApproval}
-        onDeleteConfirm={handleDeleteConfirm}
-        onDownloadAll={handleExportAll}
-        size={size}
-      />
+        <ListActions
+          selectionMode={selectionMode}
+          onToggleSelectionMode={handleToggleSelectionMode}
+          selectedIds={
+            Array.isArray(selectionModel) ? selectionModel : selectionModel ? [selectionModel] : []
+          }
+          onCreate={onCreate}
+          onRequestApproval={onRequestApproval}
+          onDeleteConfirm={handleDeleteConfirm}
+          onDownloadAll={handleExportAll}
+          size={size}
+        />
+      </Box>
 
-      <Box sx={{ height: 420, width: '100%' }}>
+      <Box sx={{ height: 550, width: '100%' }}>
         <DataGrid<T>
           rows={filteredRows}
           columns={processedColumns}
@@ -394,8 +458,16 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           pageSizeOptions={[5, 10, 20, 50]}
           disableRowSelectionOnClick
           density="standard"
+          rowHeight={46}
+          columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          sx={{
+            '& .MuiDataGrid-footerContainer': {
+              minHeight: '46px',
+              maxHeight: '46px',
+            },
+          }}
         />
       </Box>
 
@@ -408,7 +480,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         onCancel={handleCancelSelection}
         size={size}
       />
-    </Box>
+    </Section>
   );
 };
 

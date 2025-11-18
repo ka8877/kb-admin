@@ -26,7 +26,7 @@ const DetailNavigationActions: React.FC<DetailNavigationActionsProps> = ({
   }
 
   return (
-    <Stack direction="row" spacing={spacing} sx={{ mt: 1, mb: 1 }}>
+    <Stack direction="row" spacing={spacing} sx={{ mb: 2 }}>
       {onBack && (
         <MediumButton variant="outlined" onClick={onBack}>
           {backLabel}

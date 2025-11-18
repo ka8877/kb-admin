@@ -9,7 +9,9 @@ import type {
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import ListSearch from '../search/ListSearch';
+import { SearchField } from '@/types/types';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
+import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
 
 export type SimpleListRenderProps = {
@@ -48,6 +50,7 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    * DataGrid 하단에 렌더링됨
    */
   confirmBarNode?: React.ReactNode | ((props: SimpleListRenderProps) => React.ReactNode);
+  searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
 };
 
 const defaultGetRowId =
@@ -76,6 +79,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   enableStatePreservation = true,
   onApproveSelect,
   confirmBarNode,
+  searchFields,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -148,20 +152,37 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleSearch = useCallback(
-    (p: { field?: string; query: string }) => {
+    (payload: Record<string, string | number>) => {
       if (selectionMode) {
         toggleSelectionMode(false);
       }
 
+      const fields = Object.keys(payload);
+      if (fields.length === 0) {
+        if (enableStatePreservation) {
+          updateListState({
+            searchField: undefined,
+            searchQuery: '',
+            searchFieldsState: undefined,
+            page: 0,
+          });
+        } else {
+          setLocalSearchField(undefined);
+          setLocalSearchQuery('');
+          setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+        }
+        return;
+      }
+
+      // 다중 검색조건 전체를 JSON으로 저장
       if (enableStatePreservation) {
         updateListState({
-          searchField: p.field,
-          searchQuery: p.query,
-          page: 0, // 검색 시 첫 페이지로
+          searchFieldsState: JSON.stringify(payload),
+          page: 0,
         });
       } else {
-        setLocalSearchField(p.field);
-        setLocalSearchQuery(p.query);
+        setLocalSearchField(fields[0]);
+        setLocalSearchQuery(String(payload[fields[0]]));
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
       }
     },
@@ -218,22 +239,32 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     return confirmBarNode ?? null;
   }, [confirmBarNode, selectionMode, selectionModel, toggleSelectionMode, onBack]);
 
+  // searchFieldsState에서 초기값 파싱
+  let initialValues: Record<string, string | number> = {};
+  if (enableStatePreservation && listState.searchFieldsState) {
+    try {
+      initialValues = JSON.parse(listState.searchFieldsState);
+    } catch {}
+  }
+
   return (
-    <Box>
+    <Section>
+      <Box sx={{ mb: 2 }}>
       <ListSearch
         columns={columns}
+        searchFields={searchFields}
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
-        defaultField={searchField || 'all'}
-        defaultQuery={searchQuery}
         size={size}
+        initialValues={initialValues}
       />
 
-      {resolvedActionsNode}
+        <DetailNavigationActions onBack={onBack} />
+      </Box>
 
       <Box
         sx={{
-          height: 420,
+          height: 550,
           width: '100%',
           '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
             borderColor: '#1976d2 !important',
@@ -257,14 +288,22 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           pageSizeOptions={[5, 10, 20, 50]}
           disableRowSelectionOnClick
           density="standard"
+          rowHeight={46}
+          columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          sx={{
+            '& .MuiDataGrid-footerContainer': {
+              minHeight: '46px',
+              maxHeight: '46px',
+            },
+          }}
         />
       </Box>
 
       {/* 컨펌 바가 있으면 DataGrid 하단에 렌더링 */}
       {resolvedConfirmBarNode}
-    </Box>
+    </Section>
   );
 };
 

@@ -19,6 +19,7 @@ import EditableList from '@/components/common/list/EditableList';
 import DetailNavigationActions from '@/components/common/actions/DetailNavigationActions';
 import PageHeader from '@/components/common/PageHeader';
 import MediumButton from '@/components/common/button/MediumButton';
+import Section from '@/components/layout/Section';
 import CommonCodeTypeEditPage from './CommonCodeTypeEditPage';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
@@ -88,57 +89,54 @@ const CommonCodePage: React.FC = () => {
   return (
     <Box>
       <PageHeader title="공통 코드 관리" />
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <MediumButton variant="outlined" startIcon={<AddIcon />} onClick={handleAddCodeType}>
-            코드 타입 추가
-          </MediumButton>
-          <FormControl size="small" sx={{ minWidth: 200 }} error={showError}>
-            <InputLabel id="code-type-select-label">코드 타입</InputLabel>
-            <Select
-              labelId="code-type-select-label"
-              value={selectedCodeType}
-              onChange={handleCodeTypeChange}
-              label="코드 타입"
-            >
-              <MenuItem value="" disabled>
-                선택하세요
-              </MenuItem>
-              {codeTypeOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+      <Section>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <MediumButton variant="outlined" startIcon={<AddIcon />} onClick={handleAddCodeType}>
+              코드 타입 추가
+            </MediumButton>
+            <FormControl size="small" sx={{ minWidth: 200 }} error={showError}>
+              <InputLabel id="code-type-select-label">코드 타입</InputLabel>
+              <Select
+                labelId="code-type-select-label"
+                value={selectedCodeType}
+                onChange={handleCodeTypeChange}
+                label="코드 타입"
+              >
+                <MenuItem value="" disabled>
+                  선택하세요
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {showError && (
-            <Typography variant="body2" color="error">
-              코드 타입을 선택해주세요
-            </Typography>
-          )}
+                {codeTypeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {showError && (
+              <Typography variant="body2" color="error">
+                코드 타입을 선택해주세요
+              </Typography>
+            )}
+          </Stack>
+
+          <DetailNavigationActions onEdit={handleGoEditPage} />
         </Stack>
 
-        <DetailNavigationActions onEdit={handleGoEditPage} />
-      </Stack>
-
-      {!selectedCodeType ? (
-        <Box
-          sx={{
-            height: 420,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            bgcolor: '#fafafa',
-          }}
-        >
-          <Typography variant="body1" color="text.secondary">
-            코드 타입을 선택해주세요
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ height: 420, width: '100%' }}>
+        {!selectedCodeType ? (
+          <Box
+            sx={{
+              height: 420,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography variant="body1" color="text.secondary">
+              코드 타입을 선택해주세요
+            </Typography>
+          </Box>
+        ) : (
           <EditableList<RowItem>
             key={selectedCodeType}
             columns={listColumns}
@@ -148,8 +146,8 @@ const CommonCodePage: React.FC = () => {
             pageSizeOptions={[10, 25, 50, 100]}
             isEditMode={false}
           />
-        </Box>
-      )}
+        )}
+      </Section>
 
       <CommonCodeTypeEditPage
         open={dialogOpen}
