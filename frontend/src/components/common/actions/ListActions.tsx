@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import SearchSection from '@/components/layout/SearchSection';
 import MediumButton from '../button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
@@ -38,30 +39,34 @@ const ListActions: React.FC<ListActionsProps> = ({
   };
 
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} mt={1}>
-      <Stack direction="row" spacing={1}>
-        <MediumButton variant="contained" onClick={onCreate}>
-          신규 등록
-        </MediumButton>
+    <SearchSection>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" spacing={1.5}>
+          <MediumButton variant="contained" onClick={onCreate}>
+            신규 등록
+          </MediumButton>
 
-        <MediumButton variant="outlined" onClick={handleToggleSelection}>
-          {selectionMode ? '삭제 취소' : '선택 삭제'}
-        </MediumButton>
+          <MediumButton variant="outlined" onClick={handleToggleSelection}>
+            {selectionMode ? '삭제 취소' : '선택 삭제'}
+          </MediumButton>
 
-        <MediumButton variant="contained" onClick={onRequestApproval}>
-          결재요청 대기함
-        </MediumButton>
+          <MediumButton variant="contained" onClick={onRequestApproval}>
+            결재요청 대기함
+          </MediumButton>
 
-        <MediumButton variant="outlined" onClick={onDownloadAll}>
-          전체목록 xlsx 다운로드
-        </MediumButton>
-      </Stack>
+          <MediumButton variant="outlined" onClick={onDownloadAll}>
+            전체목록 XLSX 다운로드
+          </MediumButton>
+        </Stack>
 
-      {/* 간단한 상태 안내 */}
-      <Typography variant="body2" color="textSecondary">
-        {selectionMode ? `선택 : ${selectedIds.length}개 선택` : ''}
-      </Typography>
-    </Box>
+        {/* 간단한 상태 안내 */}
+        {selectionMode && (
+          <Typography variant="body2" color="primary" fontWeight={600}>
+            {selectedIds.length}개 선택됨
+          </Typography>
+        )}
+      </Box>
+    </SearchSection>
   );
 };
 
