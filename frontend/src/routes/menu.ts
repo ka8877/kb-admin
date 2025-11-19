@@ -19,7 +19,11 @@ export const ROUTES = {
     `/data-reg/recommended-questions/approval/${id}`,
   RECOMMENDED_QUESTIONS_DETAIL: (id: string | number) => `/data-reg/recommended-questions/${id}`,
   RECOMMENDED_QUESTIONS_EDIT: (id: string | number) => `/data-reg/recommended-questions/edit/${id}`,
-  APP_SKIM: '/data-reg/app-skim',
+  APP_SCHEME: '/data-reg/app-scheme',
+  APP_SCHEME_CREATE: '/data-reg/app-scheme/create',
+  APP_SCHEME_DETAIL: (id: string | number) => `/data-reg/app-scheme/${id}`,
+  APP_SCHEME_APPROVAL: '/data-reg/app-scheme/approval',
+  APP_SCHEME_APPROVAL_DETAIL: (id: string | number) => `/data-reg/app-scheme/approval/${id}`,
 
   // === 관리 ===
   MANAGEMENT: '/management',
@@ -48,7 +52,7 @@ export const frontMenus: MenuItem[] = [
           },
           {
             label: '앱스킴',
-            path: ROUTES.APP_SKIM,
+            path: ROUTES.APP_SCHEME,
           },
         ],
       },

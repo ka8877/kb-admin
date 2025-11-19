@@ -2,44 +2,37 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
-import type { RecommendedQuestionItem } from './types';
-import { recommendedQuestionColumns } from './components/columns/columns';
+import type { AppSchemeItem } from './types';
+import { appSchemeColumns } from './components/columns/columns';
 import EditableList from '@/components/common/list/EditableList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import {
-  ageGroupOptions,
-  mockApprovalDetailQuestions,
-  questionCategoryGroupedOptions,
-  questionCategoryOptions,
-  serviceOptions,
-  statusOptions,
-  under17Options,
-} from './data';
+import { mockAppSchemes, statusOptions } from './data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
-import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
+import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
+import type { ValidationResult } from '@/components/common/list/EditableList';
 import { toast } from 'react-toastify';
 
-// 결재 요청에 포함된 추천 질문 데이터를 가져오는 API
+// 결재 요청에 포함된 앱스킴 데이터를 가져오는 API
 const approvalDetailApi = {
-  getRecommendedQuestions: async (approvalId: string): Promise<RecommendedQuestionItem[]> => {
-    // 실제로는 결재 요청 ID를 통해 관련된 추천 질문들을 조회
-    return Promise.resolve(mockApprovalDetailQuestions);
+  getAppSchemes: async (approvalId: string): Promise<AppSchemeItem[]> => {
+    // 실제로는 결재 요청 ID를 통해 관련된 앱스킴들을 조회
+    return Promise.resolve(mockAppSchemes);
   },
 
   approve: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 추천 질문들을 승인 처리
+    // 실제로는 선택된 앱스킴들을 승인 처리
     console.log('승인 처리:', approvalId, selectedIds);
   },
 
   reject: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 추천 질문들을 거부 처리
+    // 실제로는 선택된 앱스킴들을 거부 처리
     console.log('거부 처리:', approvalId, selectedIds);
   },
 };
 
-const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
+const AppSchemeApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
@@ -48,13 +41,13 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
   const { data = [], isLoading } = useQuery({
-    queryKey: ['recommendedQuestionsApprovalDetail', id],
+    queryKey: ['appSchemeApprovalDetail', id],
     queryFn: () => {
       if (!id) {
-        navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+        navigate(ROUTES.APP_SCHEME_APPROVAL);
         return Promise.reject('Invalid ID');
       }
-      return approvalDetailApi.getRecommendedQuestions(id);
+      return approvalDetailApi.getAppSchemes(id);
     },
     enabled: !!id,
   });
@@ -70,7 +63,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       // React Query 캐시 무효화하여 데이터 자동 refetch
-      queryClient.invalidateQueries({ queryKey: ['recommendedQuestionsApprovalDetail', id] });
+      queryClient.invalidateQueries({ queryKey: ['appSchemeApprovalDetail', id] });
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
       setIsEditMode(false);
       console.log('선택된 항목들이 거부되었습니다.');
@@ -84,7 +77,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const approveMutation = useMutation({
     mutationFn: () => {
       if (!id) return Promise.reject('Invalid ID');
-      const allIds = data.map((item) => item.qst_id);
+      const allIds = data.map((item) => item.id);
       return approvalDetailApi.approve(id, allIds);
     },
     onSuccess: () => {
@@ -108,7 +101,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       navigate(savedApprovalState);
     } else {
       console.log('🔍 DetailPage handleBack - no saved state, going to default approval page');
-      navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+      navigate(ROUTES.APP_SCHEME_APPROVAL);
     }
   }, [savedApprovalState, navigate]);
 
@@ -144,64 +137,54 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     approveMutation.mutate();
   }, [approveMutation]);
 
-  const questionCategoryOptionsByService = useMemo(() => {
-    return questionCategoryGroupedOptions.reduce<
-      Record<string, { label: string; value: string }[]>
-    >((acc, group) => {
-      acc[group.groupValue] = group.options;
-      return acc;
-    }, {});
-  }, []);
-
-  const getQuestionCategoryOptionsByService = useCallback(
-    (serviceCode: string | undefined) => {
-      if (!serviceCode) return [];
-      return questionCategoryOptionsByService[serviceCode] ?? [];
-    },
-    [questionCategoryOptionsByService],
-  );
-
-  const dynamicQuestionCategoryOptionsGetter = useMemo(() => {
-    if (!isEditMode) {
-      return undefined;
-    }
-    return (row: RecommendedQuestionItem) => getQuestionCategoryOptionsByService(row.service_nm);
-  }, [getQuestionCategoryOptionsByService, isEditMode]);
-
-  const handleRowSanitizer = useCallback(
-    (newRow: RecommendedQuestionItem, oldRow: RecommendedQuestionItem) => {
-      if (newRow.service_nm !== oldRow.service_nm) {
-        return {
-          ...newRow,
-          qst_ctgr: '',
-        };
-      }
-      return newRow;
-    },
-    [],
-  );
-
   const selectFieldsConfig = {
-    service_nm: serviceOptions,
-    age_grp: ageGroupOptions,
-    under_17_yn: under17Options,
     status: statusOptions,
-    qst_ctgr: isEditMode ? [] : questionCategoryOptions,
   };
 
-  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
+  const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
 
-  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+  const readOnlyFieldsConfig = ['no', 'id', 'updatedAt', 'registeredAt'];
 
   // Validation 함수
-  const handleValidate = (data: RecommendedQuestionItem) => {
-    return RecommendedQuestionValidator.validateAll(data);
-  };
+  const handleValidate = useCallback((data: AppSchemeItem): Record<string, ValidationResult> => {
+    const schema = createAppSchemeYupSchema();
+    const results: Record<string, ValidationResult> = {};
+
+    // yup의 동기 validation 사용
+    try {
+      schema.validateSync(data, { abortEarly: false });
+      // 모든 필드가 유효한 경우
+      Object.keys(schema.fields).forEach((field) => {
+        results[field] = { isValid: true };
+      });
+    } catch (err: any) {
+      // validation 실패 시 에러 메시지 수집
+      const errors = err.inner || [];
+      const fieldErrors: Record<string, string> = {};
+
+      errors.forEach((error: any) => {
+        if (error.path) {
+          fieldErrors[error.path] = error.message;
+        }
+      });
+
+      // 모든 필드에 대해 결과 생성
+      Object.keys(schema.fields).forEach((field) => {
+        if (fieldErrors[field]) {
+          results[field] = { isValid: false, message: fieldErrors[field] };
+        } else {
+          results[field] = { isValid: true };
+        }
+      });
+    }
+
+    return results;
+  }, []);
 
   if (isLoading) {
     return (
       <Box>
-        <PageHeader title="추천질문 결재 상세" />
+        <PageHeader title="앱스킴 결재 상세" />
         <Box sx={{ p: 3, textAlign: 'center' }}>로딩 중...</Box>
       </Box>
     );
@@ -209,11 +192,11 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="추천질문 결재 상세" />
-      <EditableList<RecommendedQuestionItem>
+      <PageHeader title="앱스킴 결재 상세" />
+      <EditableList<AppSchemeItem>
         rows={data}
-        columns={recommendedQuestionColumns}
-        rowIdGetter="qst_id"
+        columns={appSchemeColumns}
+        rowIdGetter="id"
         onBack={handleBack}
         onEdit={handleEdit}
         isEditMode={isEditMode}
@@ -225,11 +208,9 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
-        getDynamicSelectOptions={dynamicQuestionCategoryOptionsGetter}
-        onProcessRowUpdate={handleRowSanitizer}
         externalRows={data}
       />
     </Box>
   );
 };
-export default RecommendedQuestionsApprovalDetailPage;
+export default AppSchemeApprovalDetailPage;

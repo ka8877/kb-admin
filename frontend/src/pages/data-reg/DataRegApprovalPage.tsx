@@ -8,20 +8,54 @@ import { approvalRequestColumns } from '@/constants/columns';
 import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { approvalSearchFields, mockApprovalRequests } from './data';
-import { Approval } from '@mui/icons-material';
-import ApprovalListActions from './components/approval/ApprovalListActions';
-import { ApprovalConfirmBar } from './components/approval/ApprovalConfirmBar';
+import { approvalSearchFields as recommendedQuestionsApprovalSearchFields, mockApprovalRequests as recommendedQuestionsMockApprovalRequests } from './recommended-questions/data';
+import { approvalSearchFields as appSchemeApprovalSearchFields, mockApprovalRequests as appSchemeMockApprovalRequests } from './app-scheme/data';
+import ApprovalListActions from '../../components/common/actions/ApprovalListActions';
+import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
 
-const listApi = {
-  list: async (): Promise<ApprovalRequestItem[]> => {
-    return Promise.resolve(mockApprovalRequests);
-  },
+// 경로 타입 정의
+type ApprovalPageType = 'recommended-questions' | 'app-scheme';
+
+// 경로에서 타입 추출 (ROUTES 상수 사용)
+const getApprovalPageType = (pathname: string): ApprovalPageType => {
+  if (pathname.includes(ROUTES.APP_SCHEME_APPROVAL)) {
+    return 'app-scheme';
+  }
+  return 'recommended-questions';
 };
 
-const RecommendedQuestionsApprovalPage: React.FC = () => {
+const DataRegApprovalPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // 경로에 따라 타입 결정
+  const pageType = useMemo(() => getApprovalPageType(location.pathname), [location.pathname]);
+  
+  // 타입에 따른 설정
+  const pageConfig = useMemo(() => {
+    if (pageType === 'app-scheme') {
+      return {
+        title: '앱스킴 결재 요청',
+        mockData: appSchemeMockApprovalRequests,
+        searchFields: appSchemeApprovalSearchFields,
+        defaultReturnRoute: ROUTES.APP_SCHEME,
+        approvalDetailRoute: (id: string | number) => ROUTES.APP_SCHEME_APPROVAL_DETAIL(id),
+      };
+    }
+    return {
+      title: '추천질문 결재 요청',
+      mockData: recommendedQuestionsMockApprovalRequests,
+      searchFields: recommendedQuestionsApprovalSearchFields,
+      defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
+      approvalDetailRoute: (id: string | number) => ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
+    };
+  }, [pageType]);
+
+  const listApi = {
+    list: async (): Promise<ApprovalRequestItem[]> => {
+      return Promise.resolve(pageConfig.mockData);
+    },
+  };
 
   // sessionStorage에서 원본 URL 가져오기 (useMemo로 최적화)
   const returnUrl = useMemo(() => {
@@ -38,9 +72,9 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
       sessionStorage.removeItem('approval_return_url');
       navigate(returnUrl);
     } else {
-      navigate(ROUTES.RECOMMENDED_QUESTIONS);
+      navigate(pageConfig.defaultReturnRoute);
     }
-  }, [returnUrl, navigate]);
+  }, [returnUrl, navigate, pageConfig.defaultReturnRoute]);
 
   const handleRowClick = useCallback(
     (params: { id: string | number; row: ApprovalRequestItem }) => {
@@ -51,11 +85,11 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
       );
       sessionStorage.setItem('approval_page_state', currentApprovalUrl);
 
-      const detailUrl = ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(params.id);
+      const detailUrl = pageConfig.approvalDetailRoute(params.id);
       console.log('🔍 ApprovalPage handleRowClick - navigating to:', detailUrl);
       navigate(detailUrl);
     },
-    [location.pathname, location.search, navigate],
+    [location.pathname, location.search, navigate, pageConfig],
   );
 
   // 결재 선택 토글 상태 및 핸들러
@@ -66,10 +100,10 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="추천질문 결재 요청" />
+      <PageHeader title={pageConfig.title} />
       <SimpleList<ApprovalRequestItem>
         columns={approvalRequestColumns}
-        searchFields={approvalSearchFields}
+        searchFields={pageConfig.searchFields}
         fetcher={listApi.list}
         actionsNode={({ toggleSelectionMode }) => (
           <ApprovalListActions
@@ -80,7 +114,7 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
           />
         )}
         confirmBarNode={({ selectedIds, toggleSelectionMode }) => (
-          <ApprovalConfirmBar
+          <ApprovalConfirmActions
             open={approveSelectionMode}
             selectedIds={selectedIds as (string | number)[]}
             onConfirm={(ids: (string | number)[]) => {
@@ -104,4 +138,5 @@ const RecommendedQuestionsApprovalPage: React.FC = () => {
   );
 };
 
-export default RecommendedQuestionsApprovalPage;
+export default DataRegApprovalPage;
+

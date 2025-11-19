@@ -31,7 +31,7 @@ export const TOAST_MESSAGES = {
   UPDATE_REQUESTED: '수정을 요청하였습니다.',
   DELETE_APPROVAL_REQUESTED: '결재를 요청하였습니다.',
   SAVE_SUCCESS: '저장되었습니다.',
-  DELETE_SUCCESS: '삭제되었습니다.',
+  DELETE_SUCCESS: '삭제를 요청하였습니다.',
   FINAL_APPROVAL_SUCCESS: '최종 결재가 완료되었습니다.',
 
   // 실패 메시지

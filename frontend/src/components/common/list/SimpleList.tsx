@@ -259,7 +259,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         initialValues={initialValues}
       />
 
-        <DetailNavigationActions onBack={onBack} />
+        {resolvedActionsNode}
       </Box>
 
       <Box

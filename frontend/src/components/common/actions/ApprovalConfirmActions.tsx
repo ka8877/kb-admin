@@ -8,7 +8,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '@/constants/message';
 
-export const ApprovalConfirmBar: React.FC<{
+export const ApprovalConfirmActions: React.FC<{
   open: boolean;
   selectedIds: (string | number)[];
   onConfirm: (ids: (string | number)[]) => void;
