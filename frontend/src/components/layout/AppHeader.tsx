@@ -1,8 +1,8 @@
 import type React from 'react';
 import { AppBar, Box, Toolbar, Typography, Button } from '@mui/material';
-import { APP_TITLE } from '../../constants';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { frontMenus, type MenuItem } from '../../routes/menu';
+import { APP_TITLE } from '@/constants';
+import { frontMenus, type MenuItem } from '@/routes/menu';
 
 // Global application top bar (앱 전역 헤더)
 

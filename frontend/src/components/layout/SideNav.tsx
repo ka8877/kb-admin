@@ -11,8 +11,8 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import type { MenuItem } from '../../routes/menu';
-import { registeredPathSet } from '../../routes/registry';
+import type { MenuItem } from '@/routes/menu';
+import { registeredPathSet } from '@/routes/registry';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
