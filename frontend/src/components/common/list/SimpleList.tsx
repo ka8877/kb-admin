@@ -250,21 +250,21 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   return (
     <Section>
       <Box sx={{ mb: 2 }}>
-      <ListSearch
-        columns={columns}
-        searchFields={searchFields}
-        onSearch={handleSearch}
-        placeholder={searchPlaceholder}
-        size={size}
-        initialValues={initialValues}
-      />
+        <ListSearch
+          columns={columns}
+          searchFields={searchFields}
+          onSearch={handleSearch}
+          placeholder={searchPlaceholder}
+          size={size}
+          initialValues={initialValues}
+        />
 
         <DetailNavigationActions onBack={onBack} />
       </Box>
 
       <Box
         sx={{
-          height: 550,
+          height: 545,
           width: '100%',
           '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
             borderColor: '#1976d2 !important',
@@ -294,8 +294,8 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           onRowClick={onRowClick ? handleRowClick : undefined}
           sx={{
             '& .MuiDataGrid-footerContainer': {
-              minHeight: '46px',
-              maxHeight: '46px',
+              minHeight: '42px',
+              maxHeight: '42px',
             },
           }}
         />

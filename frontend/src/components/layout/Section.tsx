@@ -20,7 +20,6 @@ const Section: React.FC<SectionProps> = ({ title, variant = 'default', children,
         borderRadius: 0.75,
         backgroundColor,
         p: 3,
-        mb: 2,
         ...sx,
       }}
     >

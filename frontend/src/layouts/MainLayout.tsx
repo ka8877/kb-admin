@@ -87,7 +87,8 @@ const MainLayout = ({ children }: PropsWithChildren) => {
           flexGrow: 1,
           pl: '3rem',
           pr: '3rem',
-          py: '2rem',
+          pt: '2rem',
+          pb: '1rem',
           width: showSideNav ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
         }}
       >
@@ -96,7 +97,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         <Box sx={{ maxWidth: '100%', py: 0 }}>
           {/* Breadcrumb / 현재 페이지 설명 텍스트 */}
           {breadcrumb.length > 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: '10px' }}>
               {breadcrumb.map((label, index) => {
                 const isLast = index === breadcrumb.length - 1;
                 return (
