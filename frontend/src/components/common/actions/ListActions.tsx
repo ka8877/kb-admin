@@ -39,34 +39,32 @@ const ListActions: React.FC<ListActionsProps> = ({
   };
 
   return (
-    <SearchSection>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" spacing={1.5}>
-          <MediumButton variant="contained" onClick={onCreate}>
-            신규 등록
-          </MediumButton>
+    <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1.5}>
+        <MediumButton variant="contained" onClick={onCreate}>
+          신규 등록
+        </MediumButton>
 
-          <MediumButton variant="outlined" onClick={handleToggleSelection}>
-            {selectionMode ? '삭제 취소' : '선택 삭제'}
-          </MediumButton>
+        <MediumButton variant="outlined" onClick={handleToggleSelection}>
+          {selectionMode ? '삭제 취소' : '선택 삭제'}
+        </MediumButton>
 
-          <MediumButton variant="contained" onClick={onRequestApproval}>
-            결재요청 대기함
-          </MediumButton>
+        <MediumButton variant="contained" onClick={onRequestApproval}>
+          결재요청 대기함
+        </MediumButton>
 
-          <MediumButton variant="outlined" onClick={onDownloadAll}>
-            전체목록 XLSX 다운로드
-          </MediumButton>
-        </Stack>
+        <MediumButton variant="outlined" onClick={onDownloadAll}>
+          전체목록 XLSX 다운로드
+        </MediumButton>
+      </Stack>
 
-        {/* 간단한 상태 안내 */}
-        {selectionMode && (
-          <Typography variant="body2" color="primary" fontWeight={600}>
-            {selectedIds.length}개 선택됨
-          </Typography>
-        )}
-      </Box>
-    </SearchSection>
+      {/* 간단한 상태 안내 */}
+      {selectionMode && (
+        <Typography variant="body2" color="primary" fontWeight={600}>
+          {selectedIds.length}개 선택됨
+        </Typography>
+      )}
+    </Box>
   );
 };
 

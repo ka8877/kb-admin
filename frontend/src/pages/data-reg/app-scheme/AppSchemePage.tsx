@@ -1,42 +1,34 @@
 import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { RecommendedQuestionItem } from './types';
-import { recommendedQuestionColumns } from './components/columns/columns';
+import type { AppSchemeItem } from './types';
+import { appSchemeColumns } from './components/columns/columns';
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import {
-  mockRecommendedQuestions,
-  serviceOptions,
-  ageGroupOptions,
-  under17Options,
-  statusOptions,
-  questionCategoryOptions,
-  searchFields,
-} from './data';
+import { mockAppSchemes, statusOptions, searchFields } from './data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 
 const listApi = {
-  list: async (): Promise<RecommendedQuestionItem[]> => {
-    return Promise.resolve(mockRecommendedQuestions);
+  list: async (): Promise<AppSchemeItem[]> => {
+    return Promise.resolve(mockAppSchemes);
   },
 };
 
-const RecommendedQuestionsPage: React.FC = () => {
+const AppSchemePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleCreate = useCallback(() => {
-    navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
+    navigate(ROUTES.APP_SCHEME_CREATE);
   }, [navigate]);
 
   const handleRequestApproval = useCallback(() => {
     const currentUrl = location.pathname + location.search;
-    console.log('🔍 RecommendedQuestionsPage - saving currentUrl to sessionStorage:', currentUrl);
+    console.log('🔍 AppSchemePage - saving currentUrl to sessionStorage:', currentUrl);
     sessionStorage.setItem('approval_return_url', currentUrl);
-    navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
+    navigate(ROUTES.APP_SCHEME_APPROVAL);
   }, [location.pathname, location.search, navigate]);
 
   const handleDeleteConfirm = useCallback((ids: (string | number)[]) => {
@@ -46,35 +38,31 @@ const RecommendedQuestionsPage: React.FC = () => {
   }, []);
 
   const handleRowClick = useCallback(
-    (params: { id: string | number; row: RecommendedQuestionItem }) => {
-      navigate(ROUTES.RECOMMENDED_QUESTIONS_DETAIL(params.id));
+    (params: { id: string | number; row: AppSchemeItem }) => {
+      navigate(ROUTES.APP_SCHEME_DETAIL(params.id));
     },
     [navigate],
   );
 
   const selectFieldsConfig = {
-    service_nm: serviceOptions,
-    age_grp: ageGroupOptions,
-    under_17_yn: under17Options,
     status: statusOptions,
-    qst_ctgr: questionCategoryOptions,
   };
 
-  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
+  const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
 
   return (
     <Box>
-      <PageHeader title="추천질문 관리" />
-      <ManagementList<RecommendedQuestionItem>
+      <PageHeader title="앱스킴 관리" />
+      <ManagementList<AppSchemeItem>
         onRowClick={handleRowClick}
-        columns={recommendedQuestionColumns}
+        columns={appSchemeColumns}
         fetcher={listApi.list}
-        rowIdGetter={'qst_id'}
+        rowIdGetter={'id'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
-        exportFileName="추천질문목록"
+        exportFileName="앱스킴목록"
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
@@ -84,4 +72,4 @@ const RecommendedQuestionsPage: React.FC = () => {
   );
 };
 
-export default RecommendedQuestionsPage;
+export default AppSchemePage;
