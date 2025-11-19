@@ -16,8 +16,8 @@ import type { RowItem } from './types';
 import { CommonCodeValidator } from './validation';
 import { CODE_TYPE_LABELS } from './components/columns';
 import PageHeader from '@/components/common/PageHeader';
-import AddDataButton from '@/components/common/actions/AddDataButton';
-import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
+import AddDataActions from '@/components/common/actions/AddDataActions';
+import SelectionDeleteActions from '@/components/common/actions/SelectionDeleteActions';
 import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
@@ -352,8 +352,8 @@ const CommonCodeEditPage: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-            <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
-            <SelectionDeleteButton
+            <AddDataActions onClick={handleAddRow}>추가</AddDataActions>
+            <SelectionDeleteActions
               selectionMode={selectionMode}
               onToggleSelection={setSelectionMode}
               size="small"

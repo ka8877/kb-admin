@@ -6,8 +6,8 @@ import { GridColDef, useGridApiRef } from '@mui/x-data-grid';
 import type { RowItem } from './types';
 import { AgeGroupValidator } from './validation';
 import PageHeader from '@/components/common/PageHeader';
-import AddDataButton from '@/components/common/actions/AddDataButton';
-import SelectionDeleteButton from '@/components/common/actions/SelectionDeleteButton';
+import AddDataActions from '@/components/common/actions/AddDataActions';
+import SelectionDeleteActions from '@/components/common/actions/SelectionDeleteActions';
 import { DeleteConfirmBar } from '@/components/common/actions/ListActions';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
@@ -329,8 +329,8 @@ const AgeGroupEditPage: React.FC = () => {
       <Section>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <AddDataButton onClick={handleAddRow}>추가</AddDataButton>
-            <SelectionDeleteButton
+            <AddDataActions onClick={handleAddRow}>추가</AddDataActions>
+            <SelectionDeleteActions
               selectionMode={selectionMode}
               onToggleSelection={handleToggleSelection}
               size="small"
