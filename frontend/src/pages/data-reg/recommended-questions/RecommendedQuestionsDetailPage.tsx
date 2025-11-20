@@ -120,7 +120,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     const requiredFields: string[] = [
       'service_nm',
       'qst_ctgr',
-      'qst_ctnt',
+      'display_ctnt',
       'under_17_yn',
       'imp_start_date',
       'imp_end_date',
@@ -148,7 +148,8 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     const validationData: Parameters<typeof RecommendedQuestionValidator.validateAll>[0] = {
       service_nm: data.service_nm,
       qst_ctgr: data.qst_ctgr,
-      qst_ctnt: data.qst_ctnt,
+      display_ctnt: data.display_ctnt,
+      prompt_ctnt: data.prompt_ctnt,
       qst_style: data.qst_style,
       parent_id: data.parent_id,
       parent_nm: data.parent_nm,

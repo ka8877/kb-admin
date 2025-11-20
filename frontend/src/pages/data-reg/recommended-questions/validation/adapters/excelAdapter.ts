@@ -33,10 +33,20 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // qst_ctnt: 공통과 같음
-    qst_ctnt: (value, row) => {
+    // display_ctnt: 공통과 같음
+    display_ctnt: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validateQuestionContent(stringValue);
+      return {
+        isValid: result.isValid,
+        errorMessage: result.message,
+      };
+    },
+
+    // prompt_ctnt: 공통과 같음 (필수 아님, 글자 수 제한만)
+    prompt_ctnt: (value, row) => {
+      const stringValue = value != null ? String(value) : null;
+      const result = RecommendedQuestionValidator.validatePromptContent(stringValue);
       return {
         isValid: result.isValid,
         errorMessage: result.message,

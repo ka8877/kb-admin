@@ -2,7 +2,8 @@ export type RecommendedQuestionItem = {
   no: number;
   qst_id: string;
   service_nm: string;
-  qst_ctnt: string;
+  display_ctnt: string;
+  prompt_ctnt: string | null;
   qst_ctgr: string;
   qst_style: string | null;
   parent_id: string | null;

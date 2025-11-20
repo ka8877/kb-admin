@@ -604,10 +604,10 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
               px: 0.75,
             },
             // 서비스명 ~ 연령대까지 셀 간격 더 줄이기
-            '& .MuiDataGrid-cell[data-field="service_nm"], & .MuiDataGrid-cell[data-field="qst_ctnt"], & .MuiDataGrid-cell[data-field="qst_ctgr"], & .MuiDataGrid-cell[data-field="qst_style"], & .MuiDataGrid-cell[data-field="parent_id"], & .MuiDataGrid-cell[data-field="parent_nm"], & .MuiDataGrid-cell[data-field="age_grp"]': {
+            '& .MuiDataGrid-cell[data-field="service_nm"], & .MuiDataGrid-cell[data-field="display_ctnt"], & .MuiDataGrid-cell[data-field="qst_ctgr"], & .MuiDataGrid-cell[data-field="qst_style"], & .MuiDataGrid-cell[data-field="parent_id"], & .MuiDataGrid-cell[data-field="parent_nm"], & .MuiDataGrid-cell[data-field="age_grp"]': {
               px: 0.5,
             },
-            '& .MuiDataGrid-columnHeader[data-field="service_nm"], & .MuiDataGrid-columnHeader[data-field="qst_ctnt"], & .MuiDataGrid-columnHeader[data-field="qst_ctgr"], & .MuiDataGrid-columnHeader[data-field="qst_style"], & .MuiDataGrid-columnHeader[data-field="parent_id"], & .MuiDataGrid-columnHeader[data-field="parent_nm"], & .MuiDataGrid-columnHeader[data-field="age_grp"]': {
+            '& .MuiDataGrid-columnHeader[data-field="service_nm"], & .MuiDataGrid-columnHeader[data-field="display_ctnt"], & .MuiDataGrid-columnHeader[data-field="qst_ctgr"], & .MuiDataGrid-columnHeader[data-field="qst_style"], & .MuiDataGrid-columnHeader[data-field="parent_id"], & .MuiDataGrid-columnHeader[data-field="parent_nm"], & .MuiDataGrid-columnHeader[data-field="age_grp"]': {
               px: 0.5,
             },
             // 노출 시작일시 ~ 반영일시까지 셀 간격 더 줄이기

@@ -18,10 +18,18 @@ export const createRecommendedQuestionYupSchema = () => {
       return result.isValid || this.createError({ message: result.message });
     }),
 
-    qst_ctnt: yup.string().test('qst_ctnt', function (value) {
+    display_ctnt: yup.string().test('display_ctnt', function (value) {
       const result = RecommendedQuestionValidator.validateQuestionContent(value);
       return result.isValid || this.createError({ message: result.message });
     }),
+
+    prompt_ctnt: yup
+      .string()
+      .nullable()
+      .test('prompt_ctnt', function (value) {
+        const result = RecommendedQuestionValidator.validatePromptContent(value);
+        return result.isValid || this.createError({ message: result.message });
+      }),
 
     qst_style: yup.string().test('qst_style', function (value) {
       const result = RecommendedQuestionValidator.validateQuestionStyle(value);

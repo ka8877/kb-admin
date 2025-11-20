@@ -21,7 +21,8 @@ const schema = createRecommendedQuestionYupSchema();
 type FormData = {
   service_nm: string;
   qst_ctgr: string;
-  qst_ctnt: string;
+  display_ctnt: string;
+  prompt_ctnt?: string;
   qst_style?: string;
   parentId?: string;
   parentIdName?: string;
@@ -50,7 +51,8 @@ const ApprovalManualForm: React.FC = () => {
     defaultValues: {
       service_nm: '',
       qst_ctgr: '',
-      qst_ctnt: '',
+      display_ctnt: '',
+      prompt_ctnt: '',
       qst_style: '',
       parentId: '',
       parentIdName: '',
@@ -152,7 +154,7 @@ const ApprovalManualForm: React.FC = () => {
             />
 
             <Controller
-              name="qst_ctnt"
+              name="display_ctnt"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -163,8 +165,23 @@ const ApprovalManualForm: React.FC = () => {
                   rows={4}
                   fullWidth
                   required
-                  error={hasTriedSubmit && !!errors.qst_ctnt}
-                  helperText={hasTriedSubmit ? errors.qst_ctnt?.message : undefined}
+                  error={hasTriedSubmit && !!errors.display_ctnt}
+                  helperText={hasTriedSubmit ? errors.display_ctnt?.message : undefined}
+                />
+              )}
+            />
+
+            <Controller
+              name="prompt_ctnt"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="AI input 쿼리"
+                  placeholder="AI input 쿼리를 입력하세요"
+                  fullWidth
+                  error={hasTriedSubmit && !!errors.prompt_ctnt}
+                  helperText={hasTriedSubmit ? errors.prompt_ctnt?.message : undefined}
                 />
               )}
             />

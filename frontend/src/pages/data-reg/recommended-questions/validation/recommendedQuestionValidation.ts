@@ -18,7 +18,8 @@ export type ValidationResult = {
 export interface RecommendedQuestionData {
   service_nm?: string | null;
   qst_ctgr?: string | null;
-  qst_ctnt?: string | null;
+  display_ctnt?: string | null;
+  prompt_ctnt?: string | null;
   qst_style?: string | null;
   parentId?: string | null; // 폼에서 사용
   parent_id?: string | null; // 엑셀에서 사용
@@ -86,6 +87,15 @@ export class RecommendedQuestionValidator {
 
     if (content.length > 500) {
       return { isValid: false, message: '질문 내용은 500자를 초과할 수 없습니다' };
+    }
+
+    return { isValid: true };
+  }
+
+  // AI input 쿼리 validation (필수 아님, 글자 수 제한만)
+  static validatePromptContent(value: string | null | undefined): ValidationResult {
+    if (value && value.length > 1000) {
+      return { isValid: false, message: 'AI input 쿼리는 1000자를 초과할 수 없습니다' };
     }
 
     return { isValid: true };
@@ -291,7 +301,8 @@ export class RecommendedQuestionValidator {
 
     results.service_nm = this.validateServiceName(data.service_nm);
     results.qst_ctgr = this.validateQuestionCategory(data.qst_ctgr);
-    results.qst_ctnt = this.validateQuestionContent(data.qst_ctnt);
+    results.display_ctnt = this.validateQuestionContent(data.display_ctnt);
+    results.prompt_ctnt = this.validatePromptContent(data.prompt_ctnt);
     results.qst_style = this.validateQuestionStyle(data.qst_style);
 
     // 부모 ID (폼과 엑셀 필드명 통합)

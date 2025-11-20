@@ -18,27 +18,37 @@ const ApprovalExcelUpload: React.FC = () => {
   );
 
   // service_nm 제외하고 service_cd로 대체
-  const templateColumns: GridColDef[] = useMemo(
-    () =>
-      baseTemplateColumns
-        .filter((col) => col.field !== 'service_nm')
-        .map((col, index, arr) => {
-          // 첫 번째 위치에 service_cd 추가
-          if (index === 0) {
-            return [
-              {
-                field: 'service_cd',
-                headerName: '서비스코드',
-                width: 140,
-              },
-              col,
-            ];
-          }
-          return col;
-        })
-        .flat(),
-    [baseTemplateColumns],
-  );
+  const templateColumns: GridColDef[] = useMemo(() => {
+    const filtered = baseTemplateColumns.filter((col) => col.field !== 'service_nm');
+    const result = filtered
+      .map((col, index) => {
+        // 첫 번째 위치에 service_cd 추가
+        if (index === 0) {
+          return [
+            {
+              field: 'service_cd',
+              headerName: '서비스코드',
+              width: 140,
+            },
+            col,
+          ];
+        }
+        return col;
+      })
+      .flat();
+    
+    // 디버깅: prompt_ctnt가 포함되어 있는지 확인
+    const hasPromptCtnt = result.some((col) => col.field === 'prompt_ctnt');
+    if (!hasPromptCtnt) {
+      console.warn('⚠️ prompt_ctnt가 templateColumns에 없습니다!', {
+        baseTemplateColumns: baseTemplateColumns.map((c) => c.field),
+        filtered: filtered.map((c) => c.field),
+        result: result.map((c) => c.field),
+      });
+    }
+    
+    return result;
+  }, [baseTemplateColumns]);
 
   const handleSave = useCallback(
     async (file: File) => {
@@ -125,7 +135,8 @@ const ApprovalExcelUpload: React.FC = () => {
   // 필드별 가이드 메시지 (필요한 필드만)
   const fieldGuides: Record<string, string> = {
     service_cd: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
-    qst_ctnt: '필수 | 5-500자',
+    display_ctnt: '필수 | 5-500자',
+    prompt_ctnt: '선택 | 1000자 이하',
     qst_ctgr: '필수 | 참조 데이터 확인',
     qst_style: '선택 | 질문 관련 태그나 스타일',
     parent_id: '조건부 필수 | AI검색 mid/story인 경우 필수 (예: M020011)',
@@ -140,7 +151,8 @@ const ApprovalExcelUpload: React.FC = () => {
   const exampleData = [
     {
       service_cd: 'ai_search',
-      qst_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+      display_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+      prompt_ctnt: '적금 상품의 금리 정보를 알려주세요',
       qst_ctgr: 'ai_search_mid',
       qst_style: '적금, 금리',
       parent_id: 'M020011',

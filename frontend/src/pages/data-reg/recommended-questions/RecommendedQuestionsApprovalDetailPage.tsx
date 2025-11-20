@@ -198,7 +198,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     const requiredFields: string[] = [
       'service_nm',
       'qst_ctgr',
-      'qst_ctnt',
+      'display_ctnt',
       'under_17_yn',
       'imp_start_date',
       'imp_end_date',
