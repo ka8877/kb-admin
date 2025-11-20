@@ -43,19 +43,27 @@ const CommonCodeEditPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
-  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>(initialCodeType);
-  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
+  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>('');
+  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([
+    { value: 'SERVICE_NAME', label: '서비스명' },
+    { value: 'QUESTION_CATEGORY', label: '질문 카테고리' },
+    { value: 'AGE_GROUP', label: '연령대' },
+  ]);
 
   const modifiedRef = useRef<Set<number>>(new Set());
   const orderModifiedRef = useRef(false);
   const hasFocusedRef = useRef(false);
 
-  // 코드 타입 옵션 로드
+  // 코드 타입 옵션 로드 및 초기 선택값 설정
   React.useEffect(() => {
     commonCodeMockDb.getCodeTypes().then((options) => {
       setCodeTypeOptions(options);
+      // 옵션이 로드된 후에 초기값 설정
+      if (initialCodeType) {
+        setSelectedCodeType(initialCodeType);
+      }
     });
-  }, []);
+  }, [initialCodeType]);
 
   // 필터링된 rows (코드 타입별로 NO 재계산)
   const filteredRows = useMemo(() => {
@@ -99,9 +107,7 @@ const CommonCodeEditPage: React.FC = () => {
         field: 'code_type',
         headerName: '코드 타입',
         width: 150,
-        editable: true,
-        type: 'singleSelect',
-        valueOptions: ['SERVICE_NAME', 'QUESTION_CATEGORY', 'AGE_GROUP'],
+        editable: false,
         valueFormatter: (params) =>
           CODE_TYPE_LABELS[params.value as keyof typeof CODE_TYPE_LABELS] || params.value,
       },
