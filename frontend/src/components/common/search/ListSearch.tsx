@@ -233,8 +233,18 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     const groups: Record<string, { start?: DateRangeField; end?: DateRangeField }> = {};
     (searchFields ?? []).forEach((sf) => {
       if (sf.type === 'dateRange') {
-        // baseField는 field를 기준으로 계산 (그룹화용)
-        const baseField = sf.field.replace(/_start$|_end$/, '');
+        // baseField는 dataField가 있으면 dataField를 기준으로, 없으면 field를 기준으로 계산 (그룹화용)
+        const dateField = 'dataField' in sf && sf.dataField ? sf.dataField : sf.field;
+        // baseField 생성: start_date, end_date -> date로 통일하기 위해 접두사/접미사 제거
+        // 1. 먼저 접두사 패턴 제거: start_, end_, imp_start_, imp_end_ 등
+        //    이렇게 하면 start_date -> date, end_date -> date, imp_start_date -> date, imp_end_date -> date
+        let baseField = dateField.replace(/^(start_|end_|imp_start_|imp_end_)/, '');
+        // 2. 접미사 패턴 제거: _start_date, _end_date, _start, _end, _date
+        baseField = baseField.replace(/_start_date$|_end_date$|_start$|_end$|_date$/, '');
+        // 3. 빈 문자열이면 'date'로 설정 (fallback) - 같은 그룹으로 묶기 위함
+        if (!baseField) {
+          baseField = 'date';
+        }
         if (!groups[baseField]) {
           groups[baseField] = {};
         }
@@ -285,7 +295,18 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
 
               // dateRange 처리
               if (sf.type === 'dateRange') {
-                const baseField = sf.field.replace(/_start$|_end$/, '');
+                // baseField는 dataField가 있으면 dataField를 기준으로, 없으면 field를 기준으로 계산
+                const dateField = 'dataField' in sf && sf.dataField ? sf.dataField : sf.field;
+                // baseField 생성: start_date, end_date -> date로 통일하기 위해 접두사/접미사 제거
+                // 1. 먼저 접두사 패턴 제거: start_, end_, imp_start_, imp_end_ 등
+                //    이렇게 하면 start_date -> date, end_date -> date, imp_start_date -> date, imp_end_date -> date
+                let baseField = dateField.replace(/^(start_|end_|imp_start_|imp_end_)/, '');
+                // 2. 접미사 패턴 제거: _start_date, _end_date, _start, _end, _date
+                baseField = baseField.replace(/_start_date$|_end_date$|_start$|_end$|_date$/, '');
+                // 3. 빈 문자열이면 'date'로 설정 (fallback) - 같은 그룹으로 묶기 위함
+                if (!baseField) {
+                  baseField = 'date';
+                }
                 const group = dateRangeGroups[baseField];
                 if (sf.position === 'start' && group.start && group.end) {
                   const startField = group.start;
