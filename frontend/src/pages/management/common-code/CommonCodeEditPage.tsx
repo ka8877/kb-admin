@@ -43,19 +43,27 @@ const CommonCodeEditPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
-  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>(initialCodeType);
-  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
+  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>('');
+  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([
+    { value: 'SERVICE_NAME', label: '서비스명' },
+    { value: 'QUESTION_CATEGORY', label: '질문 카테고리' },
+    { value: 'AGE_GROUP', label: '연령대' },
+  ]);
 
   const modifiedRef = useRef<Set<number>>(new Set());
   const orderModifiedRef = useRef(false);
   const hasFocusedRef = useRef(false);
 
-  // 코드 타입 옵션 로드
+  // 코드 타입 옵션 로드 및 초기 선택값 설정
   React.useEffect(() => {
     commonCodeMockDb.getCodeTypes().then((options) => {
       setCodeTypeOptions(options);
+      // 옵션이 로드된 후에 초기값 설정
+      if (initialCodeType) {
+        setSelectedCodeType(initialCodeType);
+      }
     });
-  }, []);
+  }, [initialCodeType]);
 
   // 필터링된 rows (코드 타입별로 NO 재계산)
   const filteredRows = useMemo(() => {
@@ -99,9 +107,7 @@ const CommonCodeEditPage: React.FC = () => {
         field: 'code_type',
         headerName: '코드 타입',
         width: 150,
-        editable: true,
-        type: 'singleSelect',
-        valueOptions: ['SERVICE_NAME', 'QUESTION_CATEGORY', 'AGE_GROUP'],
+        editable: false,
         valueFormatter: (params) =>
           CODE_TYPE_LABELS[params.value as keyof typeof CODE_TYPE_LABELS] || params.value,
       },
@@ -178,7 +184,14 @@ const CommonCodeEditPage: React.FC = () => {
       newRow.service_cd !== oldRow.service_cd ||
       newRow.code_type !== oldRow.code_type;
 
-    if (changed) modifiedRef.current.add(newRow.no);
+    if (changed) {
+      modifiedRef.current.add(newRow.no);
+      // service_cd가 변경된 경우, 원래 service_cd를 저장해둠
+      if (newRow.service_cd !== oldRow.service_cd && !newRow.isNew) {
+        // @ts-ignore - 임시로 original_service_cd 저장
+        newRow.original_service_cd = oldRow.service_cd;
+      }
+    }
 
     return newRow;
   }, []);
@@ -268,7 +281,10 @@ const CommonCodeEditPage: React.FC = () => {
             status_code: r.status_code,
           });
         } else {
-          return commonCodeMockDb.update(r.service_cd, {
+          // service_cd가 변경된 경우 original_service_cd 사용
+          // @ts-ignore
+          const targetServiceCd: string = r.original_service_cd || r.service_cd;
+          return commonCodeMockDb.update(targetServiceCd, {
             code_type: r.code_type,
             category_nm: r.category_nm,
             service_cd: r.service_cd,

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
@@ -8,11 +8,11 @@ import EditableList from '@/components/common/list/EditableList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
 import {
-  ageGroupOptions,
+  loadServiceOptions,
+  loadAgeGroupOptions,
+  loadQuestionCategoryGroupedOptions,
   mockApprovalDetailQuestions,
-  questionCategoryGroupedOptions,
   questionCategoryOptions,
-  serviceOptions,
   statusOptions,
   under17Options,
 } from './data';
@@ -45,6 +45,26 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { showConfirm } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
+  const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
+  const [questionCategoryGroupedOptions, setQuestionCategoryGroupedOptions] = useState<
+    Array<{ groupLabel: string; groupValue: string; options: Array<{ label: string; value: string }> }>
+  >([]);
+
+  // 옵션 데이터 로드
+  useEffect(() => {
+    const loadOptions = async () => {
+      const [services, ageGroups, categories] = await Promise.all([
+        loadServiceOptions(),
+        loadAgeGroupOptions(),
+        loadQuestionCategoryGroupedOptions(),
+      ]);
+      setServiceOptions(services);
+      setAgeGroupOptions(ageGroups);
+      setQuestionCategoryGroupedOptions(categories);
+    };
+    loadOptions();
+  }, []);
 
   // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
   const { data = [], isLoading } = useQuery({
@@ -151,7 +171,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       acc[group.groupValue] = group.options;
       return acc;
     }, {});
-  }, []);
+  }, [questionCategoryGroupedOptions]);
 
   const getQuestionCategoryOptionsByService = useCallback(
     (serviceCode: string | undefined) => {

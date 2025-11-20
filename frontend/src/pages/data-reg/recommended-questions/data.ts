@@ -1,7 +1,17 @@
 import type { RecommendedQuestionItem } from './types';
 import type { ApprovalRequestItem, SearchField } from '@/types/types';
+import { categoryMockDb } from '@/mocks/commonCodeDb';
 
-// 서비스 옵션 데이터
+// 서비스 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
+export const loadServiceOptions = async () => {
+  const services = await categoryMockDb.getServiceNames();
+  return services
+    .filter((s) => s.display_yn === 'Y')
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((s) => ({ label: s.service_nm, value: s.service_cd }));
+};
+
+// 정적 서비스 옵션 (기존 코드 호환성 유지)
 export const serviceOptions = [
   { label: 'AI 검색', value: 'ai_search' },
   { label: 'AI 금융계산기', value: 'ai_calc' },
@@ -9,7 +19,16 @@ export const serviceOptions = [
   { label: 'AI 모임총무', value: 'ai_shared_account' },
 ];
 
-// 연령대 옵션 데이터
+// 연령대 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
+export const loadAgeGroupOptions = async () => {
+  const ageGroups = await categoryMockDb.getAgeGroups();
+  return ageGroups
+    .filter((a) => a.display_yn === 'Y')
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((a) => ({ label: a.age_grp_nm, value: a.age_grp_cd }));
+};
+
+// 정적 연령대 옵션 (기존 코드 호환성 유지)
 export const ageGroupOptions = [
   { label: '10대', value: '10' },
   { label: '20대', value: '20' },
@@ -29,6 +48,28 @@ export const statusOptions = [
   { label: '서비스 중', value: 'in_service' },
   { label: '서비스 종료', value: 'out_of_service' },
 ];
+
+// 질문 카테고리 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
+export const loadQuestionCategoryGroupedOptions = async () => {
+  const services = await categoryMockDb.getServiceNames();
+  const categories = await categoryMockDb.getQuestionCategories();
+
+  return services
+    .filter((s) => s.display_yn === 'Y')
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((service) => ({
+      groupLabel: service.service_nm,
+      groupValue: service.service_cd,
+      options: categories
+        .filter((c) => c.service_cd === service.service_cd && c.display_yn === 'Y')
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((c) => ({
+          label: c.qst_ctgr_nm,
+          value: c.qst_ctgr_cd,
+        })),
+    }))
+    .filter((group) => group.options.length > 0);
+};
 
 // 질문 카테고리 옵션 데이터 (그룹화된 버전 - ManagementList에서 사용)
 export const questionCategoryGroupedOptions = [
