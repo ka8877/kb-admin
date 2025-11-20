@@ -62,6 +62,10 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
    * (선택) 외부에서 데이터 변경을 감지하고 초기화하고 싶을 때 전달
    */
   externalRows?: T[];
+  /**
+   * (선택) 필수 필드 목록을 반환하는 함수 (조건적 필수 포함, row별로 다를 수 있음)
+   */
+  getRequiredFields?: (row: T) => string[];
 };
 
 const defaultGetRowId =
@@ -161,6 +165,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   getDynamicSelectOptions,
   onProcessRowUpdate,
   externalRows,
+  getRequiredFields,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -179,16 +184,27 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     [],
   );
 
+  // 필수 필드 목록 가져오기 (첫 번째 행 기준)
+  const requiredFields = useMemo(() => {
+    if (!getRequiredFields || data.length === 0) return [];
+    return getRequiredFields(data[0]);
+  }, [getRequiredFields, data]);
+
   // 편집 모드에 따라 컬럼 처리 (selectFields, dateFields 포함)
   const processedColumns = useMemo(() => {
     return columns.map((col) => {
       const isSelectField = selectFields && selectFields[col.field];
       const isDateField = dateFields && dateFields.includes(col.field);
+      
+      // 필수 필드인 경우 headerName에 * 추가
+      const isRequired = requiredFields.includes(col.field);
+      const headerName = isRequired && col.headerName ? `${col.headerName} *` : col.headerName;
 
       // 날짜 필드인 경우
       if (isDateField) {
         return {
           ...col,
+          headerName,
           editable: isEditMode && !readOnlyFields.includes(col.field),
           valueFormatter: (params: { value: string }) => {
             return formatDateForDisplay(params.value, dateFormat);
@@ -229,6 +245,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       if (col.field === 'qst_ctgr' && isEditMode && typeof getDynamicSelectOptions === 'function') {
         return {
           ...col,
+          headerName,
           type: 'singleSelect',
           valueOptions: (params: GridRenderEditCellParams) => {
             const row = data.find((r) => getRowId(r) === params.id);
@@ -247,6 +264,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       if (isSelectField) {
         return {
           ...col,
+          headerName,
           type: 'singleSelect',
           valueOptions: isSelectField.map((opt) => ({
             value: opt.value,
@@ -261,6 +279,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       // 일반 필드
       return {
         ...col,
+        headerName,
         editable: isEditMode && !readOnlyFields.includes(col.field),
       };
     });
@@ -275,6 +294,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     data,
     renderSelectEditCell,
     getRowId,
+    requiredFields,
   ]);
 
   useEffect(() => {

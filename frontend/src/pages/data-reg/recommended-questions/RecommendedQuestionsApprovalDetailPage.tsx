@@ -193,6 +193,32 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
+  // 필수 필드 목록 추출 (조건적 필수 포함, 행별로 다를 수 있음)
+  const getRequiredFields = useCallback((row: RecommendedQuestionItem): string[] => {
+    const requiredFields: string[] = [
+      'service_nm',
+      'qst_ctgr',
+      'qst_ctnt',
+      'under_17_yn',
+      'imp_start_date',
+      'imp_end_date',
+    ];
+
+    // 조건적 필수: qst_ctgr가 'ai_search_mid' 또는 'ai_search_story'일 때 parent_id, parent_nm 필수
+    const qstCtgr = row.qst_ctgr;
+    if (qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story') {
+      requiredFields.push('parent_id', 'parent_nm');
+    }
+
+    // 조건적 필수: service_nm이 'ai_calc'일 때 age_grp 필수
+    const serviceNm = row.service_nm;
+    if (serviceNm === 'ai_calc') {
+      requiredFields.push('age_grp');
+    }
+
+    return requiredFields;
+  }, []);
+
   // Validation 함수
   const handleValidate = (data: RecommendedQuestionItem) => {
     return RecommendedQuestionValidator.validateAll(data);
@@ -228,6 +254,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         getDynamicSelectOptions={dynamicQuestionCategoryOptionsGetter}
         onProcessRowUpdate={handleRowSanitizer}
         externalRows={data}
+        getRequiredFields={getRequiredFields}
       />
     </Box>
   );

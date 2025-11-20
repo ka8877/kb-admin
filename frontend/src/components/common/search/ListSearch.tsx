@@ -318,12 +318,17 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
 
               // select 타입
               if (sf.type === 'select') {
+                // '전체' 옵션을 맨 앞에 추가
+                const optionsWithAll = [
+                  { label: '전체', value: '' },
+                  ...(sf.options || []),
+                ];
                 return (
                   <SearchSelect
                     key={sf.field}
                     label={sf.label}
                     value={fieldValues[sf.field] || ''}
-                    options={sf.options}
+                    options={optionsWithAll}
                     onChange={(val) => updateFieldValue(sf.field, val)}
                     size={'small'}
                     sx={{ minWidth: '200px', marginRight: 2, ...inputStyles }}

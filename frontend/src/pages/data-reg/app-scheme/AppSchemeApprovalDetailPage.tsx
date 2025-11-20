@@ -145,6 +145,19 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
 
   const readOnlyFieldsConfig = ['no', 'id', 'updatedAt', 'registeredAt'];
 
+  // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
+  const getRequiredFields = useCallback((row: AppSchemeItem): string[] => {
+    // 앱스킴 필수 필드: yup 스키마의 required 필드들
+    return [
+      'product_menu_name',
+      'description',
+      'app_scheme_link',
+      'one_link',
+      'start_date',
+      'end_date',
+    ];
+  }, []);
+
   // Validation 함수
   const handleValidate = useCallback((data: AppSchemeItem): Record<string, ValidationResult> => {
     const schema = createAppSchemeYupSchema();
@@ -209,6 +222,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         externalRows={data}
+        getRequiredFields={getRequiredFields}
       />
     </Box>
   );
