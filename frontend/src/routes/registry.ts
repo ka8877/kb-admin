@@ -19,14 +19,10 @@ const RecommendedQuestionsApprovalDetailPage = React.lazy(
 );
 
 // === 데이터 등록/노출 - 공통 결재 페이지 ===
-const DataRegApprovalPage = React.lazy(
-  () => import('@pages/data-reg/DataRegApprovalPage'),
-);
+const DataRegApprovalPage = React.lazy(() => import('@pages/data-reg/DataRegApprovalPage'));
 
 // === 데이터 등록/노출 - 앱스킴 ===
-const AppSchemePage = React.lazy(
-  () => import('@pages/data-reg/app-scheme/AppSchemePage'),
-);
+const AppSchemePage = React.lazy(() => import('@pages/data-reg/app-scheme/AppSchemePage'));
 const AppSchemeCreatePage = React.lazy(
   () => import('@pages/data-reg/app-scheme/AppSchemeCreatePage'),
 );
@@ -42,18 +38,6 @@ const CommonCodePage = React.lazy(() => import('@pages/management/common-code/Co
 const CommonCodeEditPage = React.lazy(
   () => import('@pages/management/common-code/CommonCodeEditPage'),
 );
-const ServiceNamePage = React.lazy(() => import('@pages/management/service-name/ServiceNamePage'));
-const ServiceNameEditPage = React.lazy(
-  () => import('@pages/management/service-name/ServiceNameEditPage'),
-);
-const QuestionsCategoryPage = React.lazy(
-  () => import('@pages/management/questions-category/QuestionsCategoryPage'),
-);
-const QuestionsCategoryEditPage = React.lazy(
-  () => import('@pages/management/questions-category/QuestionsCategoryEditPage'),
-);
-const AgeGroupPage = React.lazy(() => import('@pages/management/age-group/AgeGroupPage'));
-const AgeGroupEditPage = React.lazy(() => import('@pages/management/age-group/AgeGroupEditPage'));
 const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/AdminAuthPage'));
 const AdminAuthEditPage = React.lazy(
   () => import('@pages/management/admin-auth/AdminAuthEditPage'),
@@ -94,15 +78,6 @@ export const frontRoutes: AppRoute[] = [
   // 공통 코드 관리
   { path: ROUTES.COMMON_CODE, Component: CommonCodePage },
   { path: ROUTES.COMMON_CODE_EDIT, Component: CommonCodeEditPage },
-
-  // 카테고리 관리 (기존 - 유지)
-  { path: ROUTES.SERVICE_NAME, Component: ServiceNamePage }, // 서비스명 직접 경로
-  { path: ROUTES.MANAGEMENT_CATEGORY, Component: ServiceNamePage }, // 목록
-  { path: ROUTES.SERVICE_NAME_EDIT, Component: ServiceNameEditPage }, // 편집 페이지
-  { path: ROUTES.QUESTIONS_CATEGORY, Component: QuestionsCategoryPage },
-  { path: `${ROUTES.QUESTIONS_CATEGORY}/edit`, Component: QuestionsCategoryEditPage },
-  { path: ROUTES.AGE_GROUP, Component: AgeGroupPage },
-  { path: `${ROUTES.AGE_GROUP}/edit`, Component: AgeGroupEditPage },
 
   // 어드민 권한관리
   { path: ROUTES.ADMIN_AUTH, Component: AdminAuthPage },
