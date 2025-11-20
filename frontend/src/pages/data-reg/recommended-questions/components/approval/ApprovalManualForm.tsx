@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
@@ -9,7 +9,7 @@ import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
 import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
-import { serviceOptions, ageGroupOptions, under17Options } from '../../data';
+import { loadServiceOptions, loadAgeGroupOptions, under17Options } from '../../data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '../../validation';
@@ -36,8 +36,25 @@ const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
 
+  // 동적 옵션 상태
+  const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
+  const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
+
   // validation 모드 상태 관리
   const [hasTriedSubmit, setHasTriedSubmit] = React.useState(false);
+
+  // 서비스명 및 연령대 옵션 로드
+  useEffect(() => {
+    const loadOptions = async () => {
+      const [services, ageGroups] = await Promise.all([
+        loadServiceOptions(),
+        loadAgeGroupOptions(),
+      ]);
+      setServiceOptions(services);
+      setAgeGroupOptions(ageGroups);
+    };
+    loadOptions();
+  }, []);
 
   const {
     control,
@@ -332,4 +349,3 @@ const ApprovalManualForm: React.FC = () => {
 };
 
 export default ApprovalManualForm;
-

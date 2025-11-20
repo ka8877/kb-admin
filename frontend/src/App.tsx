@@ -4,12 +4,13 @@ import MainLayout from './layouts/MainLayout';
 import { frontRoutes } from './routes/registry';
 import GlobalConfirmDialog from './components/common/dialog/GlobalConfirmDialog';
 import GlobalAlertDialog from './components/common/dialog/GlobalAlertDialog';
+import GlobalLoadingSpinner from './components/common/spinner/GlobalLoadingSpinner';
 
 const App: React.FC = () => {
   return (
     <>
       <MainLayout>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<GlobalLoadingSpinner isLoading={true} />}>
           <Routes>
             {/**
              * 보호 라우트 적용 예시 (RequireAuth 사용):
