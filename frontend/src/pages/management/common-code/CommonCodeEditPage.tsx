@@ -178,7 +178,14 @@ const CommonCodeEditPage: React.FC = () => {
       newRow.service_cd !== oldRow.service_cd ||
       newRow.code_type !== oldRow.code_type;
 
-    if (changed) modifiedRef.current.add(newRow.no);
+    if (changed) {
+      modifiedRef.current.add(newRow.no);
+      // service_cd가 변경된 경우, 원래 service_cd를 저장해둠
+      if (newRow.service_cd !== oldRow.service_cd && !newRow.isNew) {
+        // @ts-ignore - 임시로 original_service_cd 저장
+        newRow.original_service_cd = oldRow.service_cd;
+      }
+    }
 
     return newRow;
   }, []);
@@ -268,7 +275,10 @@ const CommonCodeEditPage: React.FC = () => {
             status_code: r.status_code,
           });
         } else {
-          return commonCodeMockDb.update(r.service_cd, {
+          // service_cd가 변경된 경우 original_service_cd 사용
+          // @ts-ignore
+          const targetServiceCd: string = r.original_service_cd || r.service_cd;
+          return commonCodeMockDb.update(targetServiceCd, {
             code_type: r.code_type,
             category_nm: r.category_nm,
             service_cd: r.service_cd,
