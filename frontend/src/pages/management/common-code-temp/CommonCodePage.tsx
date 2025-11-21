@@ -23,7 +23,6 @@ import Section from '@/components/layout/Section';
 import CommonCodeTypeEditPage from './CommonCodeTypeEditPage';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
-import type { GridColDef } from '@mui/x-data-grid';
 
 const CommonCodePage: React.FC = () => {
   const navigate = useNavigate();
@@ -62,7 +61,7 @@ const CommonCodePage: React.FC = () => {
       setShowError(true);
       return;
     }
-    navigate(ROUTES.COMMON_CODE_EDIT, { state: { codeType: selectedCodeType } });
+    navigate(ROUTES.COMMON_CODE_TEMP_EDIT, { state: { codeType: selectedCodeType } });
   }, [navigate, selectedCodeType]);
 
   const handleCodeTypeChange = useCallback((event: SelectChangeEvent<CodeType | ''>) => {
@@ -78,17 +77,6 @@ const CommonCodePage: React.FC = () => {
     setDialogOpen(false);
   }, []);
 
-  // 동적으로 컬럼 필터링: 질문 카테고리일 때만 서비스 그룹, 서비스 그룹 코드 컬럼 표시
-  const filteredColumns = useMemo<GridColDef<RowItem>[]>(() => {
-    if (selectedCodeType === 'QUESTION_CATEGORY') {
-      return listColumns; // 모든 컬럼 포함 (parent_service_cd, service_group_name 포함)
-    }
-    // QUESTION_CATEGORY가 아니면 parent_service_cd, service_group_name 컬럼 제외
-    return listColumns.filter(
-      (col) => col.field !== 'service_group_name' && col.field !== 'parent_service_cd',
-    );
-  }, [selectedCodeType]);
-
   const handleSaveCodeTypes = useCallback(async (newCodeTypes: CodeTypeOption[]) => {
     try {
       const savedCodeTypes = await commonCodeMockDb.saveCodeTypes(newCodeTypes);
@@ -100,7 +88,7 @@ const CommonCodePage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="공통 코드 관리" />
+      <PageHeader title="공통 코드 관리 임시" />
       <Section>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -151,7 +139,7 @@ const CommonCodePage: React.FC = () => {
         ) : (
           <EditableList<RowItem>
             key={selectedCodeType}
-            columns={filteredColumns}
+            columns={listColumns}
             fetcher={listApi.list}
             rowIdGetter={(r: RowItem) => r.service_cd}
             defaultPageSize={25}

@@ -219,12 +219,16 @@ const CategoryList = <T extends GridValidRowModel = CategoryRow>({
 
 export default CategoryList;
 
+type ManagedCategoryListProps<T extends GridValidRowModel = CategoryRow> = Omit<
+  CategoryListProps<T>,
+  'defaultPageSize' | 'ghostLabelGetter' | 'onProcessRowUpdateError'
+> & {
+  isCellEditable?: (params: GridCellParams<T>) => boolean;
+};
+
 // ManagedCategoryList: wrapper with common defaults used by management edit pages
-export const ManagedCategoryList = (
-  props: Omit<
-    CategoryListProps,
-    'isCellEditable' | 'defaultPageSize' | 'ghostLabelGetter' | 'onProcessRowUpdateError'
-  >,
+export const ManagedCategoryList = <T extends GridValidRowModel = CategoryRow>(
+  props: ManagedCategoryListProps<T>,
 ) => {
   const {
     rows,
@@ -238,14 +242,16 @@ export const ManagedCategoryList = (
     onSelectionModelChange,
     onDragOrderChange,
     apiRef,
+    isCellEditable,
   } = props;
 
-  const defaultIsCellEditable = (params: GridCellParams) =>
+  const defaultIsCellEditable = (params: GridCellParams<T>) =>
     params.field === 'service_cd' ||
     params.field === 'category_nm' ||
-    params.field === 'status_code';
+    params.field === 'status_code' ||
+    params.field === 'service_group_name';
 
-  const defaultGhost = (r: CategoryRow) => {
+  const defaultGhost = (r: T) => {
     const rowData = r as Record<string, unknown>;
     return {
       no: rowData.no as number,
@@ -255,7 +261,7 @@ export const ManagedCategoryList = (
   };
 
   return (
-    <CategoryList
+    <CategoryList<T>
       apiRef={apiRef}
       rows={rows}
       setRows={setRows}
@@ -264,7 +270,7 @@ export const ManagedCategoryList = (
       loading={loading}
       processRowUpdate={processRowUpdate}
       onProcessRowUpdateError={(err) => console.error('Row update error', err)}
-      isCellEditable={defaultIsCellEditable}
+      isCellEditable={isCellEditable || defaultIsCellEditable}
       selectionMode={selectionMode}
       selectionModel={selectionModel}
       onSelectionModelChange={onSelectionModelChange}
