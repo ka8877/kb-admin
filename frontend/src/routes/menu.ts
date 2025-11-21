@@ -30,11 +30,18 @@ export const ROUTES = {
   MANAGEMENT_CATEGORY: '/management/category',
   COMMON_CODE: '/management/category/common-code',
   COMMON_CODE_EDIT: '/management/category/common-code/edit',
+  COMMON_CODE_TEMP: '/management/category/common-code-temp',
+  COMMON_CODE_TEMP_EDIT: '/management/category/common-code-temp/edit',
   SERVICE_NAME: '/management/category/service-name',
   SERVICE_NAME_EDIT: '/management/category/service-name/edit',
   QUESTIONS_CATEGORY: '/management/category/questions-category',
   AGE_GROUP: '/management/category/age-group',
   ADMIN_AUTH: '/admin-auth',
+
+  // === 이력 ===
+  HISTORY: '/history',
+  USER_LOGIN: '/history/login',
+  TRANSACTION: '/history/transaction',
 } as const;
 
 export const frontMenus: MenuItem[] = [
@@ -67,8 +74,26 @@ export const frontMenus: MenuItem[] = [
         path: ROUTES.COMMON_CODE,
       },
       {
+        label: '공통 코드 관리 임시',
+        path: ROUTES.COMMON_CODE_TEMP,
+      },
+      {
         label: '어드민 권한관리',
         path: ROUTES.ADMIN_AUTH,
+      },
+    ],
+  },
+  {
+    label: '이력',
+    path: ROUTES.HISTORY,
+    children: [
+      {
+        label: '로그인 이력',
+        path: ROUTES.USER_LOGIN,
+      },
+      {
+        label: '사용자 사용 이력',
+        path: ROUTES.TRANSACTION,
       },
     ],
   },

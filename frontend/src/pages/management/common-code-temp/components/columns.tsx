@@ -19,47 +19,21 @@ export const listColumns: GridColDef<RowItem>[] = [
   {
     field: 'code_type',
     headerName: '코드 타입',
-    width: 150,
+    width: 250,
     sortable: true,
     renderCell: (params) => CODE_TYPE_LABELS[params.value] || params.value,
   },
   {
     field: 'category_nm',
     headerName: '카테고리명',
-    width: 200,
+    width: 250,
     sortable: true,
   },
   {
     field: 'service_cd',
     headerName: '코드',
-    width: 250,
+    width: 280,
     sortable: true,
-  },
-  {
-    field: 'service_group_name',
-    headerName: '서비스 그룹',
-    width: 150,
-    sortable: true,
-    renderCell: (params) => {
-      // 질문 카테고리가 아니면 빈 셀 표시
-      if (params.row.code_type !== 'QUESTION_CATEGORY') {
-        return null;
-      }
-      return params.value || '';
-    },
-  },
-  {
-    field: 'parent_service_cd',
-    headerName: '서비스 그룹 코드',
-    width: 150,
-    sortable: true,
-    renderCell: (params) => {
-      // 질문 카테고리가 아니면 빈 셀 표시
-      if (params.row.code_type !== 'QUESTION_CATEGORY') {
-        return null;
-      }
-      return params.value || '';
-    },
   },
   {
     field: 'status_code',

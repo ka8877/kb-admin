@@ -13,6 +13,8 @@ import { SearchField } from '@/types/types';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
+import { formatDateForDisplay } from '@/utils/dateUtils';
+import type { SelectFieldOption } from './ManagementList';
 
 export type SimpleListRenderProps = {
   selectionMode: boolean;
@@ -51,6 +53,13 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    */
   confirmBarNode?: React.ReactNode | ((props: SimpleListRenderProps) => React.ReactNode);
   searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
+
+  /**
+   * (선택) 셀렉트/날짜 필드 설정 - ManagementList와 동일한 포맷터 적용용
+   */
+  selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
+  dateFields?: string[]; // 날짜 필드 목록
+  dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
 };
 
 const defaultGetRowId =
@@ -80,6 +89,9 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   onApproveSelect,
   confirmBarNode,
   searchFields,
+  selectFields,
+  dateFields,
+  dateFormat = 'YYYYMMDDHHmmss',
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -247,17 +259,54 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     } catch {}
   }
 
+  // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
+  const processedColumns = useMemo(() => {
+    // 셀렉트/날짜 설정이 없으면 원본 컬럼 그대로 사용
+    if (!selectFields && !dateFields) return columns;
+
+    return columns.map((col) => {
+      const isSelectField = selectFields && selectFields[col.field];
+      const isDateField = dateFields && dateFields.includes(col.field);
+
+      // 날짜 필드인 경우: 표시용 포맷터 적용
+      if (isDateField) {
+        return {
+          ...col,
+          valueFormatter: (params: { value: string }) =>
+            formatDateForDisplay(params.value, dateFormat),
+        };
+      }
+
+      // 셀렉트 필드인 경우: value를 label로 매핑
+      if (isSelectField) {
+        return {
+          ...col,
+          valueFormatter: (params: { value: string }) => {
+            const option = isSelectField.find((opt) => opt.value === params.value);
+            return option ? option.label : (params.value ?? '');
+          },
+        };
+      }
+
+      return col;
+    });
+  }, [columns, selectFields, dateFields, dateFormat]);
+
+  const hasSearchFields = Array.isArray(searchFields) && searchFields.length > 0;
+
   return (
     <Section>
       <Box sx={{ mb: 2 }}>
-        <ListSearch
-          columns={columns}
-          searchFields={searchFields}
-          onSearch={handleSearch}
-          placeholder={searchPlaceholder}
-          size={size}
-          initialValues={initialValues}
-        />
+        {hasSearchFields && (
+          <ListSearch
+            columns={columns}
+            searchFields={searchFields}
+            onSearch={handleSearch}
+            placeholder={searchPlaceholder}
+            size={size}
+            initialValues={initialValues}
+          />
+        )}
 
         {resolvedActionsNode}
       </Box>
@@ -277,7 +326,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       >
         <DataGrid<T>
           rows={filteredRows}
-          columns={columns}
+          columns={processedColumns}
           getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}

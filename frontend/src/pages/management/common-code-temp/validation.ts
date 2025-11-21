@@ -40,7 +40,6 @@ export class CommonCodeValidator {
     category_nm: string;
     service_cd: string;
     status_code: string;
-    parent_service_cd?: string;
   }): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
@@ -56,13 +55,6 @@ export class CommonCodeValidator {
     const statusError = this.validateStatusCode(data.status_code);
     if (statusError) errors.push(statusError);
 
-    // 질문 카테고리일 때 parent_service_cd 필수
-    if (data.code_type === 'QUESTION_CATEGORY') {
-      if (!data.parent_service_cd || data.parent_service_cd.trim() === '') {
-        errors.push('서비스 그룹 코드는 필수입니다.');
-      }
-    }
-
     return {
       isValid: errors.length === 0,
       errors,
@@ -74,7 +66,6 @@ export class CommonCodeValidator {
     category_nm: string;
     service_cd: string;
     status_code: string;
-    parent_service_cd?: string;
   }): string[] {
     const result = CommonCodeValidator.validateAll(data);
     return result.errors;
