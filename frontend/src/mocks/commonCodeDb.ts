@@ -1,4 +1,6 @@
 // Temporary in-memory mock DB for Common Code management
+// Single source of truth for all category data (Service Names, Question Categories, Age Groups)
+
 export type CodeType = 'SERVICE_NAME' | 'QUESTION_CATEGORY' | 'AGE_GROUP';
 
 export interface CodeTypeOption {
@@ -14,180 +16,326 @@ export interface CommonCodeItem extends Record<string, unknown> {
   status_code: string;
 }
 
+// 서비스명 타입
+export type ServiceNameItem = {
+  no: number;
+  service_cd: string;
+  service_nm: string;
+  category_nm: string;
+  display_yn: string;
+  sort_order: number;
+};
+
+// 질문 카테고리 타입
+export type QuestionCategoryItem = {
+  no: number;
+  qst_ctgr_cd: string;
+  service_cd: string;
+  qst_ctgr_nm: string;
+  display_yn: string;
+  sort_order: number;
+};
+
+// 연령대 타입
+export type AgeGroupItem = {
+  no: number;
+  age_grp_cd: string;
+  age_grp_nm: string;
+  display_yn: string;
+  sort_order: number;
+};
+
 let codeTypeList: CodeTypeOption[] = [
   { value: 'SERVICE_NAME', label: '서비스명' },
   { value: 'QUESTION_CATEGORY', label: '질문 카테고리' },
   { value: 'AGE_GROUP', label: '연령대' },
 ];
 
-let seq = 27;
-let items: CommonCodeItem[] = [
-  // 서비스명 (기존 serviceNameDb 데이터)
+// 서비스명 Mock 데이터
+let serviceNameMockData: ServiceNameItem[] = [
   {
     no: 1,
-    code_type: 'SERVICE_NAME',
-    category_nm: '적금',
-    service_cd: 'SVC_AI_SEARCH',
-    status_code: 'Y',
+    service_cd: 'ai_search',
+    service_nm: 'AI 검색',
+    category_nm: '서비스명',
+    display_yn: 'Y',
+    sort_order: 1,
   },
   {
     no: 2,
-    code_type: 'SERVICE_NAME',
-    category_nm: '적금',
-    service_cd: 'SVC_AI_RECOMMEND',
-    status_code: 'Y',
+    service_cd: 'ai_calc',
+    service_nm: 'AI 금융계산기',
+    category_nm: '서비스명',
+    display_yn: 'Y',
+    sort_order: 2,
   },
   {
     no: 3,
-    code_type: 'SERVICE_NAME',
-    category_nm: '대출',
-    service_cd: 'SVC_LOAN_INFO',
-    status_code: 'N',
+    service_cd: 'ai_transfer',
+    service_nm: 'AI 이체',
+    category_nm: '서비스명',
+    display_yn: 'Y',
+    sort_order: 3,
   },
   {
     no: 4,
-    code_type: 'SERVICE_NAME',
-    category_nm: '신용',
-    service_cd: 'SVC_CREDIT_CHECK',
-    status_code: 'Y',
+    service_cd: 'ai_shared_account',
+    service_nm: 'AI 모임총무',
+    category_nm: '서비스명',
+    display_yn: 'Y',
+    sort_order: 4,
+  },
+];
+
+// 질문 카테고리 Mock 데이터
+let questionCategoryMockData: QuestionCategoryItem[] = [
+  // AI 검색
+  {
+    no: 1,
+    qst_ctgr_cd: 'ai_search_mid',
+    service_cd: 'ai_search',
+    qst_ctgr_nm: 'mid (엔어드민아이디)',
+    display_yn: 'Y',
+    sort_order: 1,
+  },
+  {
+    no: 2,
+    qst_ctgr_cd: 'ai_search_story',
+    service_cd: 'ai_search',
+    qst_ctgr_nm: 'story (돈이뭔놈이야기)',
+    display_yn: 'Y',
+    sort_order: 2,
+  },
+  {
+    no: 3,
+    qst_ctgr_cd: 'ai_search_child',
+    service_cd: 'ai_search',
+    qst_ctgr_nm: 'child (아동보호)',
+    display_yn: 'Y',
+    sort_order: 3,
+  },
+  {
+    no: 4,
+    qst_ctgr_cd: 'ai_search_promo',
+    service_cd: 'ai_search',
+    qst_ctgr_nm: 'promo (프로모션)',
+    display_yn: 'Y',
+    sort_order: 4,
   },
   {
     no: 5,
-    code_type: 'SERVICE_NAME',
-    category_nm: '예금',
-    service_cd: 'SVC_DEPOSIT_PROMO',
-    status_code: 'N',
+    qst_ctgr_cd: 'ai_search_signature',
+    service_cd: 'ai_search',
+    qst_ctgr_nm: 'signature (시그니처)',
+    display_yn: 'Y',
+    sort_order: 5,
   },
+  // AI 금융계산기
   {
     no: 6,
-    code_type: 'SERVICE_NAME',
-    category_nm: '적금',
-    service_cd: 'SVC_SAVINGS_PLUS',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_calc_save',
+    service_cd: 'ai_calc',
+    qst_ctgr_nm: 'save (저축)',
+    display_yn: 'Y',
+    sort_order: 6,
   },
   {
     no: 7,
-    code_type: 'SERVICE_NAME',
-    category_nm: '예금',
-    service_cd: 'SVC_HIGH_INTEREST',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_calc_loan',
+    service_cd: 'ai_calc',
+    qst_ctgr_nm: 'loan (대출)',
+    display_yn: 'Y',
+    sort_order: 7,
   },
   {
     no: 8,
-    code_type: 'SERVICE_NAME',
-    category_nm: '대출',
-    service_cd: 'SVC_MORTGAGE_HELP',
-    status_code: 'N',
+    qst_ctgr_cd: 'ai_calc_exchange',
+    service_cd: 'ai_calc',
+    qst_ctgr_nm: 'exchange (환율)',
+    display_yn: 'Y',
+    sort_order: 8,
   },
+  // AI 이체
   {
     no: 9,
-    code_type: 'SERVICE_NAME',
-    category_nm: '보험',
-    service_cd: 'SVC_INSURANCE_BASIC',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_transfer_svc_intro',
+    service_cd: 'ai_transfer',
+    qst_ctgr_nm: 'svc_intro',
+    display_yn: 'Y',
+    sort_order: 9,
   },
   {
     no: 10,
-    code_type: 'SERVICE_NAME',
-    category_nm: '신용',
-    service_cd: 'SVC_CREDIT_CARD',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_transfer_trn_nick',
+    service_cd: 'ai_transfer',
+    qst_ctgr_nm: 'trn_nick',
+    display_yn: 'Y',
+    sort_order: 10,
   },
   {
     no: 11,
-    code_type: 'SERVICE_NAME',
-    category_nm: '투자',
-    service_cd: 'SVC_INVEST_SIMPLE',
-    status_code: 'N',
+    qst_ctgr_cd: 'ai_transfer_sec_auth',
+    service_cd: 'ai_transfer',
+    qst_ctgr_nm: 'sec_auth',
+    display_yn: 'Y',
+    sort_order: 11,
   },
   {
     no: 12,
-    code_type: 'SERVICE_NAME',
-    category_nm: '투자',
-    service_cd: 'SVC_ROBO_ADVISOR',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_transfer_mstk_trn',
+    service_cd: 'ai_transfer',
+    qst_ctgr_nm: 'mstk_trn',
+    display_yn: 'Y',
+    sort_order: 12,
   },
+  // AI 모임총무
   {
     no: 13,
-    code_type: 'SERVICE_NAME',
-    category_nm: '서비스',
-    service_cd: 'SVC_CUSTOMER_SUPPORT',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_shared_dues_status',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'DUES_STATUS',
+    display_yn: 'Y',
+    sort_order: 13,
   },
   {
     no: 14,
-    code_type: 'SERVICE_NAME',
-    category_nm: '예금',
-    service_cd: 'SVC_FIXED_DEPOSIT',
-    status_code: 'N',
+    qst_ctgr_cd: 'ai_shared_dues_record',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'DUES_RECORD',
+    display_yn: 'Y',
+    sort_order: 14,
   },
   {
     no: 15,
-    code_type: 'SERVICE_NAME',
-    category_nm: '적금',
-    service_cd: 'SVC_MONTHLY_SAVE',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_shared_dues_analysis',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'DUES_ANALYSIS',
+    display_yn: 'Y',
+    sort_order: 15,
   },
-
-  // 질문 카테고리 (기존 questionsCategoryDb 데이터)
   {
     no: 16,
-    code_type: 'QUESTION_CATEGORY',
-    category_nm: '상품문의',
-    service_cd: 'QCAT_PRODUCT',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_shared_expense_overview',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'EXPENSE_OVERVIEW',
+    display_yn: 'Y',
+    sort_order: 16,
   },
   {
     no: 17,
-    code_type: 'QUESTION_CATEGORY',
-    category_nm: '결제문의',
-    service_cd: 'QCAT_PAYMENT',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_shared_expense_analysis',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'EXPENSE_ANALYSIS',
+    display_yn: 'Y',
+    sort_order: 17,
   },
   {
     no: 18,
-    code_type: 'QUESTION_CATEGORY',
-    category_nm: '계정문의',
-    service_cd: 'QCAT_ACCOUNT',
-    status_code: 'N',
+    qst_ctgr_cd: 'ai_shared_moim_dues_status',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'MOIM_DUES_STATUS',
+    display_yn: 'Y',
+    sort_order: 18,
   },
   {
     no: 19,
-    code_type: 'QUESTION_CATEGORY',
-    category_nm: '이용방법',
-    service_cd: 'QCAT_USAGE',
-    status_code: 'Y',
+    qst_ctgr_cd: 'ai_shared_moim_dues_record',
+    service_cd: 'ai_shared_account',
+    qst_ctgr_nm: 'MOIM_DUES_RECORD',
+    display_yn: 'Y',
+    sort_order: 19,
   },
-  {
-    no: 20,
-    code_type: 'QUESTION_CATEGORY',
-    category_nm: '기타',
-    service_cd: 'QCAT_OTHER',
-    status_code: 'Y',
-  },
+];
 
-  // 연령대 (기존 ageGroupDb 데이터)
-  { no: 21, code_type: 'AGE_GROUP', category_nm: '10대', service_cd: 'AGE_10', status_code: 'Y' },
-  { no: 22, code_type: 'AGE_GROUP', category_nm: '20대', service_cd: 'AGE_20', status_code: 'Y' },
-  { no: 23, code_type: 'AGE_GROUP', category_nm: '30대', service_cd: 'AGE_30', status_code: 'Y' },
-  { no: 24, code_type: 'AGE_GROUP', category_nm: '40대', service_cd: 'AGE_40', status_code: 'N' },
-  { no: 25, code_type: 'AGE_GROUP', category_nm: '50대', service_cd: 'AGE_50', status_code: 'Y' },
+// 연령대 Mock 데이터
+let ageGroupMockData: AgeGroupItem[] = [
   {
-    no: 26,
-    code_type: 'AGE_GROUP',
-    category_nm: '60대 이상',
-    service_cd: 'AGE_60P',
-    status_code: 'Y',
+    no: 1,
+    age_grp_cd: '10',
+    age_grp_nm: '10대',
+    display_yn: 'Y',
+    sort_order: 1,
+  },
+  {
+    no: 2,
+    age_grp_cd: '20',
+    age_grp_nm: '20대',
+    display_yn: 'Y',
+    sort_order: 2,
+  },
+  {
+    no: 3,
+    age_grp_cd: '30',
+    age_grp_nm: '30대',
+    display_yn: 'Y',
+    sort_order: 3,
+  },
+  {
+    no: 4,
+    age_grp_cd: '40',
+    age_grp_nm: '40대',
+    display_yn: 'Y',
+    sort_order: 4,
+  },
+  {
+    no: 5,
+    age_grp_cd: '50',
+    age_grp_nm: '50대',
+    display_yn: 'Y',
+    sort_order: 5,
   },
 ];
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+// Helper function to convert category items to CommonCodeItem format
+function getCategoryDataAsCommonCode(): CommonCodeItem[] {
+  const result: CommonCodeItem[] = [];
+  let globalNo = 1;
+
+  // Convert service names
+  serviceNameMockData.forEach((item) => {
+    result.push({
+      no: globalNo++,
+      code_type: 'SERVICE_NAME',
+      category_nm: item.service_nm,
+      service_cd: item.service_cd,
+      status_code: item.display_yn,
+    });
+  });
+
+  // Convert question categories
+  questionCategoryMockData.forEach((item) => {
+    result.push({
+      no: globalNo++,
+      code_type: 'QUESTION_CATEGORY',
+      category_nm: item.qst_ctgr_nm,
+      service_cd: item.qst_ctgr_cd,
+      status_code: item.display_yn,
+    });
+  });
+
+  // Convert age groups
+  ageGroupMockData.forEach((item) => {
+    result.push({
+      no: globalNo++,
+      code_type: 'AGE_GROUP',
+      category_nm: item.age_grp_nm,
+      service_cd: item.age_grp_cd,
+      status_code: item.display_yn,
+    });
+  });
+
+  return result;
+}
+
 export type ListParams = { page: number; size: number };
 
+// CommonCode DB (for management pages)
 export const commonCodeMockDb = {
   async list({ page, size }: ListParams) {
     await delay(200);
+    const items = getCategoryDataAsCommonCode();
     const start = page * size;
     const end = start + size;
     const slice = items.slice(start, end);
@@ -201,44 +349,165 @@ export const commonCodeMockDb = {
 
   async listAll(): Promise<CommonCodeItem[]> {
     await delay(100);
-    return [...items];
+    return getCategoryDataAsCommonCode();
   },
 
   async delete(service_cd: string) {
     await delay(150);
-    items = items.filter((it) => it.service_cd !== service_cd);
-    // reassign nos
-    items = items.map((it, idx) => ({ ...it, no: idx + 1 }));
+    const items = getCategoryDataAsCommonCode();
+    const item = items.find((it) => it.service_cd === service_cd);
+
+    if (!item) return false;
+
+    switch (item.code_type) {
+      case 'SERVICE_NAME':
+        serviceNameMockData = serviceNameMockData.filter((it) => it.service_cd !== service_cd);
+        break;
+      case 'QUESTION_CATEGORY':
+        questionCategoryMockData = questionCategoryMockData.filter(
+          (it) => it.qst_ctgr_cd !== service_cd,
+        );
+        break;
+      case 'AGE_GROUP':
+        ageGroupMockData = ageGroupMockData.filter((it) => it.age_grp_cd !== service_cd);
+        break;
+    }
+
     return true;
   },
 
   async create(input: Omit<CommonCodeItem, 'no'>) {
     await delay(200);
-    const nowNo = seq++;
-    const newItem: CommonCodeItem = {
-      no: nowNo,
-      code_type: input.code_type as CodeType,
-      category_nm: input.category_nm as string,
-      service_cd: input.service_cd as string,
-      status_code: input.status_code as string,
-    };
-    items = [...items, newItem];
-    return newItem;
+
+    switch (input.code_type) {
+      case 'SERVICE_NAME': {
+        const newNo =
+          serviceNameMockData.length > 0
+            ? Math.max(...serviceNameMockData.map((item) => item.no)) + 1
+            : 1;
+        const newItem: ServiceNameItem = {
+          no: newNo,
+          service_cd: input.service_cd as string,
+          service_nm: input.category_nm as string,
+          category_nm: '서비스명',
+          display_yn: input.status_code as string,
+          sort_order: 999,
+        };
+        serviceNameMockData = [...serviceNameMockData, newItem];
+        return {
+          no: newNo,
+          code_type: 'SERVICE_NAME' as CodeType,
+          category_nm: input.category_nm as string,
+          service_cd: input.service_cd as string,
+          status_code: input.status_code as string,
+        };
+      }
+      case 'QUESTION_CATEGORY': {
+        const newNo =
+          questionCategoryMockData.length > 0
+            ? Math.max(...questionCategoryMockData.map((item) => item.no)) + 1
+            : 1;
+        const newItem: QuestionCategoryItem = {
+          no: newNo,
+          qst_ctgr_cd: input.service_cd as string,
+          service_cd: '',
+          qst_ctgr_nm: input.category_nm as string,
+          display_yn: input.status_code as string,
+          sort_order: 999,
+        };
+        questionCategoryMockData = [...questionCategoryMockData, newItem];
+        return {
+          no: newNo,
+          code_type: 'QUESTION_CATEGORY' as CodeType,
+          category_nm: input.category_nm as string,
+          service_cd: input.service_cd as string,
+          status_code: input.status_code as string,
+        };
+      }
+      case 'AGE_GROUP': {
+        const newNo =
+          ageGroupMockData.length > 0
+            ? Math.max(...ageGroupMockData.map((item) => item.no)) + 1
+            : 1;
+        const newItem: AgeGroupItem = {
+          no: newNo,
+          age_grp_cd: input.service_cd as string,
+          age_grp_nm: input.category_nm as string,
+          display_yn: input.status_code as string,
+          sort_order: 999,
+        };
+        ageGroupMockData = [...ageGroupMockData, newItem];
+        return {
+          no: newNo,
+          code_type: 'AGE_GROUP' as CodeType,
+          category_nm: input.category_nm as string,
+          service_cd: input.service_cd as string,
+          status_code: input.status_code as string,
+        };
+      }
+      default:
+        throw new Error('Invalid code type');
+    }
   },
 
   async update(service_cd: string, input: Partial<CommonCodeItem>) {
     await delay(150);
-    items = items.map((it) => (it.service_cd === service_cd ? { ...it, ...input } : it));
-    return items.find((it) => it.service_cd === service_cd);
+    const items = getCategoryDataAsCommonCode();
+    const item = items.find((it) => it.service_cd === service_cd);
+
+    if (!item) return undefined;
+
+    switch (item.code_type) {
+      case 'SERVICE_NAME': {
+        const index = serviceNameMockData.findIndex((it) => it.service_cd === service_cd);
+        if (index !== -1) {
+          serviceNameMockData[index] = {
+            ...serviceNameMockData[index],
+            service_cd: (input.service_cd as string) || serviceNameMockData[index].service_cd,
+            service_nm: (input.category_nm as string) || serviceNameMockData[index].service_nm,
+            display_yn: (input.status_code as string) || serviceNameMockData[index].display_yn,
+          };
+        }
+        break;
+      }
+      case 'QUESTION_CATEGORY': {
+        const index = questionCategoryMockData.findIndex((it) => it.qst_ctgr_cd === service_cd);
+        if (index !== -1) {
+          questionCategoryMockData[index] = {
+            ...questionCategoryMockData[index],
+            qst_ctgr_cd:
+              (input.service_cd as string) || questionCategoryMockData[index].qst_ctgr_cd,
+            qst_ctgr_nm:
+              (input.category_nm as string) || questionCategoryMockData[index].qst_ctgr_nm,
+            display_yn: (input.status_code as string) || questionCategoryMockData[index].display_yn,
+          };
+        }
+        break;
+      }
+      case 'AGE_GROUP': {
+        const index = ageGroupMockData.findIndex((it) => it.age_grp_cd === service_cd);
+        if (index !== -1) {
+          ageGroupMockData[index] = {
+            ...ageGroupMockData[index],
+            age_grp_cd: (input.service_cd as string) || ageGroupMockData[index].age_grp_cd,
+            age_grp_nm: (input.category_nm as string) || ageGroupMockData[index].age_grp_nm,
+            display_yn: (input.status_code as string) || ageGroupMockData[index].display_yn,
+          };
+        }
+        break;
+      }
+    }
+
+    const updatedItems = getCategoryDataAsCommonCode();
+    // service_cd가 변경된 경우 새로운 service_cd로 찾기
+    return updatedItems.find(
+      (it) => it.service_cd === ((input.service_cd as string) || service_cd),
+    );
   },
 
   async reorder(orderedNos: number[]) {
     await delay(200);
-    const sorted = orderedNos
-      .map((no) => items.find((it) => it.no === no))
-      .filter(Boolean) as CommonCodeItem[];
-    items = sorted.map((it, idx) => ({ ...it, no: idx + 1 }));
-    return items;
+    return getCategoryDataAsCommonCode();
   },
 
   async getCodeTypes(): Promise<CodeTypeOption[]> {
@@ -250,5 +519,118 @@ export const commonCodeMockDb = {
     await delay(150);
     codeTypeList = [...newCodeTypes];
     return [...codeTypeList];
+  },
+};
+
+// Category DB (for recommended questions pages)
+export const categoryMockDb = {
+  // 서비스명 - Read
+  getServiceNames: async (): Promise<ServiceNameItem[]> => {
+    return Promise.resolve([...serviceNameMockData]);
+  },
+
+  // 서비스명 - Create
+  createServiceName: async (input: Omit<ServiceNameItem, 'no'>): Promise<ServiceNameItem> => {
+    const newNo =
+      serviceNameMockData.length > 0
+        ? Math.max(...serviceNameMockData.map((item) => item.no)) + 1
+        : 1;
+    const newItem: ServiceNameItem = { no: newNo, ...input };
+    serviceNameMockData = [...serviceNameMockData, newItem];
+    return Promise.resolve(newItem);
+  },
+
+  // 서비스명 - Update
+  updateServiceName: async (
+    service_cd: string,
+    input: Partial<ServiceNameItem>,
+  ): Promise<ServiceNameItem | undefined> => {
+    const index = serviceNameMockData.findIndex((item) => item.service_cd === service_cd);
+    if (index === -1) return Promise.resolve(undefined);
+    serviceNameMockData[index] = { ...serviceNameMockData[index], ...input };
+    return Promise.resolve(serviceNameMockData[index]);
+  },
+
+  // 서비스명 - Delete
+  deleteServiceName: async (service_cd: string): Promise<boolean> => {
+    const initialLength = serviceNameMockData.length;
+    serviceNameMockData = serviceNameMockData.filter((item) => item.service_cd !== service_cd);
+    return Promise.resolve(serviceNameMockData.length < initialLength);
+  },
+
+  // 질문 카테고리 - Read
+  getQuestionCategories: async (): Promise<QuestionCategoryItem[]> => {
+    return Promise.resolve([...questionCategoryMockData]);
+  },
+
+  getQuestionCategoriesByService: async (serviceCd: string): Promise<QuestionCategoryItem[]> => {
+    return Promise.resolve(
+      questionCategoryMockData.filter((item) => item.service_cd === serviceCd),
+    );
+  },
+
+  // 질문 카테고리 - Create
+  createQuestionCategory: async (
+    input: Omit<QuestionCategoryItem, 'no'>,
+  ): Promise<QuestionCategoryItem> => {
+    const newNo =
+      questionCategoryMockData.length > 0
+        ? Math.max(...questionCategoryMockData.map((item) => item.no)) + 1
+        : 1;
+    const newItem: QuestionCategoryItem = { no: newNo, ...input };
+    questionCategoryMockData = [...questionCategoryMockData, newItem];
+    return Promise.resolve(newItem);
+  },
+
+  // 질문 카테고리 - Update
+  updateQuestionCategory: async (
+    qst_ctgr_cd: string,
+    input: Partial<QuestionCategoryItem>,
+  ): Promise<QuestionCategoryItem | undefined> => {
+    const index = questionCategoryMockData.findIndex((item) => item.qst_ctgr_cd === qst_ctgr_cd);
+    if (index === -1) return Promise.resolve(undefined);
+    questionCategoryMockData[index] = { ...questionCategoryMockData[index], ...input };
+    return Promise.resolve(questionCategoryMockData[index]);
+  },
+
+  // 질문 카테고리 - Delete
+  deleteQuestionCategory: async (qst_ctgr_cd: string): Promise<boolean> => {
+    const initialLength = questionCategoryMockData.length;
+    questionCategoryMockData = questionCategoryMockData.filter(
+      (item) => item.qst_ctgr_cd !== qst_ctgr_cd,
+    );
+    return Promise.resolve(questionCategoryMockData.length < initialLength);
+  },
+
+  // 연령대 - Read
+  getAgeGroups: async (): Promise<AgeGroupItem[]> => {
+    return Promise.resolve([...ageGroupMockData]);
+  },
+
+  // 연령대 - Create
+  createAgeGroup: async (input: Omit<AgeGroupItem, 'no'>): Promise<AgeGroupItem> => {
+    const newNo =
+      ageGroupMockData.length > 0 ? Math.max(...ageGroupMockData.map((item) => item.no)) + 1 : 1;
+    const newItem: AgeGroupItem = { no: newNo, ...input };
+    ageGroupMockData = [...ageGroupMockData, newItem];
+    return Promise.resolve(newItem);
+  },
+
+  // 연령대 - Update
+  updateAgeGroup: async (
+    age_grp_cd: string,
+    input: Partial<AgeGroupItem>,
+  ): Promise<AgeGroupItem | undefined> => {
+    const index = ageGroupMockData.findIndex((item) => item.age_grp_cd === age_grp_cd);
+    if (index === -1) return Promise.resolve(undefined);
+    ageGroupMockData[index] = { ...ageGroupMockData[index], ...input };
+    return Promise.resolve(ageGroupMockData[index]);
+  },
+
+  // 연령대 - Delete
+  deleteAgeGroup: async (age_grp_cd: string): Promise<boolean> => {
+    const initialLength = ageGroupMockData.length;
+    ageGroupMockData = ageGroupMockData.filter((item) => item.age_grp_cd !== age_grp_cd);
+    return Promise.resolve(ageGroupMockData.length < initialLength);
   },
 };
