@@ -43,6 +43,10 @@ const AdminAuthEditPage = React.lazy(
   () => import('@pages/management/admin-auth/AdminAuthEditPage'),
 );
 
+// === 이력 ===
+const UserLoginPage = React.lazy(() => import('@pages/history/login/UserLoginPage'));
+const TransactionPage = React.lazy(() => import('@pages/history/transaction/TransactionPage'));
+
 export type AppRoute = {
   path: string;
   Component: React.ComponentType;
@@ -98,6 +102,14 @@ export const frontRoutes: AppRoute[] = [
     path: `${ROUTES.APP_SCHEME_APPROVAL}/:id`,
     Component: AppSchemeApprovalDetailPage,
   }, // 결재요청 상세
+
+  // === 이력 ===
+  {
+    path: ROUTES.HISTORY,
+    Component: () => React.createElement(Navigate, { to: ROUTES.USER_LOGIN, replace: true }),
+  },
+  { path: ROUTES.USER_LOGIN, Component: UserLoginPage },
+  { path: ROUTES.TRANSACTION, Component: TransactionPage },
 ];
 
 // Helper for validating DB-provided menu paths

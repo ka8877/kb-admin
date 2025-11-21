@@ -35,6 +35,11 @@ export const ROUTES = {
   QUESTIONS_CATEGORY: '/management/category/questions-category',
   AGE_GROUP: '/management/category/age-group',
   ADMIN_AUTH: '/admin-auth',
+
+  // === 이력 ===
+  HISTORY: '/history',
+  USER_LOGIN: '/history/login',
+  TRANSACTION: '/history/transaction',
 } as const;
 
 export const frontMenus: MenuItem[] = [
@@ -69,6 +74,20 @@ export const frontMenus: MenuItem[] = [
       {
         label: '어드민 권한관리',
         path: ROUTES.ADMIN_AUTH,
+      },
+    ],
+  },
+  {
+    label: '이력',
+    path: ROUTES.HISTORY,
+    children: [
+      {
+        label: '로그인 이력',
+        path: ROUTES.USER_LOGIN,
+      },
+      {
+        label: '사용자 사용 이력',
+        path: ROUTES.TRANSACTION,
       },
     ],
   },
