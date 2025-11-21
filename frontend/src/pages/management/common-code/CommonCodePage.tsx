@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Stack,
@@ -27,7 +27,12 @@ import type { GridColDef } from '@mui/x-data-grid';
 
 const CommonCodePage: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>('');
+  const location = useLocation();
+
+  // location.state에서 편집 페이지에서 돌아온 경우 codeType 가져오기
+  const returnedCodeType = (location.state as { codeType?: CodeType })?.codeType;
+
+  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>(returnedCodeType || '');
   const [showError, setShowError] = useState(false);
   const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);

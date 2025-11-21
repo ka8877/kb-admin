@@ -590,7 +590,7 @@ const CommonCodeEditPage: React.FC = () => {
       }
     }
 
-    // 질문 카테고리의 신규 서비스명 체크
+    // 질문 카테고리의 신규 서비스명 체크 및 매칭 검증
     const newServiceNames: { service_cd: string; service_nm: string }[] = [];
     for (const row of modifiedRows) {
       if (row.code_type === 'QUESTION_CATEGORY') {
@@ -604,13 +604,33 @@ const CommonCodeEditPage: React.FC = () => {
         }
 
         if (parentServiceCd && serviceGroupName) {
-          // 서비스명 목록에 없는지 확인
-          const existingService = serviceNameList.find(
-            (s) => s.service_cd === parentServiceCd && s.service_nm === serviceGroupName,
+          // 서비스명 목록에서 매칭 확인
+          const existingServiceByCode = serviceNameList.find(
+            (s) => s.service_cd === parentServiceCd,
+          );
+          const existingServiceByName = serviceNameList.find(
+            (s) => s.service_nm === serviceGroupName,
           );
 
-          if (!existingService) {
-            // 신규 서비스명 발견
+          // 이미 등록된 값인데 매칭이 안 맞는 경우
+          if (existingServiceByCode && existingServiceByCode.service_nm !== serviceGroupName) {
+            showAlert({
+              message: `서비스 그룹 코드 "${parentServiceCd}"는 이미 "${existingServiceByCode.service_nm}"로 등록되어 있습니다.\n\n서비스 그룹명을 "${existingServiceByCode.service_nm}"로 수정하거나 다른 코드를 사용해주세요.`,
+              severity: 'error',
+            });
+            return;
+          }
+
+          if (existingServiceByName && existingServiceByName.service_cd !== parentServiceCd) {
+            showAlert({
+              message: `서비스 그룹명 "${serviceGroupName}"는 이미 "${existingServiceByName.service_cd}" 코드로 등록되어 있습니다.\n\n서비스 그룹 코드를 "${existingServiceByName.service_cd}"로 수정하거나 다른 그룹명을 사용해주세요.`,
+              severity: 'error',
+            });
+            return;
+          }
+
+          // 둘 다 없으면 신규 서비스명
+          if (!existingServiceByCode && !existingServiceByName) {
             const alreadyAdded = newServiceNames.find(
               (s) => s.service_cd === parentServiceCd && s.service_nm === serviceGroupName,
             );
@@ -681,12 +701,12 @@ const CommonCodeEditPage: React.FC = () => {
       }
 
       showAlert({ message: '저장되었습니다.' });
-      navigate(ROUTES.COMMON_CODE);
+      navigate(ROUTES.COMMON_CODE, { state: { codeType: selectedCodeType } });
     } catch (error) {
       console.error('Save error:', error);
       showAlert({ message: '오류가 발생했습니다.', severity: 'error' });
     }
-  }, [rows, navigate, showAlert, serviceNameList]);
+  }, [rows, navigate, showAlert, serviceNameList, selectedCodeType]);
 
   const toggleSelectionMode = useCallback(() => {
     setSelectionMode((prev) => !prev);
