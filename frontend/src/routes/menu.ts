@@ -30,6 +30,8 @@ export const ROUTES = {
   MANAGEMENT_CATEGORY: '/management/category',
   COMMON_CODE: '/management/category/common-code',
   COMMON_CODE_EDIT: '/management/category/common-code/edit',
+  COMMON_CODE_TEMP: '/management/category/common-code-temp',
+  COMMON_CODE_TEMP_EDIT: '/management/category/common-code-temp/edit',
   SERVICE_NAME: '/management/category/service-name',
   SERVICE_NAME_EDIT: '/management/category/service-name/edit',
   QUESTIONS_CATEGORY: '/management/category/questions-category',
@@ -65,6 +67,10 @@ export const frontMenus: MenuItem[] = [
       {
         label: '공통 코드 관리',
         path: ROUTES.COMMON_CODE,
+      },
+      {
+        label: '공통 코드 관리 임시',
+        path: ROUTES.COMMON_CODE_TEMP,
       },
       {
         label: '어드민 권한관리',

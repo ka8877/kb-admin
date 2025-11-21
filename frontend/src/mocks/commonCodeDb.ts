@@ -12,8 +12,10 @@ export interface CommonCodeItem extends Record<string, unknown> {
   no: number;
   code_type: CodeType;
   category_nm: string;
-  service_cd: string;
+  service_cd: string; // 각 타입의 고유 코드 (서비스명: service_cd, 질문: qst_ctgr_cd, 연령대: age_grp_cd)
   status_code: string;
+  parent_service_cd?: string; // 질문 카테고리가 속한 서비스 코드 (ai_search 등)
+  service_group_name?: string; // 질문 카테고리의 서비스 그룹명 (AI 검색, AI 금융계산기 등)
 }
 
 // 서비스명 타입
@@ -31,6 +33,7 @@ export type QuestionCategoryItem = {
   no: number;
   qst_ctgr_cd: string;
   service_cd: string;
+  service_group_name?: string; // 서비스 그룹명 (AI 검색, AI 금융계산기 등)
   qst_ctgr_nm: string;
   display_yn: string;
   sort_order: number;
@@ -49,6 +52,13 @@ let codeTypeList: CodeTypeOption[] = [
   { value: 'SERVICE_NAME', label: '서비스명' },
   { value: 'QUESTION_CATEGORY', label: '질문 카테고리' },
   { value: 'AGE_GROUP', label: '연령대' },
+];
+
+let serviceGroupList: CodeTypeOption[] = [
+  { value: 'AI 검색', label: 'AI 검색' },
+  { value: 'AI 금융계산기', label: 'AI 금융계산기' },
+  { value: 'AI 이체', label: 'AI 이체' },
+  { value: 'AI 모임총무', label: 'AI 모임총무' },
 ];
 
 // 서비스명 Mock 데이터
@@ -94,6 +104,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 1,
     qst_ctgr_cd: 'ai_search_mid',
     service_cd: 'ai_search',
+    service_group_name: 'AI 검색',
     qst_ctgr_nm: 'mid (엔어드민아이디)',
     display_yn: 'Y',
     sort_order: 1,
@@ -102,6 +113,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 2,
     qst_ctgr_cd: 'ai_search_story',
     service_cd: 'ai_search',
+    service_group_name: 'AI 검색',
     qst_ctgr_nm: 'story (돈이뭔놈이야기)',
     display_yn: 'Y',
     sort_order: 2,
@@ -110,6 +122,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 3,
     qst_ctgr_cd: 'ai_search_child',
     service_cd: 'ai_search',
+    service_group_name: 'AI 검색',
     qst_ctgr_nm: 'child (아동보호)',
     display_yn: 'Y',
     sort_order: 3,
@@ -118,6 +131,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 4,
     qst_ctgr_cd: 'ai_search_promo',
     service_cd: 'ai_search',
+    service_group_name: 'AI 검색',
     qst_ctgr_nm: 'promo (프로모션)',
     display_yn: 'Y',
     sort_order: 4,
@@ -126,6 +140,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 5,
     qst_ctgr_cd: 'ai_search_signature',
     service_cd: 'ai_search',
+    service_group_name: 'AI 검색',
     qst_ctgr_nm: 'signature (시그니처)',
     display_yn: 'Y',
     sort_order: 5,
@@ -135,6 +150,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 6,
     qst_ctgr_cd: 'ai_calc_save',
     service_cd: 'ai_calc',
+    service_group_name: 'AI 금융계산기',
     qst_ctgr_nm: 'save (저축)',
     display_yn: 'Y',
     sort_order: 6,
@@ -143,6 +159,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 7,
     qst_ctgr_cd: 'ai_calc_loan',
     service_cd: 'ai_calc',
+    service_group_name: 'AI 금융계산기',
     qst_ctgr_nm: 'loan (대출)',
     display_yn: 'Y',
     sort_order: 7,
@@ -151,6 +168,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 8,
     qst_ctgr_cd: 'ai_calc_exchange',
     service_cd: 'ai_calc',
+    service_group_name: 'AI 금융계산기',
     qst_ctgr_nm: 'exchange (환율)',
     display_yn: 'Y',
     sort_order: 8,
@@ -160,6 +178,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 9,
     qst_ctgr_cd: 'ai_transfer_svc_intro',
     service_cd: 'ai_transfer',
+    service_group_name: 'AI 이체',
     qst_ctgr_nm: 'svc_intro',
     display_yn: 'Y',
     sort_order: 9,
@@ -168,6 +187,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 10,
     qst_ctgr_cd: 'ai_transfer_trn_nick',
     service_cd: 'ai_transfer',
+    service_group_name: 'AI 이체',
     qst_ctgr_nm: 'trn_nick',
     display_yn: 'Y',
     sort_order: 10,
@@ -176,6 +196,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 11,
     qst_ctgr_cd: 'ai_transfer_sec_auth',
     service_cd: 'ai_transfer',
+    service_group_name: 'AI 이체',
     qst_ctgr_nm: 'sec_auth',
     display_yn: 'Y',
     sort_order: 11,
@@ -184,6 +205,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 12,
     qst_ctgr_cd: 'ai_transfer_mstk_trn',
     service_cd: 'ai_transfer',
+    service_group_name: 'AI 이체',
     qst_ctgr_nm: 'mstk_trn',
     display_yn: 'Y',
     sort_order: 12,
@@ -193,6 +215,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 13,
     qst_ctgr_cd: 'ai_shared_dues_status',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'DUES_STATUS',
     display_yn: 'Y',
     sort_order: 13,
@@ -201,6 +224,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 14,
     qst_ctgr_cd: 'ai_shared_dues_record',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'DUES_RECORD',
     display_yn: 'Y',
     sort_order: 14,
@@ -209,6 +233,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 15,
     qst_ctgr_cd: 'ai_shared_dues_analysis',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'DUES_ANALYSIS',
     display_yn: 'Y',
     sort_order: 15,
@@ -217,6 +242,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 16,
     qst_ctgr_cd: 'ai_shared_expense_overview',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'EXPENSE_OVERVIEW',
     display_yn: 'Y',
     sort_order: 16,
@@ -225,6 +251,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 17,
     qst_ctgr_cd: 'ai_shared_expense_analysis',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'EXPENSE_ANALYSIS',
     display_yn: 'Y',
     sort_order: 17,
@@ -233,6 +260,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 18,
     qst_ctgr_cd: 'ai_shared_moim_dues_status',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'MOIM_DUES_STATUS',
     display_yn: 'Y',
     sort_order: 18,
@@ -241,6 +269,7 @@ let questionCategoryMockData: QuestionCategoryItem[] = [
     no: 19,
     qst_ctgr_cd: 'ai_shared_moim_dues_record',
     service_cd: 'ai_shared_account',
+    service_group_name: 'AI 모임총무',
     qst_ctgr_nm: 'MOIM_DUES_RECORD',
     display_yn: 'Y',
     sort_order: 19,
@@ -312,6 +341,8 @@ function getCategoryDataAsCommonCode(): CommonCodeItem[] {
       category_nm: item.qst_ctgr_nm,
       service_cd: item.qst_ctgr_cd,
       status_code: item.display_yn,
+      parent_service_cd: item.service_cd,
+      service_group_name: item.service_group_name,
     });
   });
 
@@ -407,10 +438,12 @@ export const commonCodeMockDb = {
           questionCategoryMockData.length > 0
             ? Math.max(...questionCategoryMockData.map((item) => item.no)) + 1
             : 1;
+
         const newItem: QuestionCategoryItem = {
           no: newNo,
           qst_ctgr_cd: input.service_cd as string,
-          service_cd: '',
+          service_cd: (input.parent_service_cd as string) || '',
+          service_group_name: input.service_group_name as string | undefined,
           qst_ctgr_nm: input.category_nm as string,
           display_yn: input.status_code as string,
           sort_order: 999,
@@ -422,6 +455,8 @@ export const commonCodeMockDb = {
           category_nm: input.category_nm as string,
           service_cd: input.service_cd as string,
           status_code: input.status_code as string,
+          parent_service_cd: input.parent_service_cd as string | undefined,
+          service_group_name: input.service_group_name as string | undefined,
         };
       }
       case 'AGE_GROUP': {
@@ -477,9 +512,17 @@ export const commonCodeMockDb = {
             ...questionCategoryMockData[index],
             qst_ctgr_cd:
               (input.service_cd as string) || questionCategoryMockData[index].qst_ctgr_cd,
+            service_cd:
+              (input.parent_service_cd as string) !== undefined
+                ? (input.parent_service_cd as string)
+                : questionCategoryMockData[index].service_cd,
             qst_ctgr_nm:
               (input.category_nm as string) || questionCategoryMockData[index].qst_ctgr_nm,
             display_yn: (input.status_code as string) || questionCategoryMockData[index].display_yn,
+            service_group_name:
+              input.service_group_name !== undefined
+                ? input.service_group_name
+                : questionCategoryMockData[index].service_group_name,
           };
         }
         break;
@@ -519,6 +562,48 @@ export const commonCodeMockDb = {
     await delay(150);
     codeTypeList = [...newCodeTypes];
     return [...codeTypeList];
+  },
+
+  async getServiceGroupOptions(): Promise<string[]> {
+    await delay(100);
+    return serviceGroupList.map((s) => s.value);
+  },
+
+  async getServiceGroups(): Promise<CodeTypeOption[]> {
+    await delay(100);
+    return [...serviceGroupList];
+  },
+
+  async saveServiceGroups(newServiceGroups: CodeTypeOption[]): Promise<CodeTypeOption[]> {
+    await delay(150);
+    serviceGroupList = [...newServiceGroups];
+    return [...serviceGroupList];
+  },
+
+  async getServiceNames(): Promise<ServiceNameItem[]> {
+    await delay(100);
+    return [...serviceNameMockData];
+  },
+
+  async createServiceName(input: {
+    service_cd: string;
+    service_nm: string;
+  }): Promise<ServiceNameItem> {
+    await delay(150);
+    const newNo =
+      serviceNameMockData.length > 0
+        ? Math.max(...serviceNameMockData.map((item) => item.no)) + 1
+        : 1;
+    const newItem: ServiceNameItem = {
+      no: newNo,
+      service_cd: input.service_cd,
+      service_nm: input.service_nm,
+      category_nm: '서비스명',
+      display_yn: 'Y',
+      sort_order: 999,
+    };
+    serviceNameMockData = [...serviceNameMockData, newItem];
+    return newItem;
   },
 };
 
