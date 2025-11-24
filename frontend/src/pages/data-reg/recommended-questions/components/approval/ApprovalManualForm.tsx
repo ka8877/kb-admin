@@ -106,10 +106,18 @@ const ApprovalManualForm: React.FC = () => {
   // ai_calc인 경우 연령대 필수
   const isAgeGroupRequired = watchedServiceNm === 'ai_calc';
 
+  // 이전 서비스명을 추적
+  const prevServiceNmRef = React.useRef<string>('');
+
   // service_nm 변경 시 qst_ctgr 초기화 및 validation 재실행
   React.useEffect(() => {
-    // 서비스명이 변경되면 질문 카테고리 초기화
-    setValue('qst_ctgr', '');
+    // 실제로 서비스명이 변경된 경우에만 질문 카테고리 초기화
+    if (prevServiceNmRef.current && prevServiceNmRef.current !== watchedServiceNm) {
+      setValue('qst_ctgr', '');
+    }
+
+    // 이전 값 업데이트
+    prevServiceNmRef.current = watchedServiceNm || '';
 
     if (hasTriedSubmit) {
       trigger(['age_grp', 'qst_ctgr']);
@@ -152,7 +160,7 @@ const ApprovalManualForm: React.FC = () => {
 
         await createMutation.mutateAsync(apiData);
         toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
-        
+
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
         const returnUrl = sessionStorage.getItem('approval_return_url');
         if (returnUrl) {
