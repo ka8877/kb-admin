@@ -11,7 +11,7 @@ import { mockAppSchemes, statusOptions } from './data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
 import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
-import type { ValidationResult } from '@/components/common/list/EditableList';
+import type { ValidationResult } from '@/types/types';
 import { toast } from 'react-toastify';
 
 // 결재 요청에 포함된 앱스킴 데이터를 가져오는 API

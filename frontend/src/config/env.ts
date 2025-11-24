@@ -3,6 +3,7 @@ export const env = {
   requestTimeout: Number(import.meta.env.VITE_API_TIMEOUT ?? '15000'),
   isDev: import.meta.env.DEV,
   isProd: import.meta.env.PROD,
+  testURL: import.meta.env.VITE_TEST_URL ?? '',
 };
 
 export type Env = typeof env;

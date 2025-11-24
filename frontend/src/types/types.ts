@@ -12,9 +12,19 @@ export type ApprovalRequestItem = {
   process_date: string; // 처리일
 };
 
+export type SelectFieldOption = {
+  label: string;
+  value: string;
+};
+
 export type SearchFieldOption = {
   label: string;
   value: string | number;
+};
+
+export type ValidationResult = {
+  isValid: boolean;
+  message?: string;
 };
 
 export type SearchField =

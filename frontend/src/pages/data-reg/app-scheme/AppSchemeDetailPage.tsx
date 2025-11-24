@@ -11,7 +11,7 @@ import { statusOptions, mockAppSchemeDetail } from './data';
 import { appSchemeColumns } from './components/columns/columns';
 import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
-import type { ValidationResult } from '@/components/common/detail/DataDetail';
+import type { ValidationResult } from '@/types/types';
 
 // API 예시
 const detailApi = {

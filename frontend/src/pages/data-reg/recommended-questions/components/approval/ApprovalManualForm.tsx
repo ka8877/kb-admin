@@ -11,9 +11,12 @@ import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
 import { loadServiceOptions, loadAgeGroupOptions, under17Options } from '../../data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '../../validation';
-import { useFilteredQuestionCategories } from '../../hooks';
+import { useFilteredQuestionCategories, useCreateRecommendedQuestion } from '../../hooks';
+import { toCompactFormat } from '@/utils/dateUtils';
+import { toast } from 'react-toastify';
+import { ROUTES } from '@/routes/menu';
 
 // 공통 validation을 사용한 폼 검증 스키마
 const schema = createRecommendedQuestionYupSchema();
@@ -35,6 +38,7 @@ type FormData = {
 const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
+  const createMutation = useCreateRecommendedQuestion();
 
   // 동적 옵션 상태
   const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
@@ -119,10 +123,51 @@ const ApprovalManualForm: React.FC = () => {
     }
   }, [watchedQstCtgr, hasTriedSubmit, trigger]);
 
-  const onSubmit = useCallback((data: FormData) => {
-    // TODO: 폼 데이터 검증 및 저장 로직
-    console.log('직접 입력 저장:', data);
-  }, []);
+  const onSubmit = useCallback(
+    async (data: FormData) => {
+      try {
+        // Dayjs 객체를 YYYYMMDDHHmmss 형식 문자열로 변환
+        const imp_start_date = data.imp_start_date
+          ? toCompactFormat(data.imp_start_date.toDate()) || ''
+          : '';
+        const imp_end_date = data.imp_end_date
+          ? toCompactFormat(data.imp_end_date.toDate()) || ''
+          : '';
+
+        // 폼 데이터를 API 형식으로 변환
+        const apiData: Partial<import('../../types').RecommendedQuestionItem> = {
+          service_nm: data.service_nm,
+          display_ctnt: data.display_ctnt,
+          prompt_ctnt: data.prompt_ctnt || null,
+          qst_ctgr: data.qst_ctgr,
+          qst_style: data.qst_style || null,
+          parent_id: data.parentId || null,
+          parent_nm: data.parentIdName || null,
+          age_grp: data.age_grp || null,
+          under_17_yn: data.under_17_yn || 'N',
+          imp_start_date,
+          imp_end_date,
+          status: 'in_service', // 기본값
+        };
+
+        await createMutation.mutateAsync(apiData);
+        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+        
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem('approval_return_url');
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem('approval_return_url');
+        } else {
+          navigate(ROUTES.RECOMMENDED_QUESTIONS);
+        }
+      } catch (error) {
+        console.error('추천질문 생성 실패:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+      }
+    },
+    [createMutation, navigate],
+  );
 
   const handleSaveClick = useCallback(async () => {
     // 첫 번째 submit 시도 표시

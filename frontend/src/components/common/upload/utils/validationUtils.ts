@@ -2,11 +2,7 @@
 import ExcelJS from 'exceljs';
 import type { GridColDef } from '@mui/x-data-grid';
 import { parseRowData, hasRowData } from './excelUtils';
-
-export type ValidationResult = {
-  isValid: boolean;
-  errorMessage?: string;
-};
+import type { ValidationResult } from '@/types/types';
 
 export type ValidationFunction = (
   value: string | number | Date | null | undefined,
@@ -17,7 +13,6 @@ export type ValidationError = {
   rowNumber: number;
   message: string;
 };
-
 /**
  * 워크시트 데이터 validation
  */
@@ -68,7 +63,7 @@ export const validateWorksheetData = (
       if (!validationResult.isValid) {
         return {
           rowNumber: rowNum,
-          message: validationResult.errorMessage || '유효하지 않은 값입니다',
+          message: validationResult.message || '유효하지 않은 값입니다',
         };
       }
     }

@@ -5,13 +5,9 @@ import {
   RecommendedQuestionData,
 } from '../recommendedQuestionValidation';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
+import type { ValidationResult } from '@/types/types';
 
 // 엑셀 validation 함수 타입 정의
-export type ValidationResult = {
-  isValid: boolean;
-  errorMessage?: string;
-};
-
 export type ValidationFunction = (
   value: string | number | Date | null | undefined,
   row?: RecommendedQuestionData,
@@ -25,10 +21,10 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // service_cd: 필수, 20자 이하
     service_cd: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '서비스코드는 필수입니다' };
+        return { isValid: false, message: '서비스코드는 필수입니다' };
       }
       if (String(value).length > 20) {
-        return { isValid: false, errorMessage: '서비스코드는 20자를 초과할 수 없습니다' };
+        return { isValid: false, message: '서비스코드는 20자를 초과할 수 없습니다' };
       }
       return { isValid: true };
     },
@@ -39,7 +35,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       const result = RecommendedQuestionValidator.validateQuestionContent(stringValue);
       return {
         isValid: result.isValid,
-        errorMessage: result.message,
+        message: result.message,
       };
     },
 
@@ -49,17 +45,17 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       const result = RecommendedQuestionValidator.validatePromptContent(stringValue);
       return {
         isValid: result.isValid,
-        errorMessage: result.message,
+        message: result.message,
       };
     },
 
     // qst_ctgr: 필수, 20자 이하
     qst_ctgr: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '질문 카테고리는 필수입니다' };
+        return { isValid: false, message: '질문 카테고리는 필수입니다' };
       }
       if (String(value).length > 20) {
-        return { isValid: false, errorMessage: '질문 카테고리는 20자를 초과할 수 없습니다' };
+        return { isValid: false, message: '질문 카테고리는 20자를 초과할 수 없습니다' };
       }
       return { isValid: true };
     },
@@ -70,7 +66,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       const result = RecommendedQuestionValidator.validateQuestionStyle(stringValue);
       return {
         isValid: result.isValid,
-        errorMessage: result.message,
+        message: result.message,
       };
     },
 
@@ -80,7 +76,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       const result = RecommendedQuestionValidator.validateParentId(stringValue, row);
       return {
         isValid: result.isValid,
-        errorMessage: result.message,
+        message: result.message,
       };
     },
 
@@ -90,7 +86,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       const result = RecommendedQuestionValidator.validateParentIdName(stringValue, row);
       return {
         isValid: result.isValid,
-        errorMessage: result.message,
+        message: result.message,
       };
     },
 
@@ -105,7 +101,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
         if (!value || String(value).trim() === '') {
           return {
             isValid: false,
-            errorMessage: 'AI 금융계산기 서비스는 연령대가 필수입니다',
+            message: 'AI 금융계산기 서비스는 연령대가 필수입니다',
           };
         }
       }
@@ -114,7 +110,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (value && String(value).trim() !== '') {
         const numValue = Number(value);
         if (isNaN(numValue)) {
-          return { isValid: false, errorMessage: '연령대는 숫자 형태여야 합니다' };
+          return { isValid: false, message: '연령대는 숫자 형태여야 합니다' };
         }
       }
 
@@ -124,11 +120,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // under_17_yn: 필수, Y 또는 N
     under_17_yn: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '17세 미만 노출 여부는 필수입니다' };
+        return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
       }
       const strValue = String(value).toUpperCase();
       if (strValue !== 'Y' && strValue !== 'N') {
-        return { isValid: false, errorMessage: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
+        return {
+          isValid: false,
+          message: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다',
+        };
       }
       return { isValid: true };
     },
@@ -136,14 +135,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // imp_start_date: 필수, 날짜형태, 현재일 <= 노출시작일자
     imp_start_date: (value, row) => {
       if (!value) {
-        return { isValid: false, errorMessage: '노출 시작 일시는 필수입니다' };
+        return { isValid: false, message: '노출 시작 일시는 필수입니다' };
       }
 
       // 날짜 형태 검증
       if (!isValidDate(value as string | Date | null)) {
         return {
           isValid: false,
-          errorMessage: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
+          message: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
         };
       }
 
@@ -154,7 +153,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (startDate && startDate < now) {
         return {
           isValid: false,
-          errorMessage: '노출 시작 일시는 현재 일시 이후여야 합니다',
+          message: '노출 시작 일시는 현재 일시 이후여야 합니다',
         };
       }
 
@@ -164,14 +163,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // imp_end_date: 필수, 날짜형태, 노출시작일자 < 노출종료일자
     imp_end_date: (value, row) => {
       if (!value) {
-        return { isValid: false, errorMessage: '노출 종료 일시는 필수입니다' };
+        return { isValid: false, message: '노출 종료 일시는 필수입니다' };
       }
 
       // 날짜 형태 검증
       if (!isValidDate(value as string | Date | null)) {
         return {
           isValid: false,
-          errorMessage: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
+          message: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
         };
       }
 
@@ -184,7 +183,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
         if (startDate && endDate && endDate <= startDate) {
           return {
             isValid: false,
-            errorMessage: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
+            message: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
           };
         }
       }
@@ -196,7 +195,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (value && !['in_service', 'out_of_service'].includes(String(value))) {
         return {
           isValid: false,
-          errorMessage: 'status는 in_service 또는 out_of_service를 입력 가능합니다',
+          message: 'status는 in_service 또는 out_of_service를 입력 가능합니다',
         };
       }
       return { isValid: true };

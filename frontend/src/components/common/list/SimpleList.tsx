@@ -13,8 +13,8 @@ import { SearchField } from '@/types/types';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
-import { formatDateForDisplay } from '@/utils/dateUtils';
-import type { SelectFieldOption } from './ManagementList';
+import type { SelectFieldOption } from '@/types/types';
+import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 
 export type SimpleListRenderProps = {
   selectionMode: boolean;
@@ -260,43 +260,22 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   }
 
   // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
-  const processedColumns = useMemo(() => {
-    // 셀렉트/날짜 설정이 없으면 원본 컬럼 그대로 사용
-    if (!selectFields && !dateFields) return columns;
-
-    return columns.map((col) => {
-      const isSelectField = selectFields && selectFields[col.field];
-      const isDateField = dateFields && dateFields.includes(col.field);
-
-      // 날짜 필드인 경우: 표시용 포맷터 적용
-      if (isDateField) {
-        return {
-          ...col,
-          valueFormatter: (params: { value: string }) =>
-            formatDateForDisplay(params.value, dateFormat),
-        };
-      }
-
-      // 셀렉트 필드인 경우: value를 label로 매핑
-      if (isSelectField) {
-        return {
-          ...col,
-          valueFormatter: (params: { value: string }) => {
-            const option = isSelectField.find((opt) => opt.value === params.value);
-            return option ? option.label : (params.value ?? '');
-          },
-        };
-      }
-
-      return col;
-    });
-  }, [columns, selectFields, dateFields, dateFormat]);
+  const processedColumns = useMemo(
+    () =>
+      createProcessedColumns<T>({
+        columns,
+        selectFields,
+        dateFields,
+        dateFormat,
+      }),
+    [columns, selectFields, dateFields, dateFormat],
+  );
 
   const hasSearchFields = Array.isArray(searchFields) && searchFields.length > 0;
 
   return (
     <Section>
-      <Box sx={{ mb: 2 }}>
+      <Box sx={SIMPLE_LIST_HEADER_WRAPPER_SX}>
         {hasSearchFields && (
           <ListSearch
             columns={columns}
@@ -311,19 +290,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         {resolvedActionsNode}
       </Box>
 
-      <Box
-        sx={{
-          height: 545,
-          width: '100%',
-          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#1976d2 !important',
-          },
-          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-            outline: '2px solid #1976d2',
-            outlineOffset: '-2px',
-          },
-        }}
-      >
+      <Box sx={SIMPLE_LIST_GRID_WRAPPER_SX}>
         <DataGrid<T>
           rows={filteredRows}
           columns={processedColumns}
@@ -341,12 +308,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
-          sx={{
-            '& .MuiDataGrid-footerContainer': {
-              minHeight: '42px',
-              maxHeight: '42px',
-            },
-          }}
+          sx={SIMPLE_LIST_GRID_SX}
         />
       </Box>
 
@@ -357,3 +319,26 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
 };
 
 export default SimpleList;
+
+const SIMPLE_LIST_HEADER_WRAPPER_SX = {
+  mb: 2,
+} as const;
+
+const SIMPLE_LIST_GRID_WRAPPER_SX = {
+  height: 545,
+  width: '100%',
+  '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#1976d2 !important',
+  },
+  '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+    outline: '2px solid #1976d2',
+    outlineOffset: '-2px',
+  },
+} as const;
+
+const SIMPLE_LIST_GRID_SX = {
+  '& .MuiDataGrid-footerContainer': {
+    minHeight: '42px',
+    maxHeight: '42px',
+  },
+} as const;

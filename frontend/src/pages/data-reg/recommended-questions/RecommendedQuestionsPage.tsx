@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
@@ -7,7 +7,6 @@ import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
 import {
-  mockRecommendedQuestions,
   serviceOptions,
   ageGroupOptions,
   under17Options,
@@ -17,16 +16,26 @@ import {
 } from './data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
-
-const listApi = {
-  list: async (): Promise<RecommendedQuestionItem[]> => {
-    return Promise.resolve(mockRecommendedQuestions);
-  },
-};
+import { useRecommendedQuestions } from './hooks';
+import { useListState } from '@/hooks/useListState';
+import { parseSearchParams } from '@/utils/apiUtils';
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listState } = useListState(20);
+
+  // 검색 조건을 객체로 변환
+  const searchParams = useMemo(
+    () => parseSearchParams(listState.searchFieldsState),
+    [listState.searchFieldsState],
+  );
+
+  const { data: rows = [] } = useRecommendedQuestions({
+    page: listState.page,
+    pageSize: listState.pageSize,
+    searchParams,
+  });
 
   const handleCreate = useCallback(() => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
@@ -68,12 +77,13 @@ const RecommendedQuestionsPage: React.FC = () => {
       <ManagementList<RecommendedQuestionItem>
         onRowClick={handleRowClick}
         columns={recommendedQuestionColumns}
-        fetcher={listApi.list}
+        rows={rows}
         rowIdGetter={'qst_id'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
+        enableClientSearch={false}
         exportFileName="추천질문목록"
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}

@@ -13,21 +13,9 @@ import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage } from '@/utils/dateUtils';
-
-export type SelectFieldOption = {
-  label: string;
-  value: string;
-};
-
-export type ValidationResult = {
-  isValid: boolean;
-  message?: string;
-};
+import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import type { SelectFieldOption } from '@/types/types';
+import type { ValidationResult } from '@/types/types';
 
 export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -191,111 +179,36 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   }, [getRequiredFields, data]);
 
   // 편집 모드에 따라 컬럼 처리 (selectFields, dateFields 포함)
-  const processedColumns = useMemo(() => {
-    return columns.map((col) => {
-      const isSelectField = selectFields && selectFields[col.field];
-      const isDateField = dateFields && dateFields.includes(col.field);
-      
-      // 필수 필드인 경우 headerName에 * 추가
-      const isRequired = requiredFields.includes(col.field);
-      const headerName = isRequired && col.headerName ? `${col.headerName} *` : col.headerName;
-
-      // 날짜 필드인 경우
-      if (isDateField) {
-        return {
-          ...col,
-          headerName,
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          valueFormatter: (params: { value: string }) => {
-            return formatDateForDisplay(params.value, dateFormat);
-          },
-          renderEditCell: (params: GridRenderEditCellParams) => {
-            const handleDateChange = (newValue: dayjs.Dayjs | null) => {
-              const dateObj = newValue ? newValue.toDate() : null;
-              const formattedValue = formatDateForStorage(dateObj, dateFormat);
-              params.api.setEditCellValue({
-                id: params.id,
-                field: params.field,
-                value: formattedValue,
-              });
-            };
-
-            const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
-
-            return (
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DateTimePicker
-                  value={currentValue}
-                  onChange={handleDateChange}
-                  format="YYYY-MM-DD HH:mm"
-                  slotProps={{
-                    textField: {
-                      size: 'small',
-                      fullWidth: true,
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            );
-          },
-        };
-      }
-
-      // qst_ctgr 필드: 편집 모드에서 행별로 옵션 다르게 (getDynamicSelectOptions 사용)
-      if (col.field === 'qst_ctgr' && isEditMode && typeof getDynamicSelectOptions === 'function') {
-        return {
-          ...col,
-          headerName,
-          type: 'singleSelect',
-          valueOptions: (params: GridRenderEditCellParams) => {
-            const row = data.find((r) => getRowId(r) === params.id);
-            return row ? getDynamicSelectOptions(row) : [];
-          },
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          renderEditCell: (params: GridRenderEditCellParams) => {
-            const row = data.find((r) => getRowId(r) === params.id);
-            const options = row ? getDynamicSelectOptions(row) : [];
-            return renderSelectEditCell(params, options);
-          },
-        };
-      }
-
-      // 셀렉트 필드인 경우
-      if (isSelectField) {
-        return {
-          ...col,
-          headerName,
-          type: 'singleSelect',
-          valueOptions: isSelectField.map((opt) => ({
-            value: opt.value,
-            label: opt.label,
-          })),
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          renderEditCell: (params: GridRenderEditCellParams) =>
-            renderSelectEditCell(params, isSelectField),
-        };
-      }
-
-      // 일반 필드
-      return {
-        ...col,
-        headerName,
-        editable: isEditMode && !readOnlyFields.includes(col.field),
-      };
-    });
-  }, [
-    columns,
-    isEditMode,
-    readOnlyFields,
-    selectFields,
-    dateFields,
-    dateFormat,
-    getDynamicSelectOptions,
-    data,
-    renderSelectEditCell,
-    getRowId,
-    requiredFields,
-  ]);
+  const processedColumns = useMemo(
+    () =>
+      createProcessedColumns<T>({
+        columns,
+        isEditMode,
+        readOnlyFields,
+        selectFields,
+        dateFields,
+        dateFormat,
+        getDynamicSelectOptions,
+        data,
+        getRowId,
+        renderSelectEditCell,
+        requiredFields,
+        addRequiredMark: true,
+      }),
+    [
+      columns,
+      isEditMode,
+      readOnlyFields,
+      selectFields,
+      dateFields,
+      dateFormat,
+      getDynamicSelectOptions,
+      data,
+      getRowId,
+      renderSelectEditCell,
+      requiredFields,
+    ],
+  );
 
   useEffect(() => {
     if (rows) {
@@ -427,19 +340,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       {/* 상단 버튼들 - 일반 모드일 때만 */}
       {!isEditMode && <DetailNavigationActions onBack={onBack} onEdit={onEdit} />}
 
-      <Box
-        sx={{
-          height: 545,
-          width: '100%',
-          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#1976d2 !important',
-          },
-          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-            outline: '2px solid #1976d2',
-            outlineOffset: '-2px',
-          },
-        }}
-      >
+      <Box sx={EDITABLE_LIST_GRID_WRAPPER_SX}>
         <DataGrid
           key={JSON.stringify(data)}
           rows={data}
@@ -459,12 +360,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           autoHeight={false}
           processRowUpdate={handleProcessRowUpdate}
           onRowClick={onRowClick ? handleRowClick : undefined}
-          sx={{
-            '& .MuiDataGrid-footerContainer': {
-              minHeight: '42px',
-              maxHeight: '42px',
-            },
-          }}
+          sx={EDITABLE_LIST_GRID_SX}
         />
       </Box>
 
@@ -487,3 +383,22 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
 };
 
 export default EditableList;
+
+const EDITABLE_LIST_GRID_WRAPPER_SX = {
+  height: 545,
+  width: '100%',
+  '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#1976d2 !important',
+  },
+  '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+    outline: '2px solid #1976d2',
+    outlineOffset: '-2px',
+  },
+} as const;
+
+const EDITABLE_LIST_GRID_SX = {
+  '& .MuiDataGrid-footerContainer': {
+    minHeight: '42px',
+    maxHeight: '42px',
+  },
+} as const;

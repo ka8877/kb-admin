@@ -6,4 +6,5 @@ export const env = {
   apiBaseURL: '/api',
   // Default request timeout in ms
   requestTimeout: 15000,
+  testURL: import.meta.env.VITE_TEST_URL ?? '',
 } as const;
