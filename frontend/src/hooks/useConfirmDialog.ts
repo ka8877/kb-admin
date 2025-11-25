@@ -45,9 +45,23 @@ export const useConfirmDialogStore = create<ConfirmDialogStore>((set, get) => ({
     set({ open: false });
   },
 
-  confirm: () => {
+  confirm: async () => {
     const state = get();
-    if (state.onConfirm) state.onConfirm();
+    console.log('🔍 confirm 함수 호출됨, onConfirm 존재:', !!state.onConfirm);
+    if (state.onConfirm) {
+      console.log('🔍 onConfirm 실행 시작');
+      try {
+        const result = state.onConfirm();
+        // onConfirm이 Promise를 반환하는 경우 처리
+        if (result instanceof Promise) {
+          await result;
+        }
+        console.log('🔍 onConfirm 실행 완료');
+      } catch (error) {
+        console.error('🔍 onConfirm 실행 중 에러:', error);
+        throw error;
+      }
+    }
     set({ open: false });
   },
 

@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage } from '@/utils/dateUtils';
+import { formatDateForDisplay, formatDateForStorage, formatDateWithDots } from '@/utils/dateUtils';
 import type { SelectFieldOption } from '@/types/types';
 
 export type CreateProcessedColumnsOptions<T extends GridValidRowModel> = {
@@ -18,6 +18,11 @@ export type CreateProcessedColumnsOptions<T extends GridValidRowModel> = {
   selectFields?: Record<string, SelectFieldOption[]>;
   dateFields?: string[];
   dateFormat?: string;
+  /**
+   * (선택) 날짜 표시 형식 (기본: YYYY-MM-DD HH:mm)
+   * 'dots'로 설정하면 YYYY.MM.DD.HH:mm:ss 형식으로 표시
+   */
+  dateDisplayFormat?: 'default' | 'dots';
   /**
    * (선택) 행별로 qst_ctgr 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
    * EditableList에서만 사용
@@ -52,6 +57,7 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
   selectFields,
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
+  dateDisplayFormat = 'default',
   getDynamicSelectOptions,
   data,
   getRowId,
@@ -77,6 +83,9 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
         headerName,
         editable: isEditMode && !readOnlyFields.includes(col.field),
         valueFormatter: (params: { value: string }) => {
+          if (dateDisplayFormat === 'dots') {
+            return formatDateWithDots(params.value);
+          }
           return formatDateForDisplay(params.value, dateFormat);
         },
         renderEditCell: (params: GridRenderEditCellParams) => {

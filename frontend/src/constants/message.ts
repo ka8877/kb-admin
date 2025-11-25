@@ -29,6 +29,7 @@ export const CONFIRM_MESSAGES = {
 export const TOAST_MESSAGES = {
   // 성공 메시지
   UPDATE_REQUESTED: '수정을 요청하였습니다.',
+  REGISTRATION_REQUESTED: '등록을 요청하였습니다.',
   DELETE_APPROVAL_REQUESTED: '결재를 요청하였습니다.',
   SAVE_SUCCESS: '저장되었습니다.',
   DELETE_SUCCESS: '삭제를 요청하였습니다.',

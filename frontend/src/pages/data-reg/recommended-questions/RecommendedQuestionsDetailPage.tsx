@@ -1,7 +1,6 @@
 // frontend/src/pages/data-reg/recommended-questions/detail/RecommendedQuestionDetailPage.tsx
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
 import DataDetail from '@/components/common/detail/DataDetail';
@@ -10,48 +9,23 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { toast } from 'react-toastify';
 import {
   statusOptions,
-  mockRecommendedQuestionDetail,
   serviceOptions,
   ageGroupOptions,
   under17Options,
   questionCategoryOptions,
 } from './data';
-import { useFilteredQuestionCategories } from './hooks';
+import { useFilteredQuestionCategories, useRecommendedQuestion, useUpdateRecommendedQuestion } from './hooks';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
-
-// API 예시
-const detailApi = {
-  getById: async (id: string): Promise<RecommendedQuestionItem> => {
-    // 실제로는 API 호출
-    return {
-      ...mockRecommendedQuestionDetail,
-      qst_id: id,
-    };
-  },
-
-  update: async (id: string, data: RecommendedQuestionItem): Promise<RecommendedQuestionItem> => {
-    // 실제로는 API 호출
-    console.log('Updating item:', id, data);
-    // 업데이트된 데이터 반환
-    return {
-      ...data,
-      updatedAt: new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14),
-    };
-  },
-};
 
 const RecommendedQuestionDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { showConfirm } = useConfirmDialog();
+  const updateMutation = useUpdateRecommendedQuestion();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['recommendedQuestion', id],
-    queryFn: () => (id ? detailApi.getById(id) : Promise.reject('Invalid ID')),
-    enabled: !!id,
-  });
+  const { data, isLoading } = useRecommendedQuestion(id);
 
   const handleBack = React.useCallback(() => {
     navigate(-1);
@@ -77,14 +51,15 @@ const RecommendedQuestionDetailPage: React.FC = () => {
       if (!id) return;
 
       try {
-        await detailApi.update(id, updatedData);
-        console.log('데이터가 성공적으로 저장되었습니다.');
+        await updateMutation.mutateAsync({ id, data: updatedData });
+        toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
       } catch (error) {
-        console.error('저장 실패:', error);
+        console.error('수정 요청 실패:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
         throw error;
       }
     },
-    [id],
+    [id, updateMutation],
   );
 
   const selectFieldsConfig = {

@@ -6,10 +6,13 @@ export const API_ENDPOINTS = {
   RECOMMENDED_QUESTIONS: {
     BASE: '/data-reg/qst',
     LIST: '/data-reg/qst.json',
-    DETAIL: (id: string | number) => `/data-reg/qst/${id}`,
+    DETAIL: (id: string | number) => `/data-reg/qst/${id}.json`,
     CREATE: '/data-reg/qst.json',
-    UPDATE: (id: string | number) => `/data-reg/qst/${id}`,
-    DELETE: (id: string | number) => `/data-reg/qst/${id}`,
+    UPDATE: (id: string | number) => `/data-reg/qst/${id}.json`,
+    DELETE: (id: string | number) => `/data-reg/qst/${id}.json`,
+    APPROVAL: '/approval/recommended-questions.json',
+    APPROVAL_LIST: '/approval/recommended-questions.json',
+    APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/recommended-questions/${id}/list.json`,
   },
 
   // 앱 스킴 관련
@@ -20,6 +23,7 @@ export const API_ENDPOINTS = {
     CREATE: '/data-reg/app-scheme',
     UPDATE: (id: string | number) => `/data-reg/app-scheme/${id}`,
     DELETE: (id: string | number) => `/data-reg/app-scheme/${id}`,
+    APPROVAL_LIST: '/approval/app-scheme.json',
   },
 
   // 공통코드 관련

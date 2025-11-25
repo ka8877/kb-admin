@@ -13,9 +13,12 @@ import { questionCategoryGroupedOptions } from './data';
 import {
   fetchRecommendedQuestions,
   fetchRecommendedQuestion,
+  fetchApprovalDetailQuestions,
   createRecommendedQuestion,
+  createRecommendedQuestionsBatch,
   updateRecommendedQuestion,
   deleteRecommendedQuestion,
+  deleteRecommendedQuestions,
 } from './api';
 import type { RecommendedQuestionItem } from './types';
 /*
@@ -82,6 +85,17 @@ export const useRecommendedQuestion = (id: string | number | undefined) => {
 };
 
 /**
+ * 승인 요청 상세 조회 훅 (결재 요청에 포함된 추천질문 목록)
+ */
+export const useApprovalDetailQuestions = (approvalId: string | number | undefined) => {
+  return useQuery({
+    queryKey: ['approval-detail-questions', approvalId],
+    queryFn: () => fetchApprovalDetailQuestions(approvalId!),
+    enabled: !!approvalId,
+  });
+};
+
+/**
  * 추천질문 생성 뮤테이션 훅
  */
 export const useCreateRecommendedQuestion = () => {
@@ -89,6 +103,21 @@ export const useCreateRecommendedQuestion = () => {
 
   return useMutation({
     mutationFn: createRecommendedQuestion,
+    onSuccess: () => {
+      // 목록 쿼리 무효화하여 자동 리패칭
+      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+    },
+  });
+};
+
+/**
+ * 추천질문 일괄 생성 뮤테이션 훅
+ */
+export const useCreateRecommendedQuestionsBatch = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createRecommendedQuestionsBatch,
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
@@ -121,6 +150,21 @@ export const useDeleteRecommendedQuestion = () => {
 
   return useMutation({
     mutationFn: deleteRecommendedQuestion,
+    onSuccess: () => {
+      // 목록 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+    },
+  });
+};
+
+/**
+ * 여러 추천질문 삭제 뮤테이션 훅
+ */
+export const useDeleteRecommendedQuestions = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteRecommendedQuestions,
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });

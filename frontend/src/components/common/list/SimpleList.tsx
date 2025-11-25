@@ -60,6 +60,11 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   selectFields?: Record<string, SelectFieldOption[]>; // 셀렉트 박스로 표시할 필드와 옵션들
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
+  /**
+   * (선택) 날짜 표시 형식 (기본: default)
+   * 'dots'로 설정하면 YYYY.MM.DD.HH:mm:ss 형식으로 표시
+   */
+  dateDisplayFormat?: 'default' | 'dots';
 };
 
 const defaultGetRowId =
@@ -92,6 +97,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   selectFields,
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
+  dateDisplayFormat = 'default',
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -267,8 +273,9 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
         selectFields,
         dateFields,
         dateFormat,
+        dateDisplayFormat,
       }),
-    [columns, selectFields, dateFields, dateFormat],
+    [columns, selectFields, dateFields, dateFormat, dateDisplayFormat],
   );
 
   const hasSearchFields = Array.isArray(searchFields) && searchFields.length > 0;

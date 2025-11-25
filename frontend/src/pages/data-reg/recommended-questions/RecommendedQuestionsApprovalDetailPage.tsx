@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
@@ -11,38 +11,23 @@ import {
   loadServiceOptions,
   loadAgeGroupOptions,
   loadQuestionCategoryGroupedOptions,
-  mockApprovalDetailQuestions,
   questionCategoryOptions,
   statusOptions,
   under17Options,
 } from './data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { toast } from 'react-toastify';
-
-// 결재 요청에 포함된 추천 질문 데이터를 가져오는 API
-const approvalDetailApi = {
-  getRecommendedQuestions: async (approvalId: string): Promise<RecommendedQuestionItem[]> => {
-    // 실제로는 결재 요청 ID를 통해 관련된 추천 질문들을 조회
-    return Promise.resolve(mockApprovalDetailQuestions);
-  },
-
-  approve: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 추천 질문들을 승인 처리
-    console.log('승인 처리:', approvalId, selectedIds);
-  },
-
-  reject: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 추천 질문들을 거부 처리
-    console.log('거부 처리:', approvalId, selectedIds);
-  },
-};
+import { useApprovalDetailQuestions } from './hooks';
+import { updateApprovalDetailList, deleteApprovalDetailListItems } from './api';
 
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
+  const { showAlert } = useAlertDialog();
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
@@ -67,45 +52,49 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   }, []);
 
   // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
-  const { data = [], isLoading } = useQuery({
-    queryKey: ['recommendedQuestionsApprovalDetail', id],
-    queryFn: () => {
-      if (!id) {
-        navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
-        return Promise.reject('Invalid ID');
-      }
-      return approvalDetailApi.getRecommendedQuestions(id);
-    },
-    enabled: !!id,
-  });
+  const { data = [], isLoading } = useApprovalDetailQuestions(id);
+
+  // 초기 데이터 저장 (편집 전 원본 데이터)
+  const initialDataRef = React.useRef<RecommendedQuestionItem[]>([]);
+  
+  useEffect(() => {
+    if (data.length > 0 && !isEditMode) {
+      // 편집 모드가 아닐 때 초기 데이터 저장
+      initialDataRef.current = JSON.parse(JSON.stringify(data));
+    }
+  }, [data, isEditMode]);
 
   // sessionStorage 접근 최적화 (useMemo로 한 번만 읽기)
   const savedApprovalState = useMemo(() => sessionStorage.getItem('approval_page_state'), []);
 
   // Mutation for reject (삭제)
   const rejectMutation = useMutation({
-    mutationFn: (selectedIds: (string | number)[]) => {
+    mutationFn: async (selectedIds: (string | number)[]) => {
       if (!id) return Promise.reject('Invalid ID');
-      return approvalDetailApi.reject(id, selectedIds);
+      // 승인 요청 상세 목록에서 선택된 항목 삭제
+      await deleteApprovalDetailListItems(id, selectedIds);
     },
     onSuccess: () => {
       // React Query 캐시 무효화하여 데이터 자동 refetch
-      queryClient.invalidateQueries({ queryKey: ['recommendedQuestionsApprovalDetail', id] });
+      queryClient.invalidateQueries({ queryKey: ['approval-detail-questions', id] });
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
       setIsEditMode(false);
-      console.log('선택된 항목들이 거부되었습니다.');
+      console.log('선택된 항목들이 삭제되었습니다.');
     },
     onError: (error) => {
-      console.error('거부 처리 실패:', error);
+      console.error('삭제 처리 실패:', error);
+      toast.error(TOAST_MESSAGES.DELETE_FAILED);
     },
   });
 
   // Mutation for approve all
   const approveMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!id) return Promise.reject('Invalid ID');
       const allIds = data.map((item) => item.qst_id);
-      return approvalDetailApi.approve(id, allIds);
+      // TODO: 실제 승인 처리 API 호출
+      console.log('승인 처리:', id, allIds);
+      return Promise.resolve();
     },
     onSuccess: () => {
       console.log('모든 항목이 승인되었습니다.');
@@ -132,6 +121,9 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     }
   }, [savedApprovalState, navigate]);
 
+  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
+  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+
   const handleEdit = useCallback(() => {
     setIsEditMode(true);
   }, []);
@@ -140,18 +132,62 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     setIsEditMode(false);
   }, []);
 
-  const handleSave = useCallback(() => {
-    showConfirm({
-      title: CONFIRM_TITLES.APPROVAL_REQUEST,
-      message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
-      onConfirm: () => {
-        console.log('편집 내용 저장 및 결재 요청');
-        toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
-        setIsEditMode(false);
-        // TODO: 실제 저장 및 결재 요청 API 호출
-      },
-    });
-  }, [showConfirm]);
+  const handleSave = useCallback(
+    async (editedData: RecommendedQuestionItem[]) => {
+      // 초기 데이터와 편집된 데이터 비교
+      const initialData = initialDataRef.current;
+      const changedItems: RecommendedQuestionItem[] = [];
+
+      editedData.forEach((editedItem) => {
+        const initialItem = initialData.find((item) => item.qst_id === editedItem.qst_id);
+        if (!initialItem) return;
+
+        // 객체 비교 (readOnly 필드 제외)
+        const hasChanged = Object.keys(editedItem).some((key) => {
+          if (readOnlyFieldsConfig.includes(key)) return false;
+          const editedValue = editedItem[key as keyof RecommendedQuestionItem];
+          const initialValue = initialItem[key as keyof RecommendedQuestionItem];
+          return editedValue !== initialValue;
+        });
+
+        if (hasChanged) {
+          changedItems.push(editedItem);
+        }
+      });
+
+      if (changedItems.length === 0) {
+        showAlert({
+          title: '알림',
+          message: '수정된 데이터가 없습니다.',
+          severity: 'info',
+        });
+        return;
+      }
+
+      showConfirm({
+        title: CONFIRM_TITLES.APPROVAL_REQUEST,
+        message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
+        onConfirm: async () => {
+          try {
+            if (!id) {
+              toast.error('승인 요청 ID가 없습니다.');
+              return;
+            }
+            // 승인 요청 상세 목록 수정 API 호출 (변경된 항목만)
+            await updateApprovalDetailList(id, changedItems);
+            toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
+            setIsEditMode(false);
+            // 데이터 리프레시
+            queryClient.invalidateQueries({ queryKey: ['approval-detail-questions', id] });
+          } catch (error) {
+            console.error('수정 실패:', error);
+            toast.error('수정에 실패했습니다.');
+          }
+        },
+      });
+    },
+    [showConfirm, showAlert, readOnlyFieldsConfig, queryClient, id],
+  );
 
   const handleDeleteConfirm = useCallback(
     async (selectedIds: (string | number)[]) => {
@@ -208,10 +244,6 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     status: statusOptions,
     qst_ctgr: isEditMode ? [] : questionCategoryOptions,
   };
-
-  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
-
-  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
   // 필수 필드 목록 추출 (조건적 필수 포함, 행별로 다를 수 있음)
   const getRequiredFields = useCallback((row: RecommendedQuestionItem): string[] => {

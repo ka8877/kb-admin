@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
@@ -14,7 +14,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '../../validation';
 import { useFilteredQuestionCategories, useCreateRecommendedQuestion } from '../../hooks';
-import { toCompactFormat } from '@/utils/dateUtils';
+import { transformToApiFormat } from '../../api';
 import { toast } from 'react-toastify';
 import { ROUTES } from '@/routes/menu';
 
@@ -79,8 +79,8 @@ const ApprovalManualForm: React.FC = () => {
       parentIdName: '',
       age_grp: '',
       under_17_yn: '',
-      imp_start_date: null, // 현재 날짜로 초기화
-      imp_end_date: null, // 사용자가 직접 선택하도록 null로 초기화
+      imp_start_date: dayjs().add(30, 'minute'), // 현재 일시 + 30분
+      imp_end_date: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
   });
 
@@ -134,32 +134,23 @@ const ApprovalManualForm: React.FC = () => {
   const onSubmit = useCallback(
     async (data: FormData) => {
       try {
-        // Dayjs 객체를 YYYYMMDDHHmmss 형식 문자열로 변환
-        const imp_start_date = data.imp_start_date
-          ? toCompactFormat(data.imp_start_date.toDate()) || ''
-          : '';
-        const imp_end_date = data.imp_end_date
-          ? toCompactFormat(data.imp_end_date.toDate()) || ''
-          : '';
-
-        // 폼 데이터를 API 형식으로 변환
-        const apiData: Partial<import('../../types').RecommendedQuestionItem> = {
+        // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
+        const apiData = transformToApiFormat({
           service_nm: data.service_nm,
           display_ctnt: data.display_ctnt,
-          prompt_ctnt: data.prompt_ctnt || null,
+          prompt_ctnt: data.prompt_ctnt,
           qst_ctgr: data.qst_ctgr,
-          qst_style: data.qst_style || null,
-          parent_id: data.parentId || null,
-          parent_nm: data.parentIdName || null,
-          age_grp: data.age_grp || null,
-          under_17_yn: data.under_17_yn || 'N',
-          imp_start_date,
-          imp_end_date,
-          status: 'in_service', // 기본값
-        };
+          qst_style: data.qst_style,
+          parentId: data.parentId,
+          parentIdName: data.parentIdName,
+          age_grp: data.age_grp,
+          under_17_yn: data.under_17_yn,
+          imp_start_date: data.imp_start_date,
+          imp_end_date: data.imp_end_date,
+        });
 
         await createMutation.mutateAsync(apiData);
-        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+        toast.success(TOAST_MESSAGES.REGISTRATION_REQUESTED);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
         const returnUrl = sessionStorage.getItem('approval_return_url');

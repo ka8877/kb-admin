@@ -137,34 +137,54 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // start_date: 필수, 날짜형태
+    // start_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     start_date: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 시작 일시는 필수입니다' };
       }
 
-      // 날짜 형태 검증
-      if (!isValidDate(value as string | Date | null)) {
+      const strValue = String(value).trim();
+      
+      // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
+      if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
+          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+        };
+      }
+
+      // 날짜 유효성 검증 (변환 가능한지 확인)
+      if (!isValidDate(strValue as string | Date | null)) {
+        return {
+          isValid: false,
+          message: '날짜 형식이 아닙니다. 올바른 날짜 값으로 입력해주세요.',
         };
       }
 
       return { isValid: true };
     },
 
-    // end_date: 필수, 날짜형태, start_date보다 이후
+    // end_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     end_date: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 종료 일시는 필수입니다' };
       }
 
-      // 날짜 형태 검증
-      if (!isValidDate(value as string | Date | null)) {
+      const strValue = String(value).trim();
+      
+      // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
+      if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
+          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+        };
+      }
+
+      // 날짜 유효성 검증 (변환 가능한지 확인)
+      if (!isValidDate(strValue as string | Date | null)) {
+        return {
+          isValid: false,
+          message: '날짜 형식이 아닙니다. 올바른 날짜 값으로 입력해주세요.',
         };
       }
 

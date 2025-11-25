@@ -244,6 +244,53 @@ export const formatDateForStorage = (
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
+/**
+ * 날짜를 점(.) 구분 형식으로 변환 (YYYY.MM.DD.HH:mm:ss)
+ * 예: 20251125144800 -> 2025.11.25.14:48:00
+ */
+export const formatDateWithDots = (dateInput: DateInputFormat): string => {
+  if (!dateInput) return '';
+
+  let dateObj: Date;
+
+  if (dateInput instanceof Date) {
+    dateObj = dateInput;
+  } else {
+    const dateStr = String(dateInput).trim();
+
+    // YYYYMMDDHHMMSS 형식 (20251125144800)
+    if (/^\d{14}$/.test(dateStr)) {
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      const hour = dateStr.substring(8, 10);
+      const minute = dateStr.substring(10, 12);
+      const second = dateStr.substring(12, 14);
+      return `${year}.${month}.${day}.${hour}:${minute}:${second}`;
+    }
+    // YYYY-MM-DD HH:mm:ss 형식
+    else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+      return dateStr.replace(/-/g, '.').replace(' ', '.');
+    }
+    // 기타 형식 시도
+    else {
+      dateObj = new Date(dateStr);
+      if (isNaN(dateObj.getTime())) {
+        return String(dateInput); // 파싱 실패시 원본 반환
+      }
+    }
+  }
+
+  const year = dateObj.getFullYear().toString();
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  const hour = dateObj.getHours().toString().padStart(2, '0');
+  const minute = dateObj.getMinutes().toString().padStart(2, '0');
+  const second = dateObj.getSeconds().toString().padStart(2, '0');
+
+  return `${year}.${month}.${day}.${hour}:${minute}:${second}`;
+};
+
 // 사용 예시:
 // const userInput = '2025-12-12 15:00:00';
 // const backendData = toBackendFormat(userInput); // "2025-12-12T15:00:00.000Z"

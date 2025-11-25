@@ -3,15 +3,31 @@ import { TOAST_MESSAGES } from '@/constants/message';
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import type { ApprovalRequestItem } from '@/types/types';
 import { approvalRequestColumns } from '@/constants/columns';
 import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { approvalSearchFields as recommendedQuestionsApprovalSearchFields, mockApprovalRequests as recommendedQuestionsMockApprovalRequests } from './recommended-questions/data';
-import { approvalSearchFields as appSchemeApprovalSearchFields, mockApprovalRequests as appSchemeMockApprovalRequests } from './app-scheme/data';
+import { approvalSearchFields as recommendedQuestionsApprovalSearchFields } from './recommended-questions/data';
+import { approvalSearchFields as appSchemeApprovalSearchFields } from './app-scheme/data';
 import ApprovalListActions from '../../components/common/actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
+import { getApi } from '@/utils/apiUtils';
+import { API_ENDPOINTS } from '@/constants/endpoints';
+import { env } from '@/config';
+import { useQueryClient } from '@tanstack/react-query';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
+import {
+  fetchApprovalDetailQuestions,
+  updateApprovalRequestStatus,
+  createApprovedQuestions,
+  updateApprovedQuestions,
+  deleteApprovedQuestions,
+} from './recommended-questions/api';
+import { formatDateForStorage } from '@/utils/dateUtils';
+import type { RecommendedQuestionItem } from './recommended-questions/types';
 
 // 경로 타입 정의
 type ApprovalPageType = 'recommended-questions' | 'app-scheme';
@@ -22,6 +38,78 @@ const getApprovalPageType = (pathname: string): ApprovalPageType => {
     return 'app-scheme';
   }
   return 'recommended-questions';
+};
+
+/**
+ * Firebase 응답 데이터를 ApprovalRequestItem으로 변환하는 함수
+ */
+const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
+  if (!raw) return [];
+
+  // 배열 형태 응답: [null, { ... }, { ... }]
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item, index) => {
+        if (!item) return null;
+        const v = item as Partial<ApprovalRequestItem> & Record<string, any>;
+        return {
+          no: v.no ?? index + 1,
+          id: String(v.id ?? index + 1),
+          approval_form: v.approval_form ?? '',
+          title: v.title ?? '',
+          content: v.content ?? '',
+          requester: v.requester ?? null,
+          department: v.department ?? '',
+          request_date: v.request_date ? String(v.request_date) : '',
+          status: v.status ?? 'request',
+          process_date: v.process_date ? String(v.process_date) : '',
+        };
+      })
+      .filter((item): item is ApprovalRequestItem => item !== null);
+  }
+
+  // 객체 형태 응답도 지원 (기존 방식)
+  if (typeof raw === 'object' && raw !== null) {
+    const entries = Object.entries(raw as Record<string, unknown>) as [string, any][];
+
+    return entries.map(([key, value], index) => {
+      const v = value as Partial<ApprovalRequestItem> & Record<string, any>;
+      return {
+        no: v.no ?? index + 1,
+        id: String(v.id ?? key),
+        approval_form: v.approval_form ?? '',
+        title: v.title ?? '',
+        content: v.content ?? '',
+        requester: v.requester ?? null,
+        department: v.department ?? '',
+        request_date: v.request_date ? String(v.request_date) : '',
+        status: v.status ?? 'request',
+        process_date: v.process_date ? String(v.process_date) : '',
+      };
+    });
+  }
+
+  return [];
+};
+
+/**
+ * 승인 요청 목록 조회 API
+ */
+const fetchApprovalRequests = async (pageType: ApprovalPageType): Promise<ApprovalRequestItem[]> => {
+  const endpoint = pageType === 'app-scheme' 
+    ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
+    : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
+
+  const response = await getApi<ApprovalRequestItem[]>(
+    endpoint,
+    {
+      baseURL: env.testURL,
+      transform: transformApprovalRequests,
+      errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
+    },
+  );
+
+  return response.data;
 };
 
 const DataRegApprovalPage: React.FC = () => {
@@ -36,7 +124,6 @@ const DataRegApprovalPage: React.FC = () => {
     if (pageType === 'app-scheme') {
       return {
         title: '앱스킴 결재 요청',
-        mockData: appSchemeMockApprovalRequests,
         searchFields: appSchemeApprovalSearchFields,
         defaultReturnRoute: ROUTES.APP_SCHEME,
         approvalDetailRoute: (id: string | number) => ROUTES.APP_SCHEME_APPROVAL_DETAIL(id),
@@ -44,16 +131,47 @@ const DataRegApprovalPage: React.FC = () => {
     }
     return {
       title: '추천질문 결재 요청',
-      mockData: recommendedQuestionsMockApprovalRequests,
       searchFields: recommendedQuestionsApprovalSearchFields,
       defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
       approvalDetailRoute: (id: string | number) => ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
     };
   }, [pageType]);
 
+  // selectFields 설정 (코드 값을 label로 변환)
+  const selectFieldsConfig = useMemo(() => {
+    const approvalFormField = pageConfig.searchFields?.find(
+      (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
+        field.type === 'select' && field.field === 'approval_form'
+    );
+    const statusField = pageConfig.searchFields?.find(
+      (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
+        field.type === 'select' && field.field === 'status'
+    );
+
+    const approvalFormOptions = approvalFormField?.options || [];
+    const statusOptions = statusField?.options || [];
+
+    return {
+      approval_form: approvalFormOptions.map((opt: { label: string; value: string | number }) => ({
+        label: opt.label,
+        value: String(opt.value),
+      })),
+      status: statusOptions.map((opt: { label: string; value: string | number }) => ({
+        label: opt.label,
+        value: String(opt.value),
+      })),
+    };
+  }, [pageConfig.searchFields]);
+
+  // 승인 요청 목록 조회
+  const { data: approvalRequests = [], isLoading } = useQuery({
+    queryKey: ['approval-requests', pageType],
+    queryFn: () => fetchApprovalRequests(pageType),
+  });
+
   const listApi = {
     list: async (): Promise<ApprovalRequestItem[]> => {
-      return Promise.resolve(pageConfig.mockData);
+      return approvalRequests;
     },
   };
 
@@ -98,6 +216,176 @@ const DataRegApprovalPage: React.FC = () => {
     setApproveSelectionMode(next);
   }, []);
 
+  const queryClient = useQueryClient();
+  const { showConfirm } = useConfirmDialog();
+  const { showAlert } = useAlertDialog();
+
+  // 결재 확인 처리
+  const handleApproveConfirm = useCallback(
+    async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
+      console.log('🔍 handleApproveConfirm 호출됨', { selectedIds, pageType, approvalRequestsLength: approvalRequests.length });
+      
+      if (selectedIds.length === 0) {
+        showAlert({
+          title: '알림',
+          message: '선택된 항목이 없습니다.',
+          severity: 'warning',
+        });
+        return;
+      }
+
+      // 추천질문 승인 요청인 경우에만 처리
+      if (pageType !== 'recommended-questions') {
+        console.log('🔍 추천질문 승인 요청이 아님, pageType:', pageType);
+        toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
+        handleApproveSelect(false);
+        return;
+      }
+
+      // 선택된 승인 요청들 필터링
+      const selectedRequests = approvalRequests.filter((request) =>
+        selectedIds.includes(request.id),
+      );
+      console.log('🔍 선택된 승인 요청들:', selectedRequests);
+
+      // status가 'request'인 요청들만 필터링
+      const requestStatusRequests = selectedRequests.filter(
+        (request) => request.status === 'request',
+      );
+      console.log('🔍 status가 request인 요청들:', requestStatusRequests);
+
+      if (requestStatusRequests.length === 0) {
+        console.log('🔍 status가 request인 요청이 없음');
+        showAlert({
+          title: '알림',
+          message: '결재 대기 중인 요청만 선택할 수 있습니다.',
+          severity: 'warning',
+        });
+        return;
+      }
+
+      // approval_form별로 분류
+      const registrationRequests = requestStatusRequests.filter(
+        (request) => request.approval_form === 'data_registration',
+      );
+      const modificationRequests = requestStatusRequests.filter(
+        (request) => request.approval_form === 'data_modification',
+      );
+      const deletionRequests = requestStatusRequests.filter(
+        (request) => request.approval_form === 'data_deletion',
+      );
+
+      console.log('🔍 approval_form이 data_registration인 요청들:', registrationRequests);
+      console.log('🔍 approval_form이 data_modification인 요청들:', modificationRequests);
+      console.log('🔍 approval_form이 data_deletion인 요청들:', deletionRequests);
+
+      if (
+        registrationRequests.length === 0 &&
+        modificationRequests.length === 0 &&
+        deletionRequests.length === 0
+      ) {
+        console.log('🔍 처리할 수 있는 approval_form이 없음');
+        showAlert({
+          title: '알림',
+          message: '데이터 등록, 수정 또는 삭제 요청이 아닌 항목은 선택할 수 없습니다.',
+          severity: 'warning',
+        });
+        return;
+      }
+
+      console.log('🔍 승인 처리 시작');
+      try {
+        // data_registration 요청 처리
+        for (const request of registrationRequests) {
+          console.log('🔍 [data_registration] 승인 요청 처리 시작:', request.id);
+          
+          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
+          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 완료');
+
+          // 2. 승인 요청의 list 조회
+          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
+          const listItems = await fetchApprovalDetailQuestions(request.id);
+          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
+
+          // 3. list에 있는 항목들을 실제 데이터로 등록 (qst_id 그대로 사용)
+          if (listItems.length > 0) {
+            console.log('🔍 createApprovedQuestions 호출, items:', listItems);
+            await createApprovedQuestions(listItems);
+            console.log('🔍 createApprovedQuestions 완료');
+          } else {
+            console.log('🔍 listItems가 비어있음');
+          }
+        }
+
+        // data_modification 요청 처리
+        for (const request of modificationRequests) {
+          console.log('🔍 [data_modification] 승인 요청 처리 시작:', request.id);
+          
+          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
+          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 완료');
+
+          // 2. 승인 요청의 list 조회
+          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
+          const listItems = await fetchApprovalDetailQuestions(request.id);
+          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
+
+          // 3. list에 있는 항목들을 실제 데이터로 수정 (각 qst_id로 UPDATE 호출)
+          if (listItems.length > 0) {
+            console.log('🔍 updateApprovedQuestions 호출, items:', listItems);
+            await updateApprovedQuestions(listItems);
+            console.log('🔍 updateApprovedQuestions 완료');
+          } else {
+            console.log('🔍 listItems가 비어있음');
+          }
+        }
+
+        // data_deletion 요청 처리
+        for (const request of deletionRequests) {
+          console.log('🔍 [data_deletion] 승인 요청 처리 시작:', request.id);
+          
+          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
+          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 완료');
+
+          // 2. 승인 요청의 list 조회
+          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
+          const listItems = await fetchApprovalDetailQuestions(request.id);
+          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
+
+          // 3. list에 있는 항목들을 실제 데이터로 삭제 (각 qst_id로 DELETE 호출)
+          if (listItems.length > 0) {
+            console.log('🔍 deleteApprovedQuestions 호출, items:', listItems);
+            await deleteApprovedQuestions(listItems);
+            console.log('🔍 deleteApprovedQuestions 완료');
+          } else {
+            console.log('🔍 listItems가 비어있음');
+          }
+        }
+
+        console.log('🔍 모든 승인 요청 처리 완료');
+        toast.success('승인 처리가 완료되었습니다.');
+        setApproveSelectionMode(false);
+        if (toggleSelectionMode) {
+          toggleSelectionMode(false);
+        }
+        // 데이터 리프레시
+        queryClient.invalidateQueries({ queryKey: ['approval-requests', pageType] });
+      } catch (error) {
+        console.error('🔍 승인 처리 실패:', error);
+        toast.error('승인 처리에 실패했습니다.');
+      }
+    },
+    [approvalRequests, pageType, showConfirm, showAlert, queryClient, handleApproveSelect],
+  );
+
   return (
     <Box>
       <PageHeader title={pageConfig.title} />
@@ -105,6 +393,10 @@ const DataRegApprovalPage: React.FC = () => {
         columns={approvalRequestColumns}
         searchFields={pageConfig.searchFields}
         fetcher={listApi.list}
+        selectFields={selectFieldsConfig}
+        dateFields={['request_date', 'process_date']}
+        dateFormat="YYYYMMDDHHmmss"
+        dateDisplayFormat="dots"
         actionsNode={({ toggleSelectionMode }) => (
           <ApprovalListActions
             onBack={handleBack}
@@ -117,11 +409,8 @@ const DataRegApprovalPage: React.FC = () => {
           <ApprovalConfirmActions
             open={approveSelectionMode}
             selectedIds={selectedIds as (string | number)[]}
-            onConfirm={(ids: (string | number)[]) => {
-              toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
-              handleApproveSelect(false);
-              toggleSelectionMode(false);
-              // 실제 결재 처리 로직 연결 가능
+            onConfirm={async (ids: (string | number)[]) => {
+              await handleApproveConfirm(ids, toggleSelectionMode);
             }}
             onCancel={() => {
               handleApproveSelect(false);

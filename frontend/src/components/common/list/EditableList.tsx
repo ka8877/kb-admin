@@ -12,6 +12,8 @@ import MenuItem from '@mui/material/MenuItem';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
+import ApprovalListActions from '../actions/ApprovalListActions';
+import { ApprovalConfirmActions } from '../actions/ApprovalConfirmActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import type { SelectFieldOption } from '@/types/types';
@@ -30,7 +32,7 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onBack?: () => void; // 목록으로 버튼
   onEdit?: () => void; // 편집 버튼
   isEditMode?: boolean; // 편집 모드 상태
-  onSave?: () => void; // 저장 버튼
+  onSave?: (editedData: T[]) => void; // 저장 버튼 (편집된 데이터 전달)
   onCancel?: () => void; // 취소 버튼
   onDeleteConfirm?: (ids: (string | number)[]) => void; // 삭제 확인
   readOnlyFields?: string[]; // 편집 불가 필드들
@@ -54,6 +56,12 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
    * (선택) 필수 필드 목록을 반환하는 함수 (조건적 필수 포함, row별로 다를 수 있음)
    */
   getRequiredFields?: (row: T) => string[];
+  /**
+   * (선택) 결재 선택 모드 관련
+   */
+  onApproveSelect?: (next: boolean) => void; // 결재 선택 모드 토글
+  approveSelectionMode?: boolean; // 결재 선택 모드 상태
+  onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
 };
 
 const defaultGetRowId =
@@ -154,6 +162,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   onProcessRowUpdate,
   externalRows,
   getRequiredFields,
+  onApproveSelect,
+  approveSelectionMode = false,
+  onApproveConfirm,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -298,10 +309,10 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       console.log('🔍 모든 validation 통과');
     }
 
-    // Validation 통과 시 저장 실행
+    // Validation 통과 시 저장 실행 (편집된 데이터 전달)
     if (onSave) {
       console.log('🔍 onSave 호출');
-      onSave();
+      onSave(data);
     }
   }, [validator, data, columns, showAlert, onSave]);
 
@@ -338,7 +349,28 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   return (
     <Box>
       {/* 상단 버튼들 - 일반 모드일 때만 */}
-      {!isEditMode && <DetailNavigationActions onBack={onBack} onEdit={onEdit} />}
+      {!isEditMode && !approveSelectionMode && (
+        <DetailNavigationActions onBack={onBack} onEdit={onEdit} />
+      )}
+      {/* 결재 선택 모드일 때 상단 버튼들 */}
+      {!isEditMode && approveSelectionMode && onApproveSelect && (
+        <ApprovalListActions
+          onBack={onBack}
+          onApproveSelect={() => onApproveSelect(false)}
+          approveSelectLabel="선택 취소"
+          approveSelectActive={approveSelectionMode}
+        />
+      )}
+      {/* 결재 선택 모드가 아닐 때 결재 선택 버튼 표시 */}
+      {!isEditMode && !approveSelectionMode && onApproveSelect && (
+        <ApprovalListActions
+          onBack={onBack}
+          onEdit={onEdit}
+          onApproveSelect={() => onApproveSelect(true)}
+          approveSelectLabel="결재 선택"
+          approveSelectActive={false}
+        />
+      )}
 
       <Box sx={EDITABLE_LIST_GRID_WRAPPER_SX}>
         <DataGrid
@@ -346,9 +378,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           rows={data}
           columns={processedColumns}
           getRowId={getRowId}
-          checkboxSelection={isEditMode}
-          rowSelectionModel={isEditMode ? selectionModel : []}
-          onRowSelectionModelChange={isEditMode ? setSelectionModel : undefined}
+          checkboxSelection={isEditMode || approveSelectionMode}
+          rowSelectionModel={isEditMode || approveSelectionMode ? selectionModel : []}
+          onRowSelectionModelChange={isEditMode || approveSelectionMode ? setSelectionModel : undefined}
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
           pageSizeOptions={pageSizeOptions}
@@ -376,6 +408,20 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           selectedCount={selectionModel.length}
           selectedRowNumbers={selectedRowNumbers}
           onDelete={handleDeleteClick}
+        />
+      )}
+
+      {/* 결재 선택 모드일 때 하단 결재 확인 버튼들 */}
+      {!isEditMode && approveSelectionMode && onApproveConfirm && (
+        <ApprovalConfirmActions
+          open={approveSelectionMode}
+          selectedIds={selectionModel}
+          onConfirm={onApproveConfirm}
+          onCancel={() => {
+            setSelectionModel([]);
+            if (onApproveSelect) onApproveSelect(false);
+          }}
+          size={size}
         />
       )}
     </Box>

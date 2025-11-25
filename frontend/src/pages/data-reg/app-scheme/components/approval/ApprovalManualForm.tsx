@@ -38,7 +38,7 @@ const ApprovalManualForm: React.FC = () => {
     trigger,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: yupResolver(schema) as Resolver<FormData>,
+    resolver: yupResolver(schema) as unknown as Resolver<FormData>,
     mode: 'onChange', // 항상 실시간 validation 활성화
     defaultValues: {
       product_menu_name: '',

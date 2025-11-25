@@ -1,7 +1,14 @@
 // 공통 API 유틸리티 함수
 // 반환 타입, 엔드포인트 등을 props로 전달받아 유동적으로 사용 가능
 
+import { useLoadingStore } from '@/store/loading';
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+// CUD 작업인지 확인하는 헬퍼 함수
+const isCudOperation = (method: HttpMethod): boolean => {
+  return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+};
 
 export interface FetchApiOptions<T = unknown> {
   /** HTTP 메서드 */
@@ -59,6 +66,12 @@ export async function fetchApi<T = unknown>(
     fetchOptions.body = JSON.stringify(body);
   }
 
+  // CUD 작업인 경우 로딩 시작
+  const shouldShowLoading = isCudOperation(method);
+  if (shouldShowLoading) {
+    useLoadingStore.getState().start();
+  }
+
   try {
     const response = await fetch(url, fetchOptions);
 
@@ -79,6 +92,11 @@ export async function fetchApi<T = unknown>(
       throw error;
     }
     throw new Error(errorMessage);
+  } finally {
+    // CUD 작업인 경우 로딩 종료
+    if (shouldShowLoading) {
+      useLoadingStore.getState().stop();
+    }
   }
 }
 
@@ -175,6 +193,71 @@ export function parseSearchParams(
     return JSON.parse(searchFieldsState) as Record<string, string | number>;
   } catch {
     return {};
+  }
+}
+
+/**
+ * 여러 아이템을 한 번에 삭제하는 공통 함수 (Firebase Multi-Path Update)
+ * @param itemIds - 삭제할 아이템 ID 배열
+ * @param getDeletePath - 아이템 ID를 받아 삭제 경로를 반환하는 함수
+ * @param label - 에러 메시지에 사용할 라벨 (예: "추천질문")
+ * @param baseURL - Firebase Realtime Database Base URL
+ *
+ * @example
+ * await deleteItems(
+ *   ['id1', 'id2'],
+ *   (id) => API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE(id),
+ *   '추천질문',
+ *   env.testURL
+ * );
+ */
+export async function deleteItems(
+  itemIds: (string | number)[],
+  getDeletePath: (id: string | number) => string,
+  label: string,
+  baseURL: string,
+): Promise<void> {
+  if (itemIds.length === 0) {
+    return;
+  }
+
+  // Firebase Realtime Database의 Multi-Path Update를 사용
+  const updates: { [key: string]: null } = {};
+  itemIds.forEach((id) => {
+    // 각 아이템의 경로를 지정하고 값을 null로 설정하여 삭제
+    // Firebase 경로는 앞의 슬래시를 제거해야 함
+    const deletePath = getDeletePath(id).replace(/^\//, '');
+    updates[deletePath] = null;
+  });
+
+  // Firebase REST API를 통해 Multi-Path Update 실행
+  // Firebase Realtime Database REST API 사용
+  const databaseUrl = baseURL.replace(/\/$/, ''); // 마지막 슬래시 제거
+  const updatesUrl = `${databaseUrl}/.json`;
+
+  // 삭제 작업이므로 로딩 시작
+  useLoadingStore.getState().start();
+
+  try {
+    const response = await fetch(updatesUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error(`${label} 삭제에 실패했습니다. (${response.status})`);
+    }
+
+    console.log(`선택된 ${label} 아이템들이 삭제되었습니다.`);
+  } catch (error) {
+    console.error(`${label} 삭제 오류:`, error);
+    throw error;
+  } finally {
+    // 로딩 종료
+    useLoadingStore.getState().stop();
   }
 }
 
