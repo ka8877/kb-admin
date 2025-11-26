@@ -37,6 +37,7 @@ export const ROUTES = {
   QUESTIONS_CATEGORY: '/management/category/questions-category',
   AGE_GROUP: '/management/category/age-group',
   ADMIN_AUTH: '/admin-auth',
+  PERMISSION_MANAGEMENT: '/management/permission',
 
   // === 이력 ===
   HISTORY: '/history',
@@ -73,13 +74,17 @@ export const frontMenus: MenuItem[] = [
         label: '공통 코드 관리',
         path: ROUTES.COMMON_CODE,
       },
+      // {
+      //   label: '공통 코드 관리 임시',
+      //   path: ROUTES.COMMON_CODE_TEMP,
+      // },
       {
-        label: '공통 코드 관리 임시',
-        path: ROUTES.COMMON_CODE_TEMP,
+        label: '사용자 관리',
+        path: ROUTES.ADMIN_AUTH,
       },
       {
-        label: '어드민 권한관리',
-        path: ROUTES.ADMIN_AUTH,
+        label: '권한 관리',
+        path: ROUTES.PERMISSION_MANAGEMENT,
       },
     ],
   },
