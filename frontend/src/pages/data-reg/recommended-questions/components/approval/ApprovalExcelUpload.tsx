@@ -2,7 +2,12 @@ import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
-import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from '../../data';
+import {
+  serviceOptions,
+  ageGroupOptions,
+  under17Options,
+  questionCategoryOptions,
+} from '../../data';
 import { recommendedQuestionColumns } from '../../components/columns/columns';
 import { createExcelValidationRules } from '../../validation';
 import { importExcelToJson, type ExcelRowData } from '@/utils/excelUtils';
@@ -43,7 +48,7 @@ const ApprovalExcelUpload: React.FC = () => {
         return col;
       })
       .flat();
-    
+
     // 디버깅: prompt_ctnt가 포함되어 있는지 확인
     const hasPromptCtnt = result.some((col) => col.field === 'prompt_ctnt');
     if (!hasPromptCtnt) {
@@ -53,7 +58,7 @@ const ApprovalExcelUpload: React.FC = () => {
         result: result.map((c) => c.field),
       });
     }
-    
+
     return result;
   }, [baseTemplateColumns]);
 
@@ -95,7 +100,7 @@ const ApprovalExcelUpload: React.FC = () => {
 
         // 일괄 등록 API 호출
         await createBatchMutation.mutateAsync(apiDataList);
-        toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiDataList.length}개 항목)`);
+        toast.success(`${TOAST_MESSAGES.REGISTRATION_REQUESTED} (${apiDataList.length}개 항목)`);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
         const returnUrl = sessionStorage.getItem('approval_return_url');
@@ -130,7 +135,8 @@ const ApprovalExcelUpload: React.FC = () => {
     age_grp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
     under_17_yn: '필수 | Y 또는 N',
     imp_start_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
-    imp_end_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
+    imp_end_date:
+      '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
   };
 
   // 예시 데이터 (자동 생성 필드 제외)
@@ -180,4 +186,3 @@ const ApprovalExcelUpload: React.FC = () => {
 };
 
 export default ApprovalExcelUpload;
-

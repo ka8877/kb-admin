@@ -78,17 +78,18 @@ interface ApprovalRequestData {
   title: string;
   content: string;
   request_date: string;
-  status: 'request';
+  status: 'create_requested' | 'update_requested' | 'remove_requested' | 'in_review' | 'done_review';
   list: RecommendedQuestionItem[];
 }
 
 /**
  * 승인 요청 API 호출
+ * @returns 생성된 승인 요청 ID
  */
 const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: RecommendedQuestionItem[],
-): Promise<void> => {
+): Promise<string | number> => {
   const titleMap: Record<ApprovalFormType, string> = {
     data_registration: '데이터 등록',
     data_modification: '데이터 수정',
@@ -101,17 +102,24 @@ const sendApprovalRequest = async (
     data_deletion: '추천질문 삭제 요청드립니다',
   };
 
+  // approval_form에 따라 적절한 status 설정
+  const statusMap: Record<ApprovalFormType, 'create_requested' | 'update_requested' | 'remove_requested'> = {
+    data_registration: 'create_requested',
+    data_modification: 'update_requested',
+    data_deletion: 'remove_requested',
+  };
+
   const approvalData: ApprovalRequestData = {
     approval_form: approvalForm,
     title: titleMap[approvalForm],
     content: contentMap[approvalForm],
     request_date: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
-    status: 'request',
+    status: statusMap[approvalForm],
     list: items,
   };
 
   try {
-    await postApi(
+    const response = await postApi<{ name: string }>(
       API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
       approvalData,
       {
@@ -119,10 +127,12 @@ const sendApprovalRequest = async (
         errorMessage: '승인 요청 전송에 실패했습니다.',
       },
     );
-    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
+    const approvalId = response.data.name;
+    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]}, ID: ${approvalId})`);
+    return approvalId;
   } catch (error) {
     console.error('승인 요청 전송 오류:', error);
-    // 승인 요청 실패는 CUD 작업 성공에 영향을 주지 않도록 에러를 던지지 않음
+    throw error;
   }
 };
 
@@ -325,7 +335,7 @@ export const fetchApprovalDetailQuestions = async (
 };
 
 /**
- * 추천질문 생성 (승인 요청만 전송)
+ * 추천질문 생성 (승인 요청 전송 후 자동 승인 및 등록)
  */
 export const createRecommendedQuestion = async (
   data: Partial<RecommendedQuestionItem>,
@@ -339,14 +349,17 @@ export const createRecommendedQuestion = async (
     { index: 0, fallbackId: tempId },
   );
 
-  // 승인 요청만 전송 (실제 데이터 생성은 승인 후 처리)
+  // 1. 승인 요청 전송 (status: create_requested로 생성됨)
   await sendApprovalRequest('data_registration', [item]);
+
+  // 2. 승인된 항목들을 실제 데이터로 등록
+  await createApprovedQuestions([item]);
 
   return item;
 };
 
 /**
- * 추천질문 일괄 생성 (승인 요청만 전송)
+ * 추천질문 일괄 생성 (승인 요청 전송 후 자동 승인 및 등록)
  * @param items - 생성할 추천질문 아이템 배열
  */
 export const createRecommendedQuestionsBatch = async (
@@ -368,8 +381,11 @@ export const createRecommendedQuestionsBatch = async (
     );
   });
 
-  // 승인 요청만 전송 (실제 데이터 생성은 승인 후 처리)
+  // 1. 승인 요청 전송 (status: create_requested로 생성됨)
   await sendApprovalRequest('data_registration', createdItems);
+
+  // 2. 승인된 항목들을 실제 데이터로 등록
+  await createApprovedQuestions(createdItems);
 };
 
 /**
@@ -493,7 +509,7 @@ export const deleteApprovalDetailListItems = async (
 /**
  * 승인 요청 상태 수정
  * @param approvalId - 승인 요청 ID
- * @param status - 변경할 상태 ('approved' | 'rejected' 등)
+ * @param status - 변경할 상태 ('done_review' | 'in_review' 등)
  * @param processDate - 처리 일자 (YYYYMMDDHHmmss 형식, 선택)
  */
 export const updateApprovalRequestStatus = async (
@@ -735,25 +751,29 @@ export const deleteApprovedQuestions = async (
 };
 
 /**
- * 추천질문 수정
+ * 추천질문 수정 (승인 요청 전송 후 실제 데이터 수정)
  */
 export const updateRecommendedQuestion = async (
   id: string | number,
   data: Partial<RecommendedQuestionItem>,
 ): Promise<RecommendedQuestionItem> => {
-  // 실제 데이터 수정 API 호출을 제거하고 승인 요청만 전송
+  // RecommendedQuestionItem 형식으로 변환
   const updatedItem = transformItem(
     { ...data, qst_id: String(id) } as Partial<RecommendedQuestionItem> & Record<string, any>,
     { index: 0, fallbackId: id },
   );
-  
+
+  // 1. 승인 요청 전송 (status: update_requested로 생성됨)
   await sendApprovalRequest('data_modification', [updatedItem]);
 
-  return updatedItem; // 승인 요청에 포함된 항목 반환
+  // 2. 승인된 항목들을 실제 데이터로 수정
+  await updateApprovedQuestions([updatedItem]);
+
+  return updatedItem;
 };
 
 /**
- * 추천질문 삭제 (승인 요청만 전송)
+ * 추천질문 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  */
 export const deleteRecommendedQuestion = async (
   id: string | number,
@@ -767,16 +787,19 @@ export const deleteRecommendedQuestion = async (
     throw new Error('삭제할 데이터를 조회하지 못했습니다.');
   }
 
-  // 실제 삭제 API 호출을 제거하고 승인 요청만 전송
-  if (deletedItem) {
-    await sendApprovalRequest('data_deletion', [deletedItem]);
-  } else {
+  if (!deletedItem) {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }
+
+  // 1. 승인 요청 전송 (status: remove_requested로 생성됨)
+  await sendApprovalRequest('data_deletion', [deletedItem]);
+
+  // 2. 승인된 항목들을 실제 데이터로 삭제
+  await deleteApprovedQuestions([deletedItem]);
 };
 
 /**
- * 여러 추천질문을 한 번에 삭제 (승인 요청만 전송)
+ * 여러 추천질문을 한 번에 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  * @param itemIdsToDelete - 삭제할 아이템 ID 배열
  */
 export const deleteRecommendedQuestions = async (
@@ -797,11 +820,14 @@ export const deleteRecommendedQuestions = async (
     }
   }
 
-  // 실제 삭제 API 호출을 제거하고 승인 요청만 전송
-  if (deletedItems.length > 0) {
-    await sendApprovalRequest('data_deletion', deletedItems);
-  } else {
+  if (deletedItems.length === 0) {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }
+
+  // 1. 승인 요청 전송 (status: remove_requested로 생성됨)
+  await sendApprovalRequest('data_deletion', deletedItems);
+
+  // 2. 승인된 항목들을 실제 데이터로 삭제
+  await deleteApprovedQuestions(deletedItems);
 };
 

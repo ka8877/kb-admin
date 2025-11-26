@@ -62,6 +62,11 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onApproveSelect?: (next: boolean) => void; // 결재 선택 모드 토글
   approveSelectionMode?: boolean; // 결재 선택 모드 상태
   onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
+  /**
+   * (선택) 데이터 로딩 중 여부
+   * true일 때 DataGrid에 로딩 스피너 표시
+   */
+  isLoading?: boolean;
 };
 
 const defaultGetRowId =
@@ -165,6 +170,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   onApproveSelect,
   approveSelectionMode = false,
   onApproveConfirm,
+  isLoading = false,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -380,7 +386,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={getRowId}
           checkboxSelection={isEditMode || approveSelectionMode}
           rowSelectionModel={isEditMode || approveSelectionMode ? selectionModel : []}
-          onRowSelectionModelChange={isEditMode || approveSelectionMode ? setSelectionModel : undefined}
+          onRowSelectionModelChange={
+            isEditMode || approveSelectionMode ? setSelectionModel : undefined
+          }
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
           pageSizeOptions={pageSizeOptions}
@@ -392,6 +400,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           autoHeight={false}
           processRowUpdate={handleProcessRowUpdate}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          loading={isLoading}
           sx={EDITABLE_LIST_GRID_SX}
         />
       </Box>

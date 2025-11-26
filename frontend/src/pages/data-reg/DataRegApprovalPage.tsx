@@ -20,14 +20,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import {
-  fetchApprovalDetailQuestions,
   updateApprovalRequestStatus,
-  createApprovedQuestions,
-  updateApprovedQuestions,
-  deleteApprovedQuestions,
 } from './recommended-questions/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
-import type { RecommendedQuestionItem } from './recommended-questions/types';
 
 // 경로 타입 정의
 type ApprovalPageType = 'recommended-questions' | 'app-scheme';
@@ -61,7 +56,7 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
           requester: v.requester ?? null,
           department: v.department ?? '',
           request_date: v.request_date ? String(v.request_date) : '',
-          status: v.status ?? 'request',
+          status: v.status ?? 'create_requested',
           process_date: v.process_date ? String(v.process_date) : '',
         };
       })
@@ -83,7 +78,7 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
         requester: v.requester ?? null,
         department: v.department ?? '',
         request_date: v.request_date ? String(v.request_date) : '',
-        status: v.status ?? 'request',
+        status: v.status ?? 'create_requested',
         process_date: v.process_date ? String(v.process_date) : '',
       };
     });
@@ -95,19 +90,19 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
 /**
  * 승인 요청 목록 조회 API
  */
-const fetchApprovalRequests = async (pageType: ApprovalPageType): Promise<ApprovalRequestItem[]> => {
-  const endpoint = pageType === 'app-scheme' 
-    ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
-    : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
+const fetchApprovalRequests = async (
+  pageType: ApprovalPageType,
+): Promise<ApprovalRequestItem[]> => {
+  const endpoint =
+    pageType === 'app-scheme'
+      ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
+      : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
 
-  const response = await getApi<ApprovalRequestItem[]>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      transform: transformApprovalRequests,
-      errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
-    },
-  );
+  const response = await getApi<ApprovalRequestItem[]>(endpoint, {
+    baseURL: env.testURL,
+    transform: transformApprovalRequests,
+    errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
+  });
 
   return response.data;
 };
@@ -115,10 +110,10 @@ const fetchApprovalRequests = async (pageType: ApprovalPageType): Promise<Approv
 const DataRegApprovalPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 경로에 따라 타입 결정
   const pageType = useMemo(() => getApprovalPageType(location.pathname), [location.pathname]);
-  
+
   // 타입에 따른 설정
   const pageConfig = useMemo(() => {
     if (pageType === 'app-scheme') {
@@ -133,7 +128,8 @@ const DataRegApprovalPage: React.FC = () => {
       title: '추천질문 결재 요청',
       searchFields: recommendedQuestionsApprovalSearchFields,
       defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
-      approvalDetailRoute: (id: string | number) => ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
+      approvalDetailRoute: (id: string | number) =>
+        ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
     };
   }, [pageType]);
 
@@ -141,11 +137,11 @@ const DataRegApprovalPage: React.FC = () => {
   const selectFieldsConfig = useMemo(() => {
     const approvalFormField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'approval_form'
+        field.type === 'select' && field.field === 'approval_form',
     );
     const statusField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'status'
+        field.type === 'select' && field.field === 'status',
     );
 
     const approvalFormOptions = approvalFormField?.options || [];
@@ -223,8 +219,12 @@ const DataRegApprovalPage: React.FC = () => {
   // 결재 확인 처리
   const handleApproveConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
-      console.log('🔍 handleApproveConfirm 호출됨', { selectedIds, pageType, approvalRequestsLength: approvalRequests.length });
-      
+      console.log('🔍 handleApproveConfirm 호출됨', {
+        selectedIds,
+        pageType,
+        approvalRequestsLength: approvalRequests.length,
+      });
+
       if (selectedIds.length === 0) {
         showAlert({
           title: '알림',
@@ -248,17 +248,18 @@ const DataRegApprovalPage: React.FC = () => {
       );
       console.log('🔍 선택된 승인 요청들:', selectedRequests);
 
-      // status가 'request'인 요청들만 필터링
-      const requestStatusRequests = selectedRequests.filter(
-        (request) => request.status === 'request',
+      // status가 요청 상태인 항목들만 필터링 (create_requested, update_requested, remove_requested만 처리)
+      const allowedStatuses = ['create_requested', 'update_requested', 'remove_requested'];
+      const requestStatusRequests = selectedRequests.filter((request) =>
+        allowedStatuses.includes(request.status),
       );
-      console.log('🔍 status가 request인 요청들:', requestStatusRequests);
+      console.log('🔍 status가 요청 상태인 요청들:', requestStatusRequests);
 
       if (requestStatusRequests.length === 0) {
-        console.log('🔍 status가 request인 요청이 없음');
+        console.log('🔍 status가 요청 상태인 요청이 없음');
         showAlert({
           title: '알림',
-          message: '결재 대기 중인 요청만 선택할 수 있습니다.',
+          message: '등록요청, 수정요청, 삭제요청 상태인 항목만 선택할 수 있습니다.',
           severity: 'warning',
         });
         return;
@@ -295,79 +296,14 @@ const DataRegApprovalPage: React.FC = () => {
 
       console.log('🔍 승인 처리 시작');
       try {
-        // data_registration 요청 처리
-        for (const request of registrationRequests) {
-          console.log('🔍 [data_registration] 승인 요청 처리 시작:', request.id);
-          
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
-          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+        // 모든 승인 요청의 status를 in_review로 수정
+        const allRequests = [...registrationRequests, ...modificationRequests, ...deletionRequests];
+        const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+
+        for (const request of allRequests) {
+          console.log('🔍 승인 요청 처리 시작:', request.id);
+          await updateApprovalRequestStatus(request.id, 'in_review', processDate);
           console.log('🔍 updateApprovalRequestStatus 완료');
-
-          // 2. 승인 요청의 list 조회
-          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
-          const listItems = await fetchApprovalDetailQuestions(request.id);
-          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
-
-          // 3. list에 있는 항목들을 실제 데이터로 등록 (qst_id 그대로 사용)
-          if (listItems.length > 0) {
-            console.log('🔍 createApprovedQuestions 호출, items:', listItems);
-            await createApprovedQuestions(listItems);
-            console.log('🔍 createApprovedQuestions 완료');
-          } else {
-            console.log('🔍 listItems가 비어있음');
-          }
-        }
-
-        // data_modification 요청 처리
-        for (const request of modificationRequests) {
-          console.log('🔍 [data_modification] 승인 요청 처리 시작:', request.id);
-          
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
-          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
-          console.log('🔍 updateApprovalRequestStatus 완료');
-
-          // 2. 승인 요청의 list 조회
-          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
-          const listItems = await fetchApprovalDetailQuestions(request.id);
-          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
-
-          // 3. list에 있는 항목들을 실제 데이터로 수정 (각 qst_id로 UPDATE 호출)
-          if (listItems.length > 0) {
-            console.log('🔍 updateApprovedQuestions 호출, items:', listItems);
-            await updateApprovedQuestions(listItems);
-            console.log('🔍 updateApprovedQuestions 완료');
-          } else {
-            console.log('🔍 listItems가 비어있음');
-          }
-        }
-
-        // data_deletion 요청 처리
-        for (const request of deletionRequests) {
-          console.log('🔍 [data_deletion] 승인 요청 처리 시작:', request.id);
-          
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
-          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
-          console.log('🔍 updateApprovalRequestStatus 완료');
-
-          // 2. 승인 요청의 list 조회
-          console.log('🔍 fetchApprovalDetailQuestions 호출:', request.id);
-          const listItems = await fetchApprovalDetailQuestions(request.id);
-          console.log('🔍 fetchApprovalDetailQuestions 완료, listItems:', listItems);
-
-          // 3. list에 있는 항목들을 실제 데이터로 삭제 (각 qst_id로 DELETE 호출)
-          if (listItems.length > 0) {
-            console.log('🔍 deleteApprovedQuestions 호출, items:', listItems);
-            await deleteApprovedQuestions(listItems);
-            console.log('🔍 deleteApprovedQuestions 완료');
-          } else {
-            console.log('🔍 listItems가 비어있음');
-          }
         }
 
         console.log('🔍 모든 승인 요청 처리 완료');
@@ -393,6 +329,7 @@ const DataRegApprovalPage: React.FC = () => {
         columns={approvalRequestColumns}
         searchFields={pageConfig.searchFields}
         fetcher={listApi.list}
+        isLoading={isLoading}
         selectFields={selectFieldsConfig}
         dateFields={['request_date', 'process_date']}
         dateFormat="YYYYMMDDHHmmss"
@@ -428,4 +365,3 @@ const DataRegApprovalPage: React.FC = () => {
 };
 
 export default DataRegApprovalPage;
-

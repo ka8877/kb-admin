@@ -10,7 +10,7 @@
 
 // ========== 확인 다이얼로그 제목 ==========
 export const CONFIRM_TITLES = {
-  SAVE: '저장 확인',
+  SAVE: '저장확인',
   DELETE: '삭제 확인',
   APPROVAL_REQUEST: '결재 요청',
   FINAL_APPROVAL: '최종 결재 요청',
@@ -22,6 +22,7 @@ export const CONFIRM_MESSAGES = {
   SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
   DELETE: '정말로 삭제하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
+  DATA_REGISTRATION_REQUEST: '데이터 등록을 요청하시겠습니까?',
   FINAL_APPROVAL: '최종 결재를 넘기시겠습니까?',
 } as const;
 

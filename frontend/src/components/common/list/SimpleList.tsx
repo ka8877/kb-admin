@@ -65,6 +65,11 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    * 'dots'로 설정하면 YYYY.MM.DD.HH:mm:ss 형식으로 표시
    */
   dateDisplayFormat?: 'default' | 'dots';
+  /**
+   * (선택) 데이터 로딩 중 여부
+   * true일 때 DataGrid에 로딩 스피너 표시
+   */
+  isLoading?: boolean;
 };
 
 const defaultGetRowId =
@@ -98,6 +103,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
   dateDisplayFormat = 'default',
+  isLoading = false,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -315,6 +321,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          loading={isLoading}
           sx={SIMPLE_LIST_GRID_SX}
         />
       </Box>

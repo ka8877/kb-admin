@@ -333,10 +333,11 @@ export const approvalSearchFields: SearchField[] = [
     label: '결재상태',
     type: 'select',
     options: [
-      { label: '요청', value: 'request' },
-      { label: '검토중', value: 'review' },
-      { label: '승인완료', value: 'approved' },
-      { label: '거부', value: 'rejected' },
+      { label: '등록요청', value: 'create_requested' },
+      { label: '수정요청', value: 'update_requested' },
+      { label: '삭제요청', value: 'remove_requested' },
+      { label: '검토중', value: 'in_review' },
+      { label: '승인완료', value: 'done_review' },
     ],
   },
 

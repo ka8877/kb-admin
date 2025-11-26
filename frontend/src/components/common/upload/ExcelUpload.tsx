@@ -194,16 +194,18 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     }
 
     showConfirm({
-      title: CONFIRM_TITLES.SAVE,
-      message: CONFIRM_MESSAGES.SAVE,
+      title: CONFIRM_TITLES.APPROVAL_REQUEST,
+      message: CONFIRM_MESSAGES.DATA_REGISTRATION_REQUEST,
       onConfirm: () => {
         try {
           onSave(selectedFile);
+          /*
           showAlert({
             title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
             message: ALERT_MESSAGES.UPLOAD_SUCCESS,
             severity: 'success',
           });
+           */
         } catch (error) {
           showAlert({
             title: ALERT_MESSAGES.UPLOAD_FAILED,
