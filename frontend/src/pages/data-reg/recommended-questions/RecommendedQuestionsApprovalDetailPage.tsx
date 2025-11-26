@@ -21,7 +21,11 @@ import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/me
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { toast } from 'react-toastify';
 import { useApprovalDetailQuestions } from './hooks';
-import { updateApprovalDetailList, deleteApprovalDetailListItems } from './api';
+import { updateApprovalDetailList, deleteApprovalDetailListItems, fetchApprovalRequest, updateApprovalRequestStatus, fetchApprovalDetailQuestions, createApprovedQuestions, updateApprovedQuestions, deleteApprovedQuestions } from './api';
+import { useQuery } from '@tanstack/react-query';
+import { formatDateForStorage } from '@/utils/dateUtils';
+import { APPROVAL_STATUS_OPTIONS } from '@/constants/options';
+import GlobalLoadingSpinner from '@/components/common/spinner/GlobalLoadingSpinner';
 
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +58,20 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
   const { data = [], isLoading } = useApprovalDetailQuestions(id);
 
+  // 승인 요청 정보 조회 (status 확인용)
+  const { data: approvalRequest } = useQuery({
+    queryKey: ['approval-request', id],
+    queryFn: () => fetchApprovalRequest(id!),
+    enabled: !!id,
+  });
+
+  // status가 done_review 또는 in_review인 경우 편집 불가
+  const canEdit = useMemo(() => {
+    if (!approvalRequest) return true; // 데이터 로딩 전에는 편집 가능으로 설정
+    const status = approvalRequest.status;
+    return status !== 'done_review' && status !== 'in_review';
+  }, [approvalRequest]);
+
   // 초기 데이터 저장 (편집 전 원본 데이터)
   const initialDataRef = React.useRef<RecommendedQuestionItem[]>([]);
   
@@ -77,7 +95,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     onSuccess: () => {
       // React Query 캐시 무효화하여 데이터 자동 refetch
       queryClient.invalidateQueries({ queryKey: ['approval-detail-questions', id] });
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+      toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
       setIsEditMode(false);
       console.log('선택된 항목들이 삭제되었습니다.');
     },
@@ -122,7 +140,19 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   }, [savedApprovalState, navigate]);
 
   const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
-  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+  
+  // 삭제 요청인 경우 모든 필드를 읽기 전용으로 설정
+  const readOnlyFieldsConfig = useMemo(() => {
+    const baseReadOnlyFields = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+    
+    // 삭제 요청인 경우 모든 컬럼 필드를 읽기 전용으로 추가
+    if (approvalRequest?.approval_form === 'data_deletion' && isEditMode) {
+      const allFields = recommendedQuestionColumns.map((col) => col.field);
+      return [...new Set([...baseReadOnlyFields, ...allFields])];
+    }
+    
+    return baseReadOnlyFields;
+  }, [approvalRequest?.approval_form, isEditMode]);
 
   const handleEdit = useCallback(() => {
     setIsEditMode(true);
@@ -134,36 +164,6 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   const handleSave = useCallback(
     async (editedData: RecommendedQuestionItem[]) => {
-      // 초기 데이터와 편집된 데이터 비교
-      const initialData = initialDataRef.current;
-      const changedItems: RecommendedQuestionItem[] = [];
-
-      editedData.forEach((editedItem) => {
-        const initialItem = initialData.find((item) => item.qst_id === editedItem.qst_id);
-        if (!initialItem) return;
-
-        // 객체 비교 (readOnly 필드 제외)
-        const hasChanged = Object.keys(editedItem).some((key) => {
-          if (readOnlyFieldsConfig.includes(key)) return false;
-          const editedValue = editedItem[key as keyof RecommendedQuestionItem];
-          const initialValue = initialItem[key as keyof RecommendedQuestionItem];
-          return editedValue !== initialValue;
-        });
-
-        if (hasChanged) {
-          changedItems.push(editedItem);
-        }
-      });
-
-      if (changedItems.length === 0) {
-        showAlert({
-          title: '알림',
-          message: '수정된 데이터가 없습니다.',
-          severity: 'info',
-        });
-        return;
-      }
-
       showConfirm({
         title: CONFIRM_TITLES.APPROVAL_REQUEST,
         message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
@@ -173,12 +173,44 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
               toast.error('승인 요청 ID가 없습니다.');
               return;
             }
-            // 승인 요청 상세 목록 수정 API 호출 (변경된 항목만)
-            await updateApprovalDetailList(id, changedItems);
-            toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
-            setIsEditMode(false);
-            // 데이터 리프레시
+            // 승인 요청 상세 목록 수정 API 호출 (저장 시점의 데이터로 업데이트)
+            await updateApprovalDetailList(id, editedData);
+            
+            // approval_form에 따라 실제 데이터 CUD 작업 수행
+            const approvalForm = approvalRequest?.approval_form;
+            
+            if (approvalForm === 'data_registration') {
+              // 등록일 시: list에 있는 데이터를 저장 시점의 data로 저장, 같은 아이디로 실재 데이터에 저장
+              if (editedData.length > 0) {
+                await createApprovedQuestions(editedData);
+              }
+            } else if (approvalForm === 'data_modification') {
+              // 수정일 시: list에 있는 데이터를 저장 시점의 data로 저장, 같은 아이디로 실재 데이터 수정
+              if (editedData.length > 0) {
+                await updateApprovedQuestions(editedData);
+              }
+            } else if (approvalForm === 'data_deletion') {
+              // 삭제일 시: 같은 아이디로 실재 데이터 삭제
+              if (editedData.length > 0) {
+                await deleteApprovedQuestions(editedData);
+              }
+            }
+            
+            // status를 done_review로 업데이트
+            const doneReviewStatus = APPROVAL_STATUS_OPTIONS.find(opt => opt.value === 'done_review')?.value || 'done_review';
+            const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+            await updateApprovalRequestStatus(id, doneReviewStatus, processDate);
+            
+            // 모든 관련 쿼리 무효화
+            queryClient.invalidateQueries({ queryKey: ['approval-request', id] });
             queryClient.invalidateQueries({ queryKey: ['approval-detail-questions', id] });
+            // 목록 쿼리도 무효화하여 뒤로가기 시 자동 리프레시
+            queryClient.invalidateQueries({ queryKey: ['approval-requests', 'recommended-questions'] });
+            
+            toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
+            setIsEditMode(false);
+            // 뒤로 가기
+            handleBack();
           } catch (error) {
             console.error('수정 실패:', error);
             toast.error('수정에 실패했습니다.');
@@ -186,7 +218,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         },
       });
     },
-    [showConfirm, showAlert, readOnlyFieldsConfig, queryClient, id],
+    [showConfirm, queryClient, id, approvalRequest, handleBack],
   );
 
   const handleDeleteConfirm = useCallback(
@@ -276,24 +308,16 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     return RecommendedQuestionValidator.validateAll(data);
   };
 
-  if (isLoading) {
-    return (
-      <Box>
-        <PageHeader title="추천질문 결재 상세" />
-        <Box sx={{ p: 3, textAlign: 'center' }}>로딩 중...</Box>
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <PageHeader title="추천질문 결재 상세" />
+      <GlobalLoadingSpinner isLoading={isLoading} />
       <EditableList<RecommendedQuestionItem>
         rows={data}
         columns={recommendedQuestionColumns}
         rowIdGetter="qst_id"
         onBack={handleBack}
-        onEdit={handleEdit}
+        onEdit={canEdit ? handleEdit : undefined}
         isEditMode={isEditMode}
         onSave={handleSave}
         onCancel={handleCancelEdit}
@@ -307,6 +331,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         onProcessRowUpdate={handleRowSanitizer}
         externalRows={data}
         getRequiredFields={getRequiredFields}
+        isLoading={false}
       />
     </Box>
   );

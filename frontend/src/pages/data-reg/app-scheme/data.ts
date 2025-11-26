@@ -1,5 +1,6 @@
 import type { AppSchemeItem } from './types';
 import type { ApprovalRequestItem, SearchField } from '@/types/types';
+import { APPROVAL_FORM_OPTIONS, APPROVAL_STATUS_OPTIONS } from '@/constants/options';
 
 // 데이터 등록 반영 상태 옵션 데이터
 export const statusOptions = [
@@ -166,22 +167,13 @@ export const approvalSearchFields: SearchField[] = [
     field: 'approval_form',
     label: '결재양식',
     type: 'select',
-    options: [
-      { label: '데이터 등록', value: 'data_registration' },
-      { label: '데이터 수정', value: 'data_modification' },
-      { label: '데이터 삭제', value: 'data_deletion' },
-    ],
+    options: [...APPROVAL_FORM_OPTIONS],
   },
   {
     field: 'status',
     label: '결재상태',
     type: 'select',
-    options: [
-      { label: '요청', value: 'request' },
-      { label: '검토중', value: 'review' },
-      { label: '승인완료', value: 'approved' },
-      { label: '거부', value: 'rejected' },
-    ],
+    options: [...APPROVAL_STATUS_OPTIONS],
   },
 
   {

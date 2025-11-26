@@ -199,11 +199,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
       onConfirm: () => {
         try {
           onSave(selectedFile);
-          showAlert({
-            title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
-            message: ALERT_MESSAGES.UPLOAD_SUCCESS,
-            severity: 'success',
-          });
+          
         } catch (error) {
           showAlert({
             title: ALERT_MESSAGES.UPLOAD_FAILED,

@@ -223,7 +223,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
         if (editedData && onSave) {
           try {
             await onSave(editedData);
-            toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
+            toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
             setIsEditMode(false);
             setHasInitialFocus(false);
             // ref 초기화
