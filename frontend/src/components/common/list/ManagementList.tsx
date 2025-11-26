@@ -39,6 +39,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   dateFields?: string[]; // 날짜 필드 목록
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
   searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
+  isLoading?: boolean; // 로딩 상태
 };
 
 const defaultGetRowId =
@@ -72,6 +73,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
   searchFields,
+  isLoading = false,
 }: ManagementListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -357,6 +359,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          loading={isLoading}
           sx={MANAGEMENT_LIST_GRID_SX}
         />
       </Box>

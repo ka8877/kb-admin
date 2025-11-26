@@ -28,15 +28,15 @@ export const ROUTES = {
   // === 관리 ===
   MANAGEMENT: '/management',
   MANAGEMENT_CATEGORY: '/management/category',
-  COMMON_CODE: '/management/category/common-code',
-  COMMON_CODE_EDIT: '/management/category/common-code/edit',
-  COMMON_CODE_TEMP: '/management/category/common-code-temp',
-  COMMON_CODE_TEMP_EDIT: '/management/category/common-code-temp/edit',
-  SERVICE_NAME: '/management/category/service-name',
-  SERVICE_NAME_EDIT: '/management/category/service-name/edit',
-  QUESTIONS_CATEGORY: '/management/category/questions-category',
-  AGE_GROUP: '/management/category/age-group',
-  ADMIN_AUTH: '/admin-auth',
+  COMMON_CODE: '/management/common-code',
+  COMMON_CODE_EDIT: '/management/common-code/edit',
+  CODE_HIERARCHY: '/management/code-hierarchy',
+  CODE_HIERARCHY_EDIT: '/management/code-hierarchy/edit',
+  SERVICE_NAME: '/management/service-name',
+  SERVICE_NAME_EDIT: '/management/service-name/edit',
+  QUESTIONS_CATEGORY: '/management/questions-category',
+  AGE_GROUP: '/management/age-group',
+  ADMIN_AUTH: '/management/admin-auth',
   PERMISSION_MANAGEMENT: '/management/permission',
 
   // === 이력 ===
@@ -74,9 +74,10 @@ export const frontMenus: MenuItem[] = [
         label: '공통 코드 관리',
         path: ROUTES.COMMON_CODE,
       },
+      //2차때 적용??
       // {
-      //   label: '공통 코드 관리 임시',
-      //   path: ROUTES.COMMON_CODE_TEMP,
+      //   label: '코드 계층 관리',
+      //   path: ROUTES.CODE_HIERARCHY,
       // },
       {
         label: '사용자 관리',

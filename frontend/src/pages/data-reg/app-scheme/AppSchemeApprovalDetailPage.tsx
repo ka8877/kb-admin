@@ -13,6 +13,9 @@ import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/me
 import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
 import type { ValidationResult } from '@/types/types';
 import { toast } from 'react-toastify';
+import { getApi } from '@/utils/apiUtils';
+import { env } from '@/config';
+import GlobalLoadingSpinner from '@/components/common/spinner/GlobalLoadingSpinner';
 
 // 결재 요청에 포함된 앱스킴 데이터를 가져오는 API
 const approvalDetailApi = {
@@ -30,6 +33,24 @@ const approvalDetailApi = {
     // 실제로는 선택된 앱스킴들을 거부 처리
     console.log('거부 처리:', approvalId, selectedIds);
   },
+};
+
+/**
+ * 앱스킴 승인 요청 정보 조회
+ */
+const fetchAppSchemeApprovalRequest = async (
+  approvalId: string | number,
+): Promise<Partial<{ status: string }> & Record<string, any>> => {
+  const endpoint = `/approval/app-scheme/${approvalId}.json`;
+  const response = await getApi<Partial<{ status: string }> & Record<string, any>>(
+    endpoint,
+    {
+      baseURL: env.testURL,
+      errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
+    },
+  );
+
+  return response.data;
 };
 
 const AppSchemeApprovalDetailPage: React.FC = () => {
@@ -51,6 +72,20 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
     },
     enabled: !!id,
   });
+
+  // 승인 요청 정보 조회 (status 확인용)
+  const { data: approvalRequest } = useQuery({
+    queryKey: ['app-scheme-approval-request', id],
+    queryFn: () => fetchAppSchemeApprovalRequest(id!),
+    enabled: !!id,
+  });
+
+  // status가 done_review 또는 in_review인 경우 편집 불가
+  const canEdit = useMemo(() => {
+    if (!approvalRequest) return true; // 데이터 로딩 전에는 편집 가능으로 설정
+    const status = approvalRequest.status;
+    return status !== 'done_review' && status !== 'in_review';
+  }, [approvalRequest]);
 
   // sessionStorage 접근 최적화 (useMemo로 한 번만 읽기)
   const savedApprovalState = useMemo(() => sessionStorage.getItem('approval_page_state'), []);
@@ -143,7 +178,18 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
 
   const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
 
-  const readOnlyFieldsConfig = ['no', 'id', 'updatedAt', 'registeredAt'];
+  // 삭제 요청인 경우 모든 필드를 읽기 전용으로 설정
+  const readOnlyFieldsConfig = useMemo(() => {
+    const baseReadOnlyFields = ['no', 'id', 'updatedAt', 'registeredAt'];
+    
+    // 삭제 요청인 경우 모든 컬럼 필드를 읽기 전용으로 추가
+    if (approvalRequest?.approval_form === 'data_deletion' && isEditMode) {
+      const allFields = appSchemeColumns.map((col) => col.field);
+      return [...new Set([...baseReadOnlyFields, ...allFields])];
+    }
+    
+    return baseReadOnlyFields;
+  }, [approvalRequest?.approval_form, isEditMode]);
 
   // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
   const getRequiredFields = useCallback((row: AppSchemeItem): string[] => {
@@ -194,24 +240,16 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
     return results;
   }, []);
 
-  if (isLoading) {
-    return (
-      <Box>
-        <PageHeader title="앱스킴 결재 상세" />
-        <Box sx={{ p: 3, textAlign: 'center' }}>로딩 중...</Box>
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <PageHeader title="앱스킴 결재 상세" />
+      <GlobalLoadingSpinner isLoading={isLoading} />
       <EditableList<AppSchemeItem>
         rows={data}
         columns={appSchemeColumns}
         rowIdGetter="id"
         onBack={handleBack}
-        onEdit={handleEdit}
+        onEdit={canEdit ? handleEdit : undefined}
         isEditMode={isEditMode}
         onSave={handleSave}
         onCancel={handleCancelEdit}
@@ -223,6 +261,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
         validator={handleValidate}
         externalRows={data}
         getRequiredFields={getRequiredFields}
+        isLoading={false}
       />
     </Box>
   );

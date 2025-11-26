@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
@@ -32,11 +32,16 @@ const RecommendedQuestionsPage: React.FC = () => {
     [listState.searchFieldsState],
   );
 
-  const { data: rows = [] } = useRecommendedQuestions({
+  const { data: rows = [], isLoading, refetch } = useRecommendedQuestions({
     page: listState.page,
     pageSize: listState.pageSize,
     searchParams,
   });
+
+  // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
+  useEffect(() => {
+    refetch();
+  }, [location.pathname, refetch]);
 
   const handleCreate = useCallback(() => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
@@ -102,6 +107,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         searchFields={searchFields}
+        isLoading={isLoading}
       />
     </Box>
   );

@@ -20,7 +20,7 @@ export const CONFIRM_TITLES = {
 export const CONFIRM_MESSAGES = {
   SAVE: '저장 하시겠습니까?',
   SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
-  DELETE: '정말로 삭제하시겠습니까?',
+  DELETE: '삭제 하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
   FINAL_APPROVAL: '최종 결재를 넘기시겠습니까?',
 } as const;
@@ -28,6 +28,7 @@ export const CONFIRM_MESSAGES = {
 // ========== 토스트 메시지 ==========
 export const TOAST_MESSAGES = {
   // 성공 메시지
+  FINAL_APPROVAL_REQUESTED: '최종 결재를 요청하였습니다.',
   UPDATE_REQUESTED: '수정을 요청하였습니다.',
   REGISTRATION_REQUESTED: '등록을 요청하였습니다.',
   DELETE_APPROVAL_REQUESTED: '결재를 요청하였습니다.',
