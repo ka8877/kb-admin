@@ -1,7 +1,7 @@
 // Temporary in-memory mock DB for Common Code management
 // Single source of truth for all category data (Service Names, Question Categories, Age Groups)
 
-export type CodeType = 'SERVICE_NAME' | 'QUESTION_CATEGORY' | 'AGE_GROUP';
+export type CodeType = string; // 동적으로 추가 가능한 코드 타입
 
 export interface CodeTypeOption {
   value: string;
@@ -315,6 +315,9 @@ let ageGroupMockData: AgeGroupItem[] = [
   },
 ];
 
+// 기타 동적 코드 타입 데이터 저장소
+let otherCodeTypeMockData: CommonCodeItem[] = [];
+
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // Helper function to convert category items to CommonCodeItem format
@@ -354,6 +357,14 @@ function getCategoryDataAsCommonCode(): CommonCodeItem[] {
       category_nm: item.age_grp_nm,
       service_cd: item.age_grp_cd,
       status_code: item.display_yn,
+    });
+  });
+
+  // Convert other code types
+  otherCodeTypeMockData.forEach((item) => {
+    result.push({
+      no: globalNo++,
+      ...item,
     });
   });
 
@@ -401,6 +412,9 @@ export const commonCodeMockDb = {
         break;
       case 'AGE_GROUP':
         ageGroupMockData = ageGroupMockData.filter((it) => it.age_grp_cd !== service_cd);
+        break;
+      default:
+        otherCodeTypeMockData = otherCodeTypeMockData.filter((it) => it.service_cd !== service_cd);
         break;
     }
 
@@ -480,8 +494,24 @@ export const commonCodeMockDb = {
           status_code: input.status_code as string,
         };
       }
-      default:
-        throw new Error('Invalid code type');
+      default: {
+        // 새로운 코드 타입 처리
+        const newNo =
+          otherCodeTypeMockData.length > 0
+            ? Math.max(...otherCodeTypeMockData.map((item) => item.no)) + 1
+            : 1;
+        const newItem: CommonCodeItem = {
+          no: newNo,
+          code_type: input.code_type,
+          category_nm: input.category_nm as string,
+          service_cd: input.service_cd as string,
+          status_code: input.status_code as string,
+          parent_service_cd: input.parent_service_cd as string | undefined,
+          service_group_name: input.service_group_name as string | undefined,
+        };
+        otherCodeTypeMockData = [...otherCodeTypeMockData, newItem];
+        return newItem;
+      }
     }
   },
 
@@ -539,6 +569,17 @@ export const commonCodeMockDb = {
         }
         break;
       }
+      default: {
+        // 기타 코드 타입 업데이트
+        const index = otherCodeTypeMockData.findIndex((it) => it.service_cd === service_cd);
+        if (index !== -1) {
+          otherCodeTypeMockData[index] = {
+            ...otherCodeTypeMockData[index],
+            ...(input as Partial<CommonCodeItem>),
+          };
+        }
+        break;
+      }
     }
 
     const updatedItems = getCategoryDataAsCommonCode();
@@ -557,7 +598,6 @@ export const commonCodeMockDb = {
     await delay(100);
     return [...codeTypeList];
   },
-
   async saveCodeTypes(newCodeTypes: CodeTypeOption[]): Promise<CodeTypeOption[]> {
     await delay(150);
     codeTypeList = [...newCodeTypes];

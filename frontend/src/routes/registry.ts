@@ -38,11 +38,11 @@ const CommonCodePage = React.lazy(() => import('@pages/management/common-code/Co
 const CommonCodeEditPage = React.lazy(
   () => import('@pages/management/common-code/CommonCodeEditPage'),
 );
-const CommonCodeTempPage = React.lazy(
-  () => import('@pages/management/common-code-temp/CommonCodePage'),
+const HierarchicalCodePage = React.lazy(
+  () => import('@pages/management/code-hierarchy/HierarchicalCodePage'),
 );
-const CommonCodeTempEditPage = React.lazy(
-  () => import('@pages/management/common-code-temp/CommonCodeEditPage'),
+const CodeHierarchyEditPage = React.lazy(
+  () => import('@pages/management/code-hierarchy/CodeHierarchyEditPage'),
 );
 const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/AdminAuthPage'));
 const AdminAuthEditPage = React.lazy(
@@ -90,11 +90,11 @@ export const frontRoutes: AppRoute[] = [
   { path: ROUTES.COMMON_CODE, Component: CommonCodePage },
   { path: ROUTES.COMMON_CODE_EDIT, Component: CommonCodeEditPage },
 
-  // 공통 코드 관리 임시
-  { path: ROUTES.COMMON_CODE_TEMP, Component: CommonCodeTempPage },
-  { path: ROUTES.COMMON_CODE_TEMP_EDIT, Component: CommonCodeTempEditPage },
+  // 계층형 코드 관리
+  { path: ROUTES.CODE_HIERARCHY, Component: HierarchicalCodePage },
+  { path: ROUTES.CODE_HIERARCHY_EDIT, Component: CodeHierarchyEditPage },
 
-  // 어드민 권한관리
+  // 사용자 관리
   { path: ROUTES.ADMIN_AUTH, Component: AdminAuthPage },
   { path: `${ROUTES.ADMIN_AUTH}/edit`, Component: AdminAuthEditPage },
   { path: `${ROUTES.ADMIN_AUTH}/detail/:id`, Component: AdminAuthPage }, // 상세는 목록 페이지 재사용
