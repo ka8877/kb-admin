@@ -218,12 +218,12 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
 
     showConfirm({
       title: CONFIRM_TITLES.SAVE,
-      message: CONFIRM_MESSAGES.SAVE,
+      message: CONFIRM_MESSAGES.SAVE_CHANGES,
       onConfirm: async () => {
         if (editedData && onSave) {
           try {
             await onSave(editedData);
-            toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+            toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
             setIsEditMode(false);
             setHasInitialFocus(false);
             // ref 초기화

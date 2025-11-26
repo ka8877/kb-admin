@@ -52,10 +52,10 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
       try {
         await updateMutation.mutateAsync({ id, data: updatedData });
-        
+        toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
       } catch (error) {
         console.error('수정 요청 실패:', error);
-        
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
         throw error;
       }
     },

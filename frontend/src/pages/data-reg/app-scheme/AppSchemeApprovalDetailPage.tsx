@@ -194,6 +194,15 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
     return results;
   }, []);
 
+  if (isLoading) {
+    return (
+      <Box>
+        <PageHeader title="앱스킴 결재 상세" />
+        <Box sx={{ p: 3, textAlign: 'center' }}>로딩 중...</Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <PageHeader title="앱스킴 결재 상세" />
@@ -201,7 +210,6 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
         rows={data}
         columns={appSchemeColumns}
         rowIdGetter="id"
-        isLoading={isLoading}
         onBack={handleBack}
         onEdit={handleEdit}
         isEditMode={isEditMode}

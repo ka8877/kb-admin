@@ -33,11 +33,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
   const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
   const [questionCategoryGroupedOptions, setQuestionCategoryGroupedOptions] = useState<
-    Array<{
-      groupLabel: string;
-      groupValue: string;
-      options: Array<{ label: string; value: string }>;
-    }>
+    Array<{ groupLabel: string; groupValue: string; options: Array<{ label: string; value: string }> }>
   >([]);
 
   // 옵션 데이터 로드
@@ -60,7 +56,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   // 초기 데이터 저장 (편집 전 원본 데이터)
   const initialDataRef = React.useRef<RecommendedQuestionItem[]>([]);
-
+  
   useEffect(() => {
     if (data.length > 0 && !isEditMode) {
       // 편집 모드가 아닐 때 초기 데이터 저장
@@ -280,6 +276,15 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     return RecommendedQuestionValidator.validateAll(data);
   };
 
+  if (isLoading) {
+    return (
+      <Box>
+        <PageHeader title="추천질문 결재 상세" />
+        <Box sx={{ p: 3, textAlign: 'center' }}>로딩 중...</Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <PageHeader title="추천질문 결재 상세" />
@@ -287,7 +292,6 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         rows={data}
         columns={recommendedQuestionColumns}
         rowIdGetter="qst_id"
-        isLoading={isLoading}
         onBack={handleBack}
         onEdit={handleEdit}
         isEditMode={isEditMode}
