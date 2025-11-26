@@ -27,3 +27,7 @@ backend/build/
 
 # Junie
 .junie/
+.vs/
+.vscode/
+.prettierignore
+.prettierrc

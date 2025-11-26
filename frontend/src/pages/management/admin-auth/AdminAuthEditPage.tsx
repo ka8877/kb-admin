@@ -16,6 +16,7 @@ import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { adminAuthMockDb } from '@/mocks/adminAuthDb';
+import { permissionMockDb } from '@/mocks/permissionDb';
 import { ALERT_MESSAGES } from '@/constants/message';
 
 type LocalRow = RowItem & { isNew?: boolean };
@@ -29,9 +30,18 @@ const AdminAuthEditPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
+  const [permissionOptions, setPermissionOptions] = useState<string[]>([]);
 
   const modifiedRef = useRef<Set<number>>(new Set());
   const hasFocusedRef = useRef(false);
+
+  // Load permission options
+  useEffect(() => {
+    permissionMockDb.listAll().then((permissions) => {
+      const options = permissions.filter((p) => p.status === '활성').map((p) => p.permission_id);
+      setPermissionOptions(options);
+    });
+  }, []);
 
   const renderEmployeeSearchCell = useCallback(
     (params: GridRenderEditCellParams) => (
@@ -91,7 +101,7 @@ const AdminAuthEditPage: React.FC = () => {
         width: 150,
         editable: true,
         type: 'singleSelect',
-        valueOptions: ['admin', 'crud', 'viewer'],
+        valueOptions: permissionOptions,
       },
       {
         field: 'approval_permission',
@@ -110,7 +120,7 @@ const AdminAuthEditPage: React.FC = () => {
         valueOptions: ['활성', '비활성'],
       },
     ],
-    [renderEmployeeSearchCell],
+    [renderEmployeeSearchCell, permissionOptions],
   );
 
   // Load data
@@ -156,7 +166,7 @@ const AdminAuthEditPage: React.FC = () => {
       position: '',
       team_1st: '',
       team_2nd: '',
-      use_permission: 'viewer',
+      use_permission: 'VIEWER',
       approval_permission: '요청자',
       status: '활성',
       isNew: true,
@@ -315,7 +325,7 @@ const AdminAuthEditPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="어드민 권한관리 편집" />
+      <PageHeader title="사용자 관리 편집" />
 
       <Section>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
