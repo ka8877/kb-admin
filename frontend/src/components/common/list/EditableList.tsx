@@ -12,22 +12,12 @@ import MenuItem from '@mui/material/MenuItem';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
+import ApprovalListActions from '../actions/ApprovalListActions';
+import { ApprovalConfirmActions } from '../actions/ApprovalConfirmActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage } from '@/utils/dateUtils';
-
-export type SelectFieldOption = {
-  label: string;
-  value: string;
-};
-
-export type ValidationResult = {
-  isValid: boolean;
-  message?: string;
-};
+import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import type { SelectFieldOption } from '@/types/types';
+import type { ValidationResult } from '@/types/types';
 
 export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -42,7 +32,7 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onBack?: () => void; // 목록으로 버튼
   onEdit?: () => void; // 편집 버튼
   isEditMode?: boolean; // 편집 모드 상태
-  onSave?: () => void; // 저장 버튼
+  onSave?: (editedData: T[]) => void; // 저장 버튼 (편집된 데이터 전달)
   onCancel?: () => void; // 취소 버튼
   onDeleteConfirm?: (ids: (string | number)[]) => void; // 삭제 확인
   readOnlyFields?: string[]; // 편집 불가 필드들
@@ -66,6 +56,12 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
    * (선택) 필수 필드 목록을 반환하는 함수 (조건적 필수 포함, row별로 다를 수 있음)
    */
   getRequiredFields?: (row: T) => string[];
+  /**
+   * (선택) 결재 선택 모드 관련
+   */
+  onApproveSelect?: (next: boolean) => void; // 결재 선택 모드 토글
+  approveSelectionMode?: boolean; // 결재 선택 모드 상태
+  onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
 };
 
 const defaultGetRowId =
@@ -166,6 +162,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   onProcessRowUpdate,
   externalRows,
   getRequiredFields,
+  onApproveSelect,
+  approveSelectionMode = false,
+  onApproveConfirm,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -191,111 +190,36 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   }, [getRequiredFields, data]);
 
   // 편집 모드에 따라 컬럼 처리 (selectFields, dateFields 포함)
-  const processedColumns = useMemo(() => {
-    return columns.map((col) => {
-      const isSelectField = selectFields && selectFields[col.field];
-      const isDateField = dateFields && dateFields.includes(col.field);
-      
-      // 필수 필드인 경우 headerName에 * 추가
-      const isRequired = requiredFields.includes(col.field);
-      const headerName = isRequired && col.headerName ? `${col.headerName} *` : col.headerName;
-
-      // 날짜 필드인 경우
-      if (isDateField) {
-        return {
-          ...col,
-          headerName,
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          valueFormatter: (params: { value: string }) => {
-            return formatDateForDisplay(params.value, dateFormat);
-          },
-          renderEditCell: (params: GridRenderEditCellParams) => {
-            const handleDateChange = (newValue: dayjs.Dayjs | null) => {
-              const dateObj = newValue ? newValue.toDate() : null;
-              const formattedValue = formatDateForStorage(dateObj, dateFormat);
-              params.api.setEditCellValue({
-                id: params.id,
-                field: params.field,
-                value: formattedValue,
-              });
-            };
-
-            const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
-
-            return (
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DateTimePicker
-                  value={currentValue}
-                  onChange={handleDateChange}
-                  format="YYYY-MM-DD HH:mm"
-                  slotProps={{
-                    textField: {
-                      size: 'small',
-                      fullWidth: true,
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            );
-          },
-        };
-      }
-
-      // qst_ctgr 필드: 편집 모드에서 행별로 옵션 다르게 (getDynamicSelectOptions 사용)
-      if (col.field === 'qst_ctgr' && isEditMode && typeof getDynamicSelectOptions === 'function') {
-        return {
-          ...col,
-          headerName,
-          type: 'singleSelect',
-          valueOptions: (params: GridRenderEditCellParams) => {
-            const row = data.find((r) => getRowId(r) === params.id);
-            return row ? getDynamicSelectOptions(row) : [];
-          },
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          renderEditCell: (params: GridRenderEditCellParams) => {
-            const row = data.find((r) => getRowId(r) === params.id);
-            const options = row ? getDynamicSelectOptions(row) : [];
-            return renderSelectEditCell(params, options);
-          },
-        };
-      }
-
-      // 셀렉트 필드인 경우
-      if (isSelectField) {
-        return {
-          ...col,
-          headerName,
-          type: 'singleSelect',
-          valueOptions: isSelectField.map((opt) => ({
-            value: opt.value,
-            label: opt.label,
-          })),
-          editable: isEditMode && !readOnlyFields.includes(col.field),
-          renderEditCell: (params: GridRenderEditCellParams) =>
-            renderSelectEditCell(params, isSelectField),
-        };
-      }
-
-      // 일반 필드
-      return {
-        ...col,
-        headerName,
-        editable: isEditMode && !readOnlyFields.includes(col.field),
-      };
-    });
-  }, [
-    columns,
-    isEditMode,
-    readOnlyFields,
-    selectFields,
-    dateFields,
-    dateFormat,
-    getDynamicSelectOptions,
-    data,
-    renderSelectEditCell,
-    getRowId,
-    requiredFields,
-  ]);
+  const processedColumns = useMemo(
+    () =>
+      createProcessedColumns<T>({
+        columns,
+        isEditMode,
+        readOnlyFields,
+        selectFields,
+        dateFields,
+        dateFormat,
+        getDynamicSelectOptions,
+        data,
+        getRowId,
+        renderSelectEditCell,
+        requiredFields,
+        addRequiredMark: true,
+      }),
+    [
+      columns,
+      isEditMode,
+      readOnlyFields,
+      selectFields,
+      dateFields,
+      dateFormat,
+      getDynamicSelectOptions,
+      data,
+      getRowId,
+      renderSelectEditCell,
+      requiredFields,
+    ],
+  );
 
   useEffect(() => {
     if (rows) {
@@ -385,10 +309,10 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       console.log('🔍 모든 validation 통과');
     }
 
-    // Validation 통과 시 저장 실행
+    // Validation 통과 시 저장 실행 (편집된 데이터 전달)
     if (onSave) {
       console.log('🔍 onSave 호출');
-      onSave();
+      onSave(data);
     }
   }, [validator, data, columns, showAlert, onSave]);
 
@@ -425,29 +349,38 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   return (
     <Box>
       {/* 상단 버튼들 - 일반 모드일 때만 */}
-      {!isEditMode && <DetailNavigationActions onBack={onBack} onEdit={onEdit} />}
+      {!isEditMode && !approveSelectionMode && (
+        <DetailNavigationActions onBack={onBack} onEdit={onEdit} />
+      )}
+      {/* 결재 선택 모드일 때 상단 버튼들 */}
+      {!isEditMode && approveSelectionMode && onApproveSelect && (
+        <ApprovalListActions
+          onBack={onBack}
+          onApproveSelect={() => onApproveSelect(false)}
+          approveSelectLabel="선택 취소"
+          approveSelectActive={approveSelectionMode}
+        />
+      )}
+      {/* 결재 선택 모드가 아닐 때 결재 선택 버튼 표시 */}
+      {!isEditMode && !approveSelectionMode && onApproveSelect && (
+        <ApprovalListActions
+          onBack={onBack}
+          onEdit={onEdit}
+          onApproveSelect={() => onApproveSelect(true)}
+          approveSelectLabel="결재 선택"
+          approveSelectActive={false}
+        />
+      )}
 
-      <Box
-        sx={{
-          height: 545,
-          width: '100%',
-          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#1976d2 !important',
-          },
-          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-            outline: '2px solid #1976d2',
-            outlineOffset: '-2px',
-          },
-        }}
-      >
+      <Box sx={EDITABLE_LIST_GRID_WRAPPER_SX}>
         <DataGrid
           key={JSON.stringify(data)}
           rows={data}
           columns={processedColumns}
           getRowId={getRowId}
-          checkboxSelection={isEditMode}
-          rowSelectionModel={isEditMode ? selectionModel : []}
-          onRowSelectionModelChange={isEditMode ? setSelectionModel : undefined}
+          checkboxSelection={isEditMode || approveSelectionMode}
+          rowSelectionModel={isEditMode || approveSelectionMode ? selectionModel : []}
+          onRowSelectionModelChange={isEditMode || approveSelectionMode ? setSelectionModel : undefined}
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
           pageSizeOptions={pageSizeOptions}
@@ -459,12 +392,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           autoHeight={false}
           processRowUpdate={handleProcessRowUpdate}
           onRowClick={onRowClick ? handleRowClick : undefined}
-          sx={{
-            '& .MuiDataGrid-footerContainer': {
-              minHeight: '42px',
-              maxHeight: '42px',
-            },
-          }}
+          sx={EDITABLE_LIST_GRID_SX}
         />
       </Box>
 
@@ -482,8 +410,41 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           onDelete={handleDeleteClick}
         />
       )}
+
+      {/* 결재 선택 모드일 때 하단 결재 확인 버튼들 */}
+      {!isEditMode && approveSelectionMode && onApproveConfirm && (
+        <ApprovalConfirmActions
+          open={approveSelectionMode}
+          selectedIds={selectionModel}
+          onConfirm={onApproveConfirm}
+          onCancel={() => {
+            setSelectionModel([]);
+            if (onApproveSelect) onApproveSelect(false);
+          }}
+          size={size}
+        />
+      )}
     </Box>
   );
 };
 
 export default EditableList;
+
+const EDITABLE_LIST_GRID_WRAPPER_SX = {
+  height: 545,
+  width: '100%',
+  '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#1976d2 !important',
+  },
+  '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+    outline: '2px solid #1976d2',
+    outlineOffset: '-2px',
+  },
+} as const;
+
+const EDITABLE_LIST_GRID_SX = {
+  '& .MuiDataGrid-footerContainer': {
+    minHeight: '42px',
+    maxHeight: '42px',
+  },
+} as const;

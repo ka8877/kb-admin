@@ -13,17 +13,15 @@ import { SearchField } from '@/types/types';
 import ListActions, { DeleteConfirmBar } from '../actions/ListActions';
 import Section from '@/components/layout/Section';
 import { useListState } from '@/hooks/useListState';
-import ExcelJS from 'exceljs';
-import { formatDateForDisplay } from '@/utils/dateUtils';
-
-export type SelectFieldOption = {
-  label: string;
-  value: string;
-};
+import { exportGridToExcel } from '@/utils/excelUtils';
+import type { SelectFieldOption } from '@/types/types';
+import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import { parseSearchParams } from '@/utils/apiUtils';
 
 export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
-  fetcher?: () => Promise<T[]>;
+  /** 데이터를 가져오는 함수 (페이지/검색 조건 변경 시 자동 호출) */
+  fetcher?: (params: { page: number; pageSize: number; searchParams?: Record<string, string | number> }) => Promise<T[]>;
   rows?: T[];
   rowIdGetter?: keyof T | ((row: T) => string | number);
   defaultPageSize?: number;
@@ -97,6 +95,14 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
 
+  // 검색 조건을 객체로 변환
+  const searchParams = useMemo(() => {
+    if (!enableStatePreservation || !listState.searchFieldsState) return undefined;
+    const parsed = parseSearchParams(listState.searchFieldsState);
+    return Object.keys(parsed).length > 0 ? parsed : undefined;
+  }, [enableStatePreservation, listState.searchFieldsState]);
+
+  // rows prop이 있으면 우선 사용, 없으면 fetcher 호출
   useEffect(() => {
     if (rows) {
       setData(rows);
@@ -104,14 +110,30 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     }
     if (fetcher) {
       let mounted = true;
-      fetcher()
+      const currentPage = enableStatePreservation ? listState.page : localPaginationModel.page;
+      const currentPageSize = enableStatePreservation ? listState.pageSize : localPaginationModel.pageSize;
+      
+      fetcher({
+        page: currentPage,
+        pageSize: currentPageSize,
+        searchParams: searchParams,
+      })
         .then((d) => mounted && setData(d))
         .catch(() => {});
       return () => {
         mounted = false;
       };
     }
-  }, [fetcher, rows]);
+  }, [
+    fetcher,
+    rows,
+    enableStatePreservation,
+    listState.page,
+    listState.pageSize,
+    localPaginationModel.page,
+    localPaginationModel.pageSize,
+    searchParams,
+  ]);
 
   const filteredRows = useMemo(() => {
     if (!enableClientSearch) return data;
@@ -161,147 +183,19 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     listState.searchFieldsState,
   ]);
 
-  // 컬럼 처리 로직 공통화 (DRY 원칙)
-  const applyColumnFormatters = useCallback(
-    (col: GridColDef<T>) => {
-      const isSelectField = selectFields && selectFields[col.field];
-      const isDateField = dateFields && dateFields.includes(col.field);
-
-      // 날짜 필드인 경우
-      if (isDateField) {
-        return {
-          ...col,
-          valueFormatter: (params: { value: string }) =>
-            formatDateForDisplay(params.value, dateFormat),
-        };
-      }
-
-      // 셀렉트 필드인 경우
-      if (isSelectField) {
-        return {
-          ...col,
-          valueFormatter: (params: { value: string }) => {
-            const option = isSelectField.find((opt) => opt.value === params.value);
-            return option ? option.label : (params.value ?? '');
-          },
-        };
-      }
-
-      return col;
-    },
-    [selectFields, dateFields, dateFormat],
-  );
-
   const handleExportAll = useCallback(async () => {
     if (onExportAll) return onExportAll(filteredRows);
-    if (!filteredRows.length) return;
-
-    // 포맷터 적용된 컬럼 생성
-    const processedColumnsForExport = columns.map(applyColumnFormatters);
-
-    // columns의 field와 headerName 매핑 생성
-    const columnMap = new Map<string, string>();
-    processedColumnsForExport.forEach((col) => {
-      columnMap.set(col.field, col.headerName || col.field);
+    await exportGridToExcel({
+      rows: filteredRows,
+      columns: createProcessedColumns<T>({
+        columns,
+        selectFields,
+        dateFields,
+        dateFormat,
+      }),
+      exportFileName,
     });
-
-    // 헤더 생성 (columns 순서대로, headerName 사용)
-    const orderedFields = processedColumnsForExport.map((col) => col.field);
-    const headers = orderedFields.map((field) => columnMap.get(field) || field);
-
-    // ExcelJS 워크북 생성
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet1');
-
-    // 헤더 행 추가
-    const headerRow = worksheet.addRow(headers);
-
-    // 헤더 스타일 적용
-    headerRow.eachCell((cell) => {
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF4472C4' }, // 파란색
-      };
-      cell.font = {
-        bold: true,
-        color: { argb: 'FFFFFFFF' }, // 흰색
-      };
-      cell.alignment = {
-        horizontal: 'center',
-        vertical: 'middle',
-      };
-    });
-
-    // 데이터 행 추가 (화면에 표시되는 포맷팅된 값 사용)
-    filteredRows.forEach((row) => {
-      const rowData = orderedFields.map((field) => {
-        const column = processedColumnsForExport.find((col) => col.field === field);
-        if (!column) return '';
-
-        const rowObj = row as Record<string, unknown>;
-        const rawValue = rowObj[field];
-
-        // valueFormatter가 있으면 사용 (날짜, 셀렉트 필드 포맷팅)
-        if (column.valueFormatter && typeof column.valueFormatter === 'function') {
-          try {
-            return column.valueFormatter({ value: rawValue } as never) ?? '';
-          } catch {
-            return rawValue ?? '';
-          }
-        }
-
-        // valueGetter가 있으면 사용
-        if (column.valueGetter && typeof column.valueGetter === 'function') {
-          try {
-            return column.valueGetter({ row, field } as never) ?? '';
-          } catch {
-            return rawValue ?? '';
-          }
-        }
-
-        // 기본값
-        return rawValue ?? '';
-      });
-      worksheet.addRow(rowData);
-    });
-
-    // 열 너비 자동 조정
-    worksheet.columns = orderedFields.map((field, idx) => {
-      // 헤더 길이
-      const headerLength = (headers[idx] || '').length;
-      // 데이터 최대 길이
-      const maxDataLength = Math.max(
-        ...filteredRows.map((row) => {
-          const rowObj = row as Record<string, unknown>;
-          const value = rowObj[field];
-          return String(value ?? '').length;
-        }),
-        0,
-      );
-      // 헤더와 데이터 중 더 긴 것 기준으로 너비 설정 (최소 10, 최대 50)
-      const width = Math.min(Math.max(headerLength, maxDataLength, 10), 50);
-      return { width };
-    });
-
-    // 파일명: {메뉴명}_{YYYYMMDD_HHmmss}.xlsx
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
-    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHmmss
-    const fileName = `${exportFileName}_${dateStr}_${timeStr}.xlsx`;
-
-    // 파일 다운로드
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [onExportAll, filteredRows, columns, applyColumnFormatters, exportFileName]);
+  }, [onExportAll, filteredRows, columns, selectFields, dateFields, dateFormat, exportFileName]);
 
   const handleDeleteConfirm = useCallback(
     (ids: (string | number)[]) => {
@@ -322,6 +216,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
       const fields = Object.keys(payload);
       if (fields.length === 0) {
+        // 검색 조건 초기화
         if (enableStatePreservation) {
           updateListState({
             searchField: undefined,
@@ -334,23 +229,37 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           setLocalSearchQuery('');
           setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
         }
+        // 검색 조건이 초기화되면 fetcher가 자동으로 호출됨 (useEffect의 searchParams 의존성으로 인해)
         return;
       }
 
       // 다중 검색조건 전체를 JSON으로 저장
+      // enableStatePreservation이 true면 URL 상태에 저장되고, useEffect의 searchParams 의존성이 변경되어 fetcher가 자동 호출됨
+      // enableStatePreservation이 false면 로컬 상태만 업데이트하고, fetcher가 있으면 수동으로 호출해야 함
       if (enableStatePreservation) {
         updateListState({
           searchFieldsState: JSON.stringify(payload),
-          page: 0,
+          page: 0, // 검색 시 첫 페이지로 이동
         });
       } else {
         // 로컬 상태만 쓸 경우(비 URL)
         setLocalSearchField(fields[0]);
         setLocalSearchQuery(String(payload[fields[0]]));
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
+        
+        // enableClientSearch가 false이고 fetcher가 있으면 즉시 API 호출
+        if (!enableClientSearch && fetcher) {
+          fetcher({
+            page: 0,
+            pageSize: localPaginationModel.pageSize,
+            searchParams: payload,
+          })
+            .then((d) => setData(d))
+            .catch(() => {});
+        }
       }
     },
-    [selectionMode, enableStatePreservation, updateListState],
+    [selectionMode, enableStatePreservation, updateListState, enableClientSearch, fetcher, localPaginationModel.pageSize],
   );
 
   const handlePaginationChange = useCallback(
@@ -387,28 +296,16 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   }, []);
 
   // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
-  const processedColumns = useMemo(() => {
-    if (!selectFields && !dateFields) return columns;
-
-    return columns.map((col) => {
-      const isSelectField = selectFields && selectFields[col.field];
-      const formattedCol = applyColumnFormatters(col);
-
-      // 셀렉트 필드인 경우 type과 valueOptions 추가 (DataGrid 편집용)
-      if (isSelectField) {
-        return {
-          ...formattedCol,
-          type: 'singleSelect',
-          valueOptions: isSelectField.map((opt) => ({
-            value: opt.value,
-            label: opt.label,
-          })),
-        };
-      }
-
-      return formattedCol;
-    });
-  }, [columns, selectFields, dateFields, applyColumnFormatters]);
+  const processedColumns = useMemo(
+    () =>
+      createProcessedColumns<T>({
+        columns,
+        selectFields,
+        dateFields,
+        dateFormat,
+      }),
+    [columns, selectFields, dateFields, dateFormat],
+  );
 
   // searchFieldsState에서 초기값 파싱
   let initialValues: Record<string, string | number> = {};
@@ -442,7 +339,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         size={size}
       />
 
-      <Box sx={{ height: 545, width: '100%' }}>
+      <Box sx={MANAGEMENT_LIST_GRID_WRAPPER_SX}>
         <DataGrid<T>
           rows={filteredRows}
           columns={processedColumns}
@@ -460,12 +357,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
-          sx={{
-            '& .MuiDataGrid-footerContainer': {
-              minHeight: '42px',
-              maxHeight: '42px',
-            },
-          }}
+          sx={MANAGEMENT_LIST_GRID_SX}
         />
       </Box>
 
@@ -483,3 +375,15 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 };
 
 export default ManagementList;
+
+const MANAGEMENT_LIST_GRID_WRAPPER_SX = {
+  height: 545,
+  width: '100%',
+} as const;
+
+const MANAGEMENT_LIST_GRID_SX = {
+  '& .MuiDataGrid-footerContainer': {
+    minHeight: '42px',
+    maxHeight: '42px',
+  },
+} as const;

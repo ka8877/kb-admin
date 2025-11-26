@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
@@ -11,9 +11,12 @@ import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
 import { loadServiceOptions, loadAgeGroupOptions, under17Options } from '../../data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '../../validation';
-import { useFilteredQuestionCategories } from '../../hooks';
+import { useFilteredQuestionCategories, useCreateRecommendedQuestion } from '../../hooks';
+import { transformToApiFormat } from '../../api';
+import { toast } from 'react-toastify';
+import { ROUTES } from '@/routes/menu';
 
 // 공통 validation을 사용한 폼 검증 스키마
 const schema = createRecommendedQuestionYupSchema();
@@ -35,6 +38,7 @@ type FormData = {
 const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
+  const createMutation = useCreateRecommendedQuestion();
 
   // 동적 옵션 상태
   const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
@@ -75,8 +79,8 @@ const ApprovalManualForm: React.FC = () => {
       parentIdName: '',
       age_grp: '',
       under_17_yn: '',
-      imp_start_date: null, // 현재 날짜로 초기화
-      imp_end_date: null, // 사용자가 직접 선택하도록 null로 초기화
+      imp_start_date: dayjs().add(30, 'minute'), // 현재 일시 + 30분
+      imp_end_date: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
   });
 
@@ -102,10 +106,18 @@ const ApprovalManualForm: React.FC = () => {
   // ai_calc인 경우 연령대 필수
   const isAgeGroupRequired = watchedServiceNm === 'ai_calc';
 
+  // 이전 서비스명을 추적
+  const prevServiceNmRef = React.useRef<string>('');
+
   // service_nm 변경 시 qst_ctgr 초기화 및 validation 재실행
   React.useEffect(() => {
-    // 서비스명이 변경되면 질문 카테고리 초기화
-    setValue('qst_ctgr', '');
+    // 실제로 서비스명이 변경된 경우에만 질문 카테고리 초기화
+    if (prevServiceNmRef.current && prevServiceNmRef.current !== watchedServiceNm) {
+      setValue('qst_ctgr', '');
+    }
+
+    // 이전 값 업데이트
+    prevServiceNmRef.current = watchedServiceNm || '';
 
     if (hasTriedSubmit) {
       trigger(['age_grp', 'qst_ctgr']);
@@ -119,10 +131,42 @@ const ApprovalManualForm: React.FC = () => {
     }
   }, [watchedQstCtgr, hasTriedSubmit, trigger]);
 
-  const onSubmit = useCallback((data: FormData) => {
-    // TODO: 폼 데이터 검증 및 저장 로직
-    console.log('직접 입력 저장:', data);
-  }, []);
+  const onSubmit = useCallback(
+    async (data: FormData) => {
+      try {
+        // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
+        const apiData = transformToApiFormat({
+          service_nm: data.service_nm,
+          display_ctnt: data.display_ctnt,
+          prompt_ctnt: data.prompt_ctnt,
+          qst_ctgr: data.qst_ctgr,
+          qst_style: data.qst_style,
+          parentId: data.parentId,
+          parentIdName: data.parentIdName,
+          age_grp: data.age_grp,
+          under_17_yn: data.under_17_yn,
+          imp_start_date: data.imp_start_date,
+          imp_end_date: data.imp_end_date,
+        });
+
+        await createMutation.mutateAsync(apiData);
+        toast.success(TOAST_MESSAGES.REGISTRATION_REQUESTED);
+
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem('approval_return_url');
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem('approval_return_url');
+        } else {
+          navigate(ROUTES.RECOMMENDED_QUESTIONS);
+        }
+      } catch (error) {
+        console.error('추천질문 생성 실패:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+      }
+    },
+    [createMutation, navigate],
+  );
 
   const handleSaveClick = useCallback(async () => {
     // 첫 번째 submit 시도 표시

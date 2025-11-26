@@ -7,13 +7,7 @@
 
 import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from '../data';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
-
-// 공통 validation 결과 타입
-export type ValidationResult = {
-  isValid: boolean;
-  message?: string;
-};
-
+import type { ValidationResult } from '@/types/types';
 // 공통 validation 규칙 인터페이스
 export interface RecommendedQuestionData {
   service_nm?: string | null;

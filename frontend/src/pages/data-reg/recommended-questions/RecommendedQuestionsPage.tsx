@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from './types';
@@ -7,7 +7,6 @@ import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
 import {
-  mockRecommendedQuestions,
   serviceOptions,
   ageGroupOptions,
   under17Options,
@@ -17,16 +16,27 @@ import {
 } from './data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
-
-const listApi = {
-  list: async (): Promise<RecommendedQuestionItem[]> => {
-    return Promise.resolve(mockRecommendedQuestions);
-  },
-};
+import { useRecommendedQuestions, useDeleteRecommendedQuestions } from './hooks';
+import { useListState } from '@/hooks/useListState';
+import { parseSearchParams } from '@/utils/apiUtils';
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listState } = useListState(20);
+  const deleteMutation = useDeleteRecommendedQuestions();
+
+  // 검색 조건을 객체로 변환
+  const searchParams = useMemo(
+    () => parseSearchParams(listState.searchFieldsState),
+    [listState.searchFieldsState],
+  );
+
+  const { data: rows = [] } = useRecommendedQuestions({
+    page: listState.page,
+    pageSize: listState.pageSize,
+    searchParams,
+  });
 
   const handleCreate = useCallback(() => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_CREATE);
@@ -39,11 +49,23 @@ const RecommendedQuestionsPage: React.FC = () => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
   }, [location.pathname, location.search, navigate]);
 
-  const handleDeleteConfirm = useCallback((ids: (string | number)[]) => {
-    console.log('삭제 요청 ids:', ids);
-    // 실제 삭제 처리 후 필요 시 재요청
-    toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-  }, []);
+  const handleDeleteConfirm = useCallback(
+    async (ids: (string | number)[]) => {
+      if (ids.length === 0) {
+        return;
+      }
+
+      try {
+        console.log('삭제 요청 ids:', ids);
+        await deleteMutation.mutateAsync(ids);
+        toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+      } catch (error) {
+        console.error('삭제 실패:', error);
+        toast.error(TOAST_MESSAGES.DELETE_FAILED);
+      }
+    },
+    [deleteMutation],
+  );
 
   const handleRowClick = useCallback(
     (params: { id: string | number; row: RecommendedQuestionItem }) => {
@@ -68,12 +90,13 @@ const RecommendedQuestionsPage: React.FC = () => {
       <ManagementList<RecommendedQuestionItem>
         onRowClick={handleRowClick}
         columns={recommendedQuestionColumns}
-        fetcher={listApi.list}
+        rows={rows}
         rowIdGetter={'qst_id'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
+        enableClientSearch={false}
         exportFileName="추천질문목록"
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}

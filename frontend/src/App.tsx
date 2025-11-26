@@ -27,6 +27,7 @@ const App: React.FC = () => {
       </MainLayout>
       <GlobalConfirmDialog />
       <GlobalAlertDialog />
+      <GlobalLoadingSpinner />
     </>
   );
 };

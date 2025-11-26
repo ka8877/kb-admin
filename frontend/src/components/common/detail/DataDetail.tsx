@@ -19,16 +19,9 @@ import {
   TOAST_MESSAGES,
   ALERT_TITLES,
 } from '@/constants/message';
+import type { SelectFieldOption } from '@/types/types';
+import type { ValidationResult } from '@/types/types';
 
-export type SelectFieldOption = {
-  label: string;
-  value: string;
-};
-
-export type ValidationResult = {
-  isValid: boolean;
-  message?: string;
-};
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   data?: T;

@@ -16,7 +16,7 @@ export interface AdminAuthData {
   position?: string;
   team_1st?: string;
   team_2nd?: string;
-  use_permission?: 'admin' | 'crud' | 'viewer';
+  use_permission?: 'ADMIN' | 'OPERATOR' | 'VIEWER';
   approval_permission?: '요청자' | '결재자';
   status?: '활성' | '비활성';
 }
@@ -125,9 +125,12 @@ export class AdminAuthValidator {
       return { isValid: false, message: '이용권한은 필수입니다' };
     }
 
-    const validPermissions = ['admin', 'crud', 'viewer'];
+    const validPermissions = ['ADMIN', 'OPERATOR', 'VIEWER'];
     if (!validPermissions.includes(String(value))) {
-      return { isValid: false, message: '올바른 이용권한을 선택해주세요 (admin, crud, viewer)' };
+      return {
+        isValid: false,
+        message: '올바른 이용권한을 선택해주세요 (ADMIN, OPERATOR, VIEWER)',
+      };
     }
 
     return { isValid: true };

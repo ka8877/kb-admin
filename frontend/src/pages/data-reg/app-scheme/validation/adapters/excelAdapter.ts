@@ -1,13 +1,9 @@
 // frontend/src/pages/data-reg/app-scheme/validation/adapters/excelAdapter.ts
 
 import { isValidDate, toISOString } from '@/utils/dateUtils';
+import type { ValidationResult } from '@/types/types';
 
 // 엑셀 validation 함수 타입 정의
-export type ValidationResult = {
-  isValid: boolean;
-  errorMessage?: string;
-};
-
 export type AppSchemeData = {
   product_menu_name?: string | null;
   description?: string | null;
@@ -33,13 +29,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // product_menu_name: 필수, 200자 이하
     product_menu_name: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: 'AI검색 노출버튼명은 필수입니다' };
+        return { isValid: false, message: 'AI검색 노출버튼명은 필수입니다' };
       }
       const strValue = String(value);
       if (strValue.length > 200) {
         return {
           isValid: false,
-          errorMessage: 'AI검색 노출버튼명은 200자(공백 포함)를 초과할 수 없습니다',
+          message: 'AI검색 노출버튼명은 200자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
@@ -48,13 +44,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // description: 필수, 2000자 이하
     description: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '앱스킴 설명은 필수입니다' };
+        return { isValid: false, message: '앱스킴 설명은 필수입니다' };
       }
       const strValue = String(value);
       if (strValue.length > 2000) {
         return {
           isValid: false,
-          errorMessage: '앱스킴 설명은 2000자(공백 포함)를 초과할 수 없습니다',
+          message: '앱스킴 설명은 2000자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
@@ -63,13 +59,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // app_scheme_link: 필수, URL 형식, 500자 이하
     app_scheme_link: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '앱스킴 주소는 필수입니다' };
+        return { isValid: false, message: '앱스킴 주소는 필수입니다' };
       }
       const strValue = String(value).trim();
       if (strValue.length > 500) {
         return {
           isValid: false,
-          errorMessage: '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다',
+          message: '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
       // URL 형식 검증
@@ -78,7 +74,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       } catch {
         return {
           isValid: false,
-          errorMessage: '앱스킴 주소는 올바른 URL 형식이어야 합니다',
+          message: '앱스킴 주소는 올바른 URL 형식이어야 합니다',
         };
       }
       return { isValid: true };
@@ -87,13 +83,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // one_link: 필수, URL 형식, 500자 이하
     one_link: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, errorMessage: '원링크 주소는 필수입니다' };
+        return { isValid: false, message: '원링크 주소는 필수입니다' };
       }
       const strValue = String(value).trim();
       if (strValue.length > 500) {
         return {
           isValid: false,
-          errorMessage: '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다',
+          message: '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
       // URL 형식 검증
@@ -102,7 +98,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       } catch {
         return {
           isValid: false,
-          errorMessage: '원링크 주소는 올바른 URL 형식이어야 합니다',
+          message: '원링크 주소는 올바른 URL 형식이어야 합니다',
         };
       }
       return { isValid: true };
@@ -113,7 +109,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (value && String(value).length > 200) {
         return {
           isValid: false,
-          errorMessage: '연관 상품/서비스 리스트는 200자(공백 포함)를 초과할 수 없습니다',
+          message: '연관 상품/서비스 리스트는 200자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
@@ -124,7 +120,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (value && String(value).length > 50) {
         return {
           isValid: false,
-          errorMessage: 'MID는 50자(공백 포함)를 초과할 수 없습니다',
+          message: 'MID는 50자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
@@ -135,40 +131,60 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (value && String(value).length > 200) {
         return {
           isValid: false,
-          errorMessage: 'MID 상품/서비스명은 200자(공백 포함)를 초과할 수 없습니다',
+          message: 'MID 상품/서비스명은 200자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
     },
 
-    // start_date: 필수, 날짜형태
+    // start_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     start_date: (value, row) => {
       if (!value) {
-        return { isValid: false, errorMessage: '노출 시작 일시는 필수입니다' };
+        return { isValid: false, message: '노출 시작 일시는 필수입니다' };
       }
 
-      // 날짜 형태 검증
-      if (!isValidDate(value as string | Date | null)) {
+      const strValue = String(value).trim();
+      
+      // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
+      if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          errorMessage: '노출 시작 일시가 올바른 날짜 형식이 아닙니다',
+          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+        };
+      }
+
+      // 날짜 유효성 검증 (변환 가능한지 확인)
+      if (!isValidDate(strValue as string | Date | null)) {
+        return {
+          isValid: false,
+          message: '날짜 형식이 아닙니다. 올바른 날짜 값으로 입력해주세요.',
         };
       }
 
       return { isValid: true };
     },
 
-    // end_date: 필수, 날짜형태, start_date보다 이후
+    // end_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     end_date: (value, row) => {
       if (!value) {
-        return { isValid: false, errorMessage: '노출 종료 일시는 필수입니다' };
+        return { isValid: false, message: '노출 종료 일시는 필수입니다' };
       }
 
-      // 날짜 형태 검증
-      if (!isValidDate(value as string | Date | null)) {
+      const strValue = String(value).trim();
+      
+      // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
+      if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          errorMessage: '노출 종료 일시가 올바른 날짜 형식이 아닙니다',
+          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+        };
+      }
+
+      // 날짜 유효성 검증 (변환 가능한지 확인)
+      if (!isValidDate(strValue as string | Date | null)) {
+        return {
+          isValid: false,
+          message: '날짜 형식이 아닙니다. 올바른 날짜 값으로 입력해주세요.',
         };
       }
 
@@ -181,7 +197,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
         if (startDate && endDate && endDate <= startDate) {
           return {
             isValid: false,
-            errorMessage: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
+            message: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
           };
         }
       }

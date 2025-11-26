@@ -4,6 +4,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import { appSchemeColumns } from '../../components/columns/columns';
 import { createExcelValidationRules } from '../../validation';
+import { importExcelToJson, type ExcelRowData } from '@/utils/excelUtils';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -21,67 +22,35 @@ const ApprovalExcelUpload: React.FC = () => {
   const handleSave = useCallback(
     async (file: File) => {
       try {
-        // TODO: 실제 파일 파싱 및 데이터 변환 로직
-        // 엑셀 파일을 읽어서 JSON 데이터로 변환
-        const ExcelJS = await import('exceljs');
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(await file.arrayBuffer());
-        const worksheet = workbook.getWorksheet(1);
-
-        if (!worksheet) {
-          throw new Error('워크시트를 찾을 수 없습니다.');
-        }
-
-        const data: Record<string, unknown>[] = [];
-        const startRow = 4; // 4행부터 데이터 시작
-        const lastRow = worksheet.lastRow?.number || startRow - 1;
         const columnFields = templateColumns.map((col) => col.field);
 
-        // 각 행의 데이터를 변환
-        for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
-          const row = worksheet.getRow(rowNum);
-          const rowData: Record<string, unknown> = {};
+        // 엑셀 파일을 읽어서 JSON 데이터로 변환
+        const data = await importExcelToJson({
+          file,
+          columnFields,
+          startRow: 4, // 4행부터 데이터 시작
+          dateFields: ['start_date', 'end_date'], // 날짜 필드: 14자리 숫자 형식만 허용
+          transformRow: (rowData: ExcelRowData) => {
+            // 문자열 필드: trim 처리
+            ['product_menu_name', 'description', 'app_scheme_link', 'one_link', 'goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
+              if (rowData[field] !== null && rowData[field] !== undefined) {
+                rowData[field] = String(rowData[field]).trim();
+              }
+            });
 
-          columnFields.forEach((field, colIndex) => {
-            let cellValue = row.getCell(colIndex + 1).value;
+            // 빈 문자열을 null로 변환 (선택 필드)
+            ['goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
+              if (rowData[field] === '') {
+                rowData[field] = null;
+              }
+            });
 
-            // ExcelJS의 rich text 객체 처리
-            if (cellValue && typeof cellValue === 'object' && 'richText' in cellValue) {
-              const richTextObj = cellValue as { richText: Array<{ text: string }> };
-              cellValue = richTextObj.richText.map((t) => t.text).join('');
-            }
+            // 날짜 필드: 문자열 형태로 유지 (YYYY-MM-DD HH:mm:ss 또는 YYYYMMDDHHmmss)
+            // validation에서 날짜 형태 체크함
 
-            rowData[field] = cellValue;
-          });
-
-          // 빈 행 스킵
-          const hasData = columnFields.some((field) => {
-            const value = rowData[field];
-            return value !== null && value !== undefined && String(value).trim() !== '';
-          });
-
-          if (!hasData) continue;
-
-          // 데이터 타입 변환
-          // 문자열 필드: trim 처리
-          ['product_menu_name', 'description', 'app_scheme_link', 'one_link', 'goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
-            if (rowData[field] !== null && rowData[field] !== undefined) {
-              rowData[field] = String(rowData[field]).trim();
-            }
-          });
-
-          // 빈 문자열을 null로 변환 (선택 필드)
-          ['goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
-            if (rowData[field] === '') {
-              rowData[field] = null;
-            }
-          });
-
-          // 날짜 필드: 문자열 형태로 유지 (YYYY-MM-DD HH:mm:ss 또는 YYYYMMDDHHmmss)
-          // validation에서 날짜 형태 체크함
-
-          data.push(rowData);
-        }
+            return rowData;
+          },
+        });
 
         console.log('변환된 데이터:', data);
         console.log('엑셀 업로드 저장:', file.name, `총 ${data.length}개 행`);
@@ -109,8 +78,8 @@ const ApprovalExcelUpload: React.FC = () => {
     goods_name_list: '선택 | 200자 이하',
     parent_id: '선택 | 50자 이하 (예: M020011)',
     parent_title: '선택 | 200자 이하',
-    start_date: '필수 | 날짜 형식 (예: 2025-12-12 15:00:00 또는 20251212150000)',
-    end_date: '필수 | 날짜 형식, 노출시작일시 이후여야 함 (예: 2025-12-12 15:00:00 또는 20251212150000)',
+    start_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
+    end_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
   };
 
   // 예시 데이터 (자동 생성 필드 제외)
@@ -123,8 +92,8 @@ const ApprovalExcelUpload: React.FC = () => {
       goods_name_list: '자유적금, 햇살론 15',
       parent_id: 'M020011',
       parent_title: '26주 적금',
-      start_date: '2025-05-01 23:59:59',
-      end_date: '9999-12-31 23:59:59',
+      start_date: '20250501235959',
+      end_date: '99991231235959',
     },
   ];
 

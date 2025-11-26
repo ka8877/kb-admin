@@ -5,9 +5,16 @@ import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from '../../data';
 import { recommendedQuestionColumns } from '../../components/columns/columns';
 import { createExcelValidationRules } from '../../validation';
+import { importExcelToJson, type ExcelRowData } from '@/utils/excelUtils';
+import { useCreateRecommendedQuestionsBatch } from '../../hooks';
+import { transformToApiFormat } from '../../api';
+import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
+import { ROUTES } from '@/routes/menu';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
+  const createBatchMutation = useCreateRecommendedQuestionsBatch();
 
   // 템플릿에서 제외할 자동 생성 필드들
   const excludeFields = ['no', 'qst_id', 'updatedAt', 'registeredAt', 'status'];
@@ -53,79 +60,58 @@ const ApprovalExcelUpload: React.FC = () => {
   const handleSave = useCallback(
     async (file: File) => {
       try {
-        // TODO: 실제 파일 파싱 및 데이터 변환 로직
-        // 엑셀 파일을 읽어서 JSON 데이터로 변환
-        const ExcelJS = await import('exceljs');
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(await file.arrayBuffer());
-        const worksheet = workbook.getWorksheet(1);
-
-        if (!worksheet) {
-          throw new Error('워크시트를 찾을 수 없습니다.');
-        }
-
-        const data: Record<string, unknown>[] = [];
-        const startRow = 4; // 4행부터 데이터 시작
-        const lastRow = worksheet.lastRow?.number || startRow - 1;
         const columnFields = templateColumns.map((col) => col.field);
 
-        // 각 행의 데이터를 변환
-        for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
-          const row = worksheet.getRow(rowNum);
-          const rowData: Record<string, unknown> = {};
-
-          columnFields.forEach((field, colIndex) => {
-            let cellValue = row.getCell(colIndex + 1).value;
-
-            // ExcelJS의 rich text 객체 처리
-            if (cellValue && typeof cellValue === 'object' && 'richText' in cellValue) {
-              const richTextObj = cellValue as { richText: Array<{ text: string }> };
-              cellValue = richTextObj.richText.map((t) => t.text).join('');
+        // 엑셀 파일을 읽어서 JSON 데이터로 변환
+        const excelData = await importExcelToJson({
+          file,
+          columnFields,
+          startRow: 4, // 4행부터 데이터 시작
+          dateFields: ['imp_start_date', 'imp_end_date'], // 날짜 필드: 텍스트로 읽어서 잘못된 변환 방지
+          transformRow: (rowData: ExcelRowData) => {
+            // age_grp: 숫자로 변환 (엑셀에서 읽은 후 문자열로 변환하여 API 전송)
+            if (
+              rowData.age_grp !== null &&
+              rowData.age_grp !== undefined &&
+              String(rowData.age_grp).trim() !== ''
+            ) {
+              rowData.age_grp = String(Number(rowData.age_grp));
             }
 
-            rowData[field] = cellValue;
-          });
+            // under_17_yn: 대문자로 변환
+            if (rowData.under_17_yn) {
+              rowData.under_17_yn = String(rowData.under_17_yn).toUpperCase();
+            }
 
-          // 빈 행 스킵
-          const hasData = columnFields.some((field) => {
-            const value = rowData[field];
-            return value !== null && value !== undefined && String(value).trim() !== '';
-          });
+            return rowData;
+          },
+        });
 
-          if (!hasData) continue;
+        console.log('변환된 데이터:', excelData);
+        console.log('엑셀 업로드 저장:', file.name, `총 ${excelData.length}개 행`);
 
-          // 데이터 타입 변환
-          // age_grp: 숫자로 변환
-          if (
-            rowData.age_grp !== null &&
-            rowData.age_grp !== undefined &&
-            String(rowData.age_grp).trim() !== ''
-          ) {
-            rowData.age_grp = Number(rowData.age_grp);
-          }
+        // API 형식으로 데이터 변환 (공통 함수 사용)
+        const apiDataList = excelData.map((rowData) => transformToApiFormat(rowData));
 
-          // under_17_yn: 대문자로 변환
-          if (rowData.under_17_yn) {
-            rowData.under_17_yn = String(rowData.under_17_yn).toUpperCase();
-          }
+        // 일괄 등록 API 호출
+        await createBatchMutation.mutateAsync(apiDataList);
+        toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiDataList.length}개 항목)`);
 
-          // 날짜 필드: 문자열 형태로 유지 (YYYY-MM-DD HH:mm:ss 또는 YYYYMMDDHHmmss)
-          // validation에서 날짜 형태 체크함
-
-          data.push(rowData);
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem('approval_return_url');
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem('approval_return_url');
+        } else {
+          navigate(ROUTES.RECOMMENDED_QUESTIONS);
         }
-
-        console.log('변환된 데이터:', data);
-        console.log('엑셀 업로드 저장:', file.name, `총 ${data.length}개 행`);
-
-        // TODO: 백엔드 API 호출
-        // await api.saveRecommendedQuestions(data);
       } catch (error) {
         console.error('파일 처리 오류:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
         throw error;
       }
     },
-    [templateColumns],
+    [templateColumns, createBatchMutation, navigate],
   );
 
   const handleCancel = useCallback(() => {
@@ -143,8 +129,8 @@ const ApprovalExcelUpload: React.FC = () => {
     parent_nm: '조건부 필수 | AI검색 mid/story인 경우 필수',
     age_grp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
     under_17_yn: '필수 | Y 또는 N',
-    imp_start_date: '필수 | 2025-12-12 15:00:00',
-    imp_end_date: '필수 | 2025-12-12 15:00:00 (노출시작일시 이후여야 함)',
+    imp_start_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
+    imp_end_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
   };
 
   // 예시 데이터 (자동 생성 필드 제외)
@@ -159,8 +145,8 @@ const ApprovalExcelUpload: React.FC = () => {
       parent_nm: '26주 적금',
       age_grp: 10,
       under_17_yn: 'N',
-      imp_start_date: '2025-05-01 23:59:59',
-      imp_end_date: '9999-12-31 23:59:59',
+      imp_start_date: '20251125000000',
+      imp_end_date: '99991231000000',
     },
   ];
 
