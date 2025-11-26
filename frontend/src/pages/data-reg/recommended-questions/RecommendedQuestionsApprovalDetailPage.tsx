@@ -21,7 +21,7 @@ import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/me
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { toast } from 'react-toastify';
 import { useApprovalDetailQuestions } from './hooks';
-import { updateApprovalDetailList, deleteApprovalDetailListItems, fetchApprovalRequest, updateApprovalRequestStatus, fetchApprovalDetailQuestions, createApprovedQuestions, updateApprovedQuestions, deleteApprovedQuestions } from './api';
+import { updateApprovalDetailList, deleteApprovalDetailListItems, fetchApprovalRequest, updateApprovalRequestStatus } from './api';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { APPROVAL_STATUS_OPTIONS } from '@/constants/options';
@@ -66,11 +66,14 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   });
 
   // status가 done_review 또는 in_review인 경우 편집 불가
+  // 저장 성공 후에도 편집 불가로 설정
+  const [canEditState, setCanEditState] = useState(true);
   const canEdit = useMemo(() => {
+    if (!canEditState) return false; // 저장 후 편집 불가
     if (!approvalRequest) return true; // 데이터 로딩 전에는 편집 가능으로 설정
     const status = approvalRequest.status;
     return status !== 'done_review' && status !== 'in_review';
-  }, [approvalRequest]);
+  }, [approvalRequest, canEditState]);
 
   // 초기 데이터 저장 (편집 전 원본 데이터)
   const initialDataRef = React.useRef<RecommendedQuestionItem[]>([]);
@@ -96,7 +99,8 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       // React Query 캐시 무효화하여 데이터 자동 refetch
       queryClient.invalidateQueries({ queryKey: ['approval-detail-questions', id] });
       toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
-      setIsEditMode(false);
+      // 편집 모드 유지 (setIsEditMode(false) 제거)
+      // 체크박스 선택은 EditableList에서 externalRows 변경 시 자동 초기화됨
       console.log('선택된 항목들이 삭제되었습니다.');
     },
     onError: (error) => {
@@ -176,30 +180,10 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
             // 승인 요청 상세 목록 수정 API 호출 (저장 시점의 데이터로 업데이트)
             await updateApprovalDetailList(id, editedData);
             
-            // approval_form에 따라 실제 데이터 CUD 작업 수행
-            const approvalForm = approvalRequest?.approval_form;
-            
-            if (approvalForm === 'data_registration') {
-              // 등록일 시: list에 있는 데이터를 저장 시점의 data로 저장, 같은 아이디로 실재 데이터에 저장
-              if (editedData.length > 0) {
-                await createApprovedQuestions(editedData);
-              }
-            } else if (approvalForm === 'data_modification') {
-              // 수정일 시: list에 있는 데이터를 저장 시점의 data로 저장, 같은 아이디로 실재 데이터 수정
-              if (editedData.length > 0) {
-                await updateApprovedQuestions(editedData);
-              }
-            } else if (approvalForm === 'data_deletion') {
-              // 삭제일 시: 같은 아이디로 실재 데이터 삭제
-              if (editedData.length > 0) {
-                await deleteApprovedQuestions(editedData);
-              }
-            }
-            
-            // status를 done_review로 업데이트
-            const doneReviewStatus = APPROVAL_STATUS_OPTIONS.find(opt => opt.value === 'done_review')?.value || 'done_review';
+            // status를 in_review로 업데이트
+            const inReviewStatus = APPROVAL_STATUS_OPTIONS.find(opt => opt.value === 'in_review')?.value || 'in_review';
             const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-            await updateApprovalRequestStatus(id, doneReviewStatus, processDate);
+            await updateApprovalRequestStatus(id, inReviewStatus, processDate);
             
             // 모든 관련 쿼리 무효화
             queryClient.invalidateQueries({ queryKey: ['approval-request', id] });
@@ -209,8 +193,11 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
             
             toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
             setIsEditMode(false);
-            // 뒤로 가기
-            handleBack();
+            // 저장 성공 후 편집 불가 처리
+            setCanEditState(false);
+            // refetch하여 최신 상태 가져오기
+            await queryClient.refetchQueries({ queryKey: ['approval-request', id] });
+            // 뒤로 가기 제거 (뒤로가기 버튼도 제거됨)
           } catch (error) {
             console.error('수정 실패:', error);
             toast.error('수정에 실패했습니다.');

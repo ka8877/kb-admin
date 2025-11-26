@@ -32,11 +32,14 @@ const RecommendedQuestionsPage: React.FC = () => {
     [listState.searchFieldsState],
   );
 
-  const { data: rows = [], isLoading, refetch } = useRecommendedQuestions({
+  const { data: rows = [], isLoading, isFetching, refetch } = useRecommendedQuestions({
     page: listState.page,
     pageSize: listState.pageSize,
     searchParams,
   });
+  
+  // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
+  const isDataLoading = isLoading || isFetching;
 
   // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
   useEffect(() => {
@@ -63,7 +66,7 @@ const RecommendedQuestionsPage: React.FC = () => {
       try {
         console.log('삭제 요청 ids:', ids);
         await deleteMutation.mutateAsync(ids);
-        toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
       } catch (error) {
         console.error('삭제 실패:', error);
         toast.error(TOAST_MESSAGES.DELETE_FAILED);
@@ -107,7 +110,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         searchFields={searchFields}
-        isLoading={isLoading}
+        isLoading={isDataLoading}
       />
     </Box>
   );

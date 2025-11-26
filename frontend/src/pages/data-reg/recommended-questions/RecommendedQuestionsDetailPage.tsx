@@ -13,38 +13,52 @@ import {
   ageGroupOptions,
   under17Options,
   questionCategoryOptions,
+  loadQuestionCategoryGroupedOptions,
 } from './data';
-import { useFilteredQuestionCategories, useRecommendedQuestion, useUpdateRecommendedQuestion } from './hooks';
+import { useRecommendedQuestion, useUpdateRecommendedQuestion, useDeleteRecommendedQuestion } from './hooks';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
+import { ROUTES } from '@/routes/menu';
 
 const RecommendedQuestionDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { showConfirm } = useConfirmDialog();
   const updateMutation = useUpdateRecommendedQuestion();
+  const deleteMutation = useDeleteRecommendedQuestion();
 
-  const { data, isLoading } = useRecommendedQuestion(id);
+  const { data, isLoading, refetch } = useRecommendedQuestion(id);
+  
+  // 편집 가능 여부: 저장 후에는 편집 불가 (결재 요청이 들어갔으므로)
+  const [canEdit, setCanEdit] = React.useState(true);
 
   const handleBack = React.useCallback(() => {
-    navigate(-1);
+    navigate(ROUTES.RECOMMENDED_QUESTIONS);
   }, [navigate]);
 
   const handleDelete = React.useCallback(() => {
+    if (!id) return;
+
     showConfirm({
       title: CONFIRM_TITLES.DELETE,
       message: CONFIRM_MESSAGES.DELETE,
       confirmText: '삭제',
       cancelText: '취소',
       severity: 'error',
-      onConfirm: () => {
-        console.log('Delete:', id);
-        toast.success(TOAST_MESSAGES.DELETE_APPROVAL_REQUESTED);
-        navigate(-1);
+      onConfirm: async () => {
+        try {
+          console.log('삭제 요청 id:', id);
+          await deleteMutation.mutateAsync(id);
+          toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+          navigate(-1);
+        } catch (error) {
+          console.error('삭제 실패:', error);
+          toast.error(TOAST_MESSAGES.DELETE_FAILED);
+        }
       },
     });
-  }, [showConfirm, id, navigate]);
+  }, [showConfirm, id, deleteMutation, navigate]);
 
   const handleSave = React.useCallback(
     async (updatedData: RecommendedQuestionItem) => {
@@ -52,12 +66,15 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
       try {
         await updateMutation.mutateAsync({ id, data: updatedData });
+        // 저장 성공 후 refetch 및 편집 불가 처리
+        await refetch();
+        setCanEdit(false); // 저장 후 편집 불가
       } catch (error) {
         console.error('수정 요청 실패:', error);
         throw error;
       }
     },
-    [id, updateMutation],
+    [id, updateMutation, refetch],
   );
 
   const selectFieldsConfig = {
@@ -67,13 +84,34 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     status: statusOptions,
   };
 
-  // 현재 행의 service_nm 기준으로 카테고리 옵션 필터링 (최상위에서 훅 호출)
-  const filteredGroups = useFilteredQuestionCategories(data?.service_nm);
+  // 질문 카테고리 그룹 옵션 로드 (편집 중 service_nm 변경에 대응하기 위해 전체 로드)
+  const [questionCategoryGroupedOptions, setQuestionCategoryGroupedOptions] = React.useState<
+    Array<{ groupLabel: string; groupValue: string; options: Array<{ label: string; value: string }> }>
+  >([]);
+
+  React.useEffect(() => {
+    const loadCategories = async () => {
+      const categories = await loadQuestionCategoryGroupedOptions();
+      setQuestionCategoryGroupedOptions(categories);
+    };
+    loadCategories();
+  }, []);
+
+  // editedData의 service_nm에 따라 동적으로 카테고리 옵션 반환
   const dynamicSelectFieldsConfig = React.useMemo(
     () => ({
-      qst_ctgr: () => filteredGroups.flatMap((group) => group.options),
+      qst_ctgr: (editedData?: RecommendedQuestionItem) => {
+        if (!editedData?.service_nm) {
+          return [];
+        }
+        // editedData의 service_nm에 해당하는 그룹 찾기
+        const matchedGroup = questionCategoryGroupedOptions.find(
+          (group) => group.groupValue === editedData.service_nm,
+        );
+        return matchedGroup ? matchedGroup.options : [];
+      },
     }),
-    [filteredGroups],
+    [questionCategoryGroupedOptions],
   );
 
   // 동적 셀렉트 필드의 의존성 설정: qst_ctgr는 service_nm에 의존
@@ -154,6 +192,9 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
+        checkChangesBeforeSave={true}
+        excludeFieldsFromChangeCheck={['updatedAt', 'registeredAt', 'no', 'qst_id']}
+        canEdit={canEdit}
       />
     </Box>
   );

@@ -242,6 +242,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   useEffect(() => {
     if (Array.isArray(externalRows)) {
       setData(externalRows);
+      // externalRows가 변경되면 선택 초기화 (삭제 후 refetch 시 선택 초기화)
+      setSelectionModel([]);
     }
   }, [externalRows]);
 

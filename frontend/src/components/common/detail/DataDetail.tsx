@@ -18,9 +18,11 @@ import {
   CONFIRM_MESSAGES,
   TOAST_MESSAGES,
   ALERT_TITLES,
+  ALERT_MESSAGES,
 } from '@/constants/message';
 import type { SelectFieldOption } from '@/types/types';
 import type { ValidationResult } from '@/types/types';
+import { hasDataChanges } from '@/utils/dataUtils';
 
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
@@ -41,6 +43,9 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   dynamicSelectFields?: Record<string, (data: T | undefined) => SelectFieldOption[]>; // 동적 셀렉트 필드 (데이터에 따라 옵션이 변경됨)
   dynamicSelectFieldDependencies?: Record<string, string[]>; // 동적 셀렉트 필드가 의존하는 필드들 (예: { qst_ctgr: ['service_nm'] })
   getRequiredFields?: (data: T | undefined) => string[]; // 필수 필드 목록을 반환하는 함수 (조건적 필수 포함)
+  checkChangesBeforeSave?: boolean; // 저장 전 변경사항 체크 여부 (기본: false)
+  excludeFieldsFromChangeCheck?: string[]; // 변경사항 체크에서 제외할 필드 목록
+  canEdit?: boolean; // 편집 가능 여부 (기본: true, false면 편집 버튼 숨김)
 };
 
 // 날짜 필드 편집 셀 컴포넌트
@@ -130,6 +135,9 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   dynamicSelectFields,
   dynamicSelectFieldDependencies,
   getRequiredFields,
+  checkChangesBeforeSave = false,
+  excludeFieldsFromChangeCheck = ['updatedAt', 'registeredAt', 'no'],
+  canEdit = true, // 기본값: 편집 가능
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
   const { showConfirm } = useConfirmDialog();
@@ -194,6 +202,19 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
 
   // 저장 확인
   const handleSaveClick = useCallback(() => {
+    // 변경사항 체크 (checkChangesBeforeSave가 true인 경우)
+    if (checkChangesBeforeSave && editedData && data) {
+      const hasChanges = hasDataChanges(data, editedData, excludeFieldsFromChangeCheck);
+      if (!hasChanges) {
+        showAlert({
+          title: ALERT_TITLES.VALIDATION_CHECK,
+          message: '변경된 내용이 없습니다.',
+          severity: 'warning',
+        });
+        return;
+      }
+    }
+
     // Validation 체크 (컬럼 순서대로 검증, 첫 번째 에러에서 중단)
     if (validator && editedData) {
       const validationResults = validator(editedData);
@@ -236,7 +257,17 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
         }
       },
     });
-  }, [validator, editedData, columns, showAlert, showConfirm, onSave]);
+  }, [
+    checkChangesBeforeSave,
+    editedData,
+    data,
+    excludeFieldsFromChangeCheck,
+    validator,
+    columns,
+    showAlert,
+    showConfirm,
+    onSave,
+  ]);
 
   // 필수 필드 목록 가져오기
   const requiredFields = useMemo(() => {
@@ -567,9 +598,9 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
       {!isEditMode && (
         <DataDetailActions
           onBack={onBack}
-          onEdit={onSave ? handleEditClick : undefined}
+          onEdit={canEdit && onSave ? handleEditClick : undefined}
           onDelete={onDelete}
-          showEdit={!!onSave}
+          showEdit={canEdit && !!onSave}
           showDelete={!!onDelete}
         />
       )}
