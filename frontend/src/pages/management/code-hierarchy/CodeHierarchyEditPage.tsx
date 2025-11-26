@@ -30,7 +30,7 @@ import { ALERT_MESSAGES } from '@/constants/message';
 type LocalRow = RowItem & { isNew?: boolean };
 type CategoryRowGeneric = Record<string, unknown>;
 
-const CommonCodeEditPage: React.FC = () => {
+const CodeHierarchyEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiRef = useGridApiRef();
@@ -252,7 +252,7 @@ const CommonCodeEditPage: React.FC = () => {
   }, []);
 
   const handleCancel = useCallback(() => {
-    navigate(ROUTES.COMMON_CODE_TEMP);
+    navigate(ROUTES.CODE_HIERARCHY);
   }, [navigate]);
 
   const handleSave = useCallback(async () => {
@@ -300,7 +300,7 @@ const CommonCodeEditPage: React.FC = () => {
       }
 
       showAlert({ message: '저장되었습니다.' });
-      navigate(ROUTES.COMMON_CODE_TEMP);
+      navigate(ROUTES.CODE_HIERARCHY);
     } catch (error) {
       console.error('Save error:', error);
       showAlert({ message: '오류가 발생했습니다.', severity: 'error' });
@@ -358,9 +358,6 @@ const CommonCodeEditPage: React.FC = () => {
                 onChange={handleCodeTypeChange}
                 label="코드 타입"
               >
-                <MenuItem value="" disabled>
-                  선택하세요
-                </MenuItem>
                 {codeTypeOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -415,4 +412,4 @@ const CommonCodeEditPage: React.FC = () => {
   );
 };
 
-export default CommonCodeEditPage;
+export default CodeHierarchyEditPage;

@@ -61,7 +61,7 @@ const CommonCodePage: React.FC = () => {
       setShowError(true);
       return;
     }
-    navigate(ROUTES.COMMON_CODE_TEMP_EDIT, { state: { codeType: selectedCodeType } });
+    navigate(ROUTES.CODE_HIERARCHY_EDIT, { state: { codeType: selectedCodeType } });
   }, [navigate, selectedCodeType]);
 
   const handleCodeTypeChange = useCallback((event: SelectChangeEvent<CodeType | ''>) => {
