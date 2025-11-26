@@ -65,6 +65,12 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    * 'dots'로 설정하면 YYYY.MM.DD.HH:mm:ss 형식으로 표시
    */
   dateDisplayFormat?: 'default' | 'dots';
+  isLoading?: boolean; // 로딩 상태
+  /**
+   * (선택) 행 선택 가능 여부를 결정하는 함수
+   * true를 반환하면 선택 가능, false를 반환하면 선택 불가
+   */
+  isRowSelectable?: (params: { row: T }) => boolean;
 };
 
 const defaultGetRowId =
@@ -98,6 +104,8 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   dateFields,
   dateFormat = 'YYYYMMDDHHmmss',
   dateDisplayFormat = 'default',
+  isLoading = false,
+  isRowSelectable,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -305,6 +313,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}
           onRowSelectionModelChange={setSelectionModel}
+          isRowSelectable={isRowSelectable}
           pagination
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
@@ -315,6 +324,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          loading={isLoading}
           sx={SIMPLE_LIST_GRID_SX}
         />
       </Box>

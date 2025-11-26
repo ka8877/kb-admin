@@ -8,6 +8,7 @@ import type { RecommendedQuestionItem } from './types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
 import { useLoadingStore } from '@/store/loading';
+import { APPROVAL_STATUS_OPTIONS } from '@/constants/options';
 
 /**
  * Firebase 응답 데이터를 RecommendedQuestionItem으로 변환하는 헬퍼 함수
@@ -78,7 +79,7 @@ interface ApprovalRequestData {
   title: string;
   content: string;
   request_date: string;
-  status: 'request';
+  status: 'create_requested' | 'update_requested' | 'delete_requested' | 'in_review' | 'done_review';
   list: RecommendedQuestionItem[];
 }
 
@@ -101,12 +102,19 @@ const sendApprovalRequest = async (
     data_deletion: '추천질문 삭제 요청드립니다',
   };
 
+  // approval_form에 따라 적절한 status 설정 (상수에서 value 추출)
+  const statusMap: Record<ApprovalFormType, 'create_requested' | 'update_requested' | 'delete_requested'> = {
+    data_registration: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'create_requested')?.value as 'create_requested',
+    data_modification: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'update_requested')?.value as 'update_requested',
+    data_deletion: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'delete_requested')?.value as 'delete_requested',
+  };
+
   const approvalData: ApprovalRequestData = {
     approval_form: approvalForm,
     title: titleMap[approvalForm],
     content: contentMap[approvalForm],
     request_date: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
-    status: 'request',
+    status: statusMap[approvalForm],
     list: items,
   };
 

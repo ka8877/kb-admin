@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
-import { TOAST_MESSAGES } from '@/constants/message';
-import React, { useCallback, useMemo } from 'react';
+import { TOAST_MESSAGES, CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -164,10 +164,15 @@ const DataRegApprovalPage: React.FC = () => {
   }, [pageConfig.searchFields]);
 
   // 승인 요청 목록 조회
-  const { data: approvalRequests = [], isLoading } = useQuery({
+  const { data: approvalRequests = [], isLoading, refetch } = useQuery({
     queryKey: ['approval-requests', pageType],
     queryFn: () => fetchApprovalRequests(pageType),
   });
+
+  // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
+  useEffect(() => {
+    refetch();
+  }, [location.pathname, refetch]);
 
   const listApi = {
     list: async (): Promise<ApprovalRequestItem[]> => {
@@ -248,17 +253,38 @@ const DataRegApprovalPage: React.FC = () => {
       );
       console.log('🔍 선택된 승인 요청들:', selectedRequests);
 
-      // status가 'request'인 요청들만 필터링
-      const requestStatusRequests = selectedRequests.filter(
-        (request) => request.status === 'request',
+      // done_review 상태인 건은 선택 불가
+      const doneReviewRequests = selectedRequests.filter(
+        (request) => request.status === 'done_review',
       );
-      console.log('🔍 status가 request인 요청들:', requestStatusRequests);
-
-      if (requestStatusRequests.length === 0) {
-        console.log('🔍 status가 request인 요청이 없음');
+      if (doneReviewRequests.length > 0) {
         showAlert({
           title: '알림',
-          message: '결재 대기 중인 요청만 선택할 수 있습니다.',
+          message: '승인완료된 항목은 선택할 수 없습니다.',
+          severity: 'warning',
+        });
+        return;
+      }
+
+      // status별로 분류
+      const requestStatusRequests = selectedRequests.filter(
+        (request) =>
+          request.status === 'create_requested' ||
+          request.status === 'update_requested' ||
+          request.status === 'delete_requested',
+      );
+      const inReviewRequests = selectedRequests.filter(
+        (request) => request.status === 'in_review',
+      );
+
+      console.log('🔍 status가 create_requested, update_requested, delete_requested인 요청들:', requestStatusRequests);
+      console.log('🔍 status가 in_review인 요청들:', inReviewRequests);
+
+      // 처리할 요청이 없으면 return
+      if (requestStatusRequests.length === 0 && inReviewRequests.length === 0) {
+        showAlert({
+          title: '알림',
+          message: '처리할 수 있는 항목이 없습니다.',
           severity: 'warning',
         });
         return;
@@ -293,16 +319,46 @@ const DataRegApprovalPage: React.FC = () => {
         return;
       }
 
+      // in_review 상태인 요청들은 바로 최종 결재 confirm (실제 데이터 작업 없음)
+      if (inReviewRequests.length > 0) {
+        showConfirm({
+          title: CONFIRM_TITLES.FINAL_APPROVAL,
+          message: CONFIRM_MESSAGES.FINAL_APPROVAL,
+          onConfirm: async () => {
+            try {
+              const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+              for (const request of inReviewRequests) {
+                await updateApprovalRequestStatus(request.id, 'done_review', processDate);
+              }
+              toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
+              setApproveSelectionMode(false);
+              if (toggleSelectionMode) {
+                toggleSelectionMode(false);
+              }
+              queryClient.invalidateQueries({ queryKey: ['approval-requests', pageType] });
+            } catch (error) {
+              console.error('🔍 최종 결재 처리 실패:', error);
+              toast.error('최종 결재 처리에 실패했습니다.');
+            }
+          },
+        });
+      }
+
+      // create_requested, update_requested, delete_requested 상태인 요청들은 실제 데이터 작업 수행
+      if (requestStatusRequests.length === 0) {
+        return;
+      }
+
       console.log('🔍 승인 처리 시작');
       try {
         // data_registration 요청 처리
         for (const request of registrationRequests) {
           console.log('🔍 [data_registration] 승인 요청 처리 시작:', request.id);
           
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          // 1. 승인 요청의 status를 done_review로 수정 (process_date 포함)
           const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'done_review', processDate });
+          await updateApprovalRequestStatus(request.id, 'done_review', processDate);
           console.log('🔍 updateApprovalRequestStatus 완료');
 
           // 2. 승인 요청의 list 조회
@@ -324,10 +380,10 @@ const DataRegApprovalPage: React.FC = () => {
         for (const request of modificationRequests) {
           console.log('🔍 [data_modification] 승인 요청 처리 시작:', request.id);
           
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          // 1. 승인 요청의 status를 done_review로 수정 (process_date 포함)
           const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'done_review', processDate });
+          await updateApprovalRequestStatus(request.id, 'done_review', processDate);
           console.log('🔍 updateApprovalRequestStatus 완료');
 
           // 2. 승인 요청의 list 조회
@@ -349,10 +405,10 @@ const DataRegApprovalPage: React.FC = () => {
         for (const request of deletionRequests) {
           console.log('🔍 [data_deletion] 승인 요청 처리 시작:', request.id);
           
-          // 1. 승인 요청의 status를 approved로 수정 (process_date 포함)
+          // 1. 승인 요청의 status를 done_review로 수정 (process_date 포함)
           const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'approved', processDate });
-          await updateApprovalRequestStatus(request.id, 'approved', processDate);
+          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'done_review', processDate });
+          await updateApprovalRequestStatus(request.id, 'done_review', processDate);
           console.log('🔍 updateApprovalRequestStatus 완료');
 
           // 2. 승인 요청의 list 조회
@@ -371,7 +427,7 @@ const DataRegApprovalPage: React.FC = () => {
         }
 
         console.log('🔍 모든 승인 요청 처리 완료');
-        toast.success('승인 처리가 완료되었습니다.');
+        toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
@@ -393,6 +449,7 @@ const DataRegApprovalPage: React.FC = () => {
         columns={approvalRequestColumns}
         searchFields={pageConfig.searchFields}
         fetcher={listApi.list}
+        isLoading={isLoading}
         selectFields={selectFieldsConfig}
         dateFields={['request_date', 'process_date']}
         dateFormat="YYYYMMDDHHmmss"
@@ -422,6 +479,10 @@ const DataRegApprovalPage: React.FC = () => {
         onRowClick={handleRowClick}
         enableStatePreservation={true}
         onApproveSelect={handleApproveSelect}
+        isRowSelectable={(params) => {
+          // done_review, in_review 상태인 행은 선택 불가
+          return params.row.status !== 'done_review' && params.row.status !== 'in_review';
+        }}
       />
     </Box>
   );

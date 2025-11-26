@@ -62,6 +62,7 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onApproveSelect?: (next: boolean) => void; // 결재 선택 모드 토글
   approveSelectionMode?: boolean; // 결재 선택 모드 상태
   onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
+  isLoading?: boolean; // 로딩 상태
 };
 
 const defaultGetRowId =
@@ -165,6 +166,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   onApproveSelect,
   approveSelectionMode = false,
   onApproveConfirm,
+  isLoading = false,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
