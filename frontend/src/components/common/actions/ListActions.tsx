@@ -3,7 +3,6 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import SearchSection from '@/components/layout/SearchSection';
 import MediumButton from '../button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
@@ -15,9 +14,7 @@ export type ListActionsProps = {
   selectedIds?: (string | number)[];
   onCreate?: () => void;
   onRequestApproval?: () => void;
-  onDeleteConfirm: (ids: (string | number)[]) => void;
   onDownloadAll?: () => void;
-  size?: 'small' | 'medium' | 'large';
 };
 
 const ListActions: React.FC<ListActionsProps> = ({
@@ -26,17 +23,12 @@ const ListActions: React.FC<ListActionsProps> = ({
   selectedIds = [],
   onCreate,
   onRequestApproval,
-  onDeleteConfirm,
   onDownloadAll,
-  size = 'small',
 }) => {
   const handleToggleSelection = () => {
     onToggleSelectionMode(!selectionMode);
   };
 
-  const handleConfirmDelete = () => {
-    onDeleteConfirm(selectedIds);
-  };
 
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -58,7 +50,6 @@ const ListActions: React.FC<ListActionsProps> = ({
         </MediumButton>
       </Stack>
 
-      {/* 간단한 상태 안내 */}
       {selectionMode && (
         <Typography variant="body2" color="primary" fontWeight={600}>
           {selectedIds.length}개 선택됨

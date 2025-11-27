@@ -8,14 +8,21 @@ import PageHeader from '@/components/common/PageHeader';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { toast } from 'react-toastify';
 import {
-  statusOptions,
-  serviceOptions,
-  ageGroupOptions,
-  under17Options,
-  questionCategoryOptions,
-  loadQuestionCategoryGroupedOptions,
+  selectFieldsConfig,
+  dateFieldsConfig,
+  readOnlyFieldsConfig,
+  excludeFieldsFromChangeCheckConfig,
+  baseRequiredFieldsConfig,
+  CONDITIONAL_REQUIRED_FIELDS,
+  conditionalRequiredFieldsForQuestionCategory,
+  conditionalRequiredFieldsForService,
 } from './data';
-import { useRecommendedQuestion, useUpdateRecommendedQuestion, useDeleteRecommendedQuestion } from './hooks';
+import {
+  useRecommendedQuestion,
+  useUpdateRecommendedQuestion,
+  useDeleteRecommendedQuestion,
+  useQuestionCategoryOptionsMap,
+} from './hooks';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
@@ -29,7 +36,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   const deleteMutation = useDeleteRecommendedQuestion();
 
   const { data, isLoading, refetch } = useRecommendedQuestion(id);
-  
+
   // 편집 가능 여부: 저장 후에는 편집 불가 (결재 요청이 들어갔으므로)
   const [canEdit, setCanEdit] = React.useState(true);
 
@@ -48,12 +55,10 @@ const RecommendedQuestionDetailPage: React.FC = () => {
       severity: 'error',
       onConfirm: async () => {
         try {
-          console.log('삭제 요청 id:', id);
           await deleteMutation.mutateAsync(id);
           toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
           navigate(-1);
         } catch (error) {
-          console.error('삭제 실패:', error);
           toast.error(TOAST_MESSAGES.DELETE_FAILED);
         }
       },
@@ -77,25 +82,8 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     [id, updateMutation, refetch],
   );
 
-  const selectFieldsConfig = {
-    service_nm: serviceOptions,
-    age_grp: ageGroupOptions,
-    under_17_yn: under17Options,
-    status: statusOptions,
-  };
-
-  // 질문 카테고리 그룹 옵션 로드 (편집 중 service_nm 변경에 대응하기 위해 전체 로드)
-  const [questionCategoryGroupedOptions, setQuestionCategoryGroupedOptions] = React.useState<
-    Array<{ groupLabel: string; groupValue: string; options: Array<{ label: string; value: string }> }>
-  >([]);
-
-  React.useEffect(() => {
-    const loadCategories = async () => {
-      const categories = await loadQuestionCategoryGroupedOptions();
-      setQuestionCategoryGroupedOptions(categories);
-    };
-    loadCategories();
-  }, []);
+  // 서비스 코드별 질문 카테고리 옵션 맵 로드
+  const questionCategoryOptionsMap = useQuestionCategoryOptionsMap();
 
   // editedData의 service_nm에 따라 동적으로 카테고리 옵션 반환
   const dynamicSelectFieldsConfig = React.useMemo(
@@ -104,14 +92,11 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         if (!editedData?.service_nm) {
           return [];
         }
-        // editedData의 service_nm에 해당하는 그룹 찾기
-        const matchedGroup = questionCategoryGroupedOptions.find(
-          (group) => group.groupValue === editedData.service_nm,
-        );
-        return matchedGroup ? matchedGroup.options : [];
+        // 서비스 코드에 해당하는 질문 카테고리 옵션 반환
+        return questionCategoryOptionsMap[editedData.service_nm] || [];
       },
     }),
-    [questionCategoryGroupedOptions],
+    [questionCategoryOptionsMap],
   );
 
   // 동적 셀렉트 필드의 의존성 설정: qst_ctgr는 service_nm에 의존
@@ -122,37 +107,33 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     [],
   );
 
-  const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
-
-  const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
 
   // 필수 필드 목록 추출 (조건적 필수 포함)
-  const getRequiredFields = React.useCallback((currentData: RecommendedQuestionItem | undefined): string[] => {
-    const requiredFields: string[] = [
-      'service_nm',
-      'qst_ctgr',
-      'display_ctnt',
-      'under_17_yn',
-      'imp_start_date',
-      'imp_end_date',
-    ];
+  const getRequiredFields = React.useCallback(
+    (currentData: RecommendedQuestionItem | undefined): string[] => {
+      const requiredFields: string[] = [...baseRequiredFieldsConfig];
 
-    if (currentData) {
-      // 조건적 필수: qst_ctgr가 'ai_search_mid' 또는 'ai_search_story'일 때 parent_id, parent_nm 필수
-      const qstCtgr = currentData.qst_ctgr;
-      if (qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story') {
-        requiredFields.push('parent_id', 'parent_nm');
+      if (currentData) {
+        // 조건적 필수: qst_ctgr가 'ai_search_mid' 또는 'ai_search_story'일 때 parent_id, parent_nm 필수
+        const qstCtgr = currentData.qst_ctgr;
+        if (
+          qstCtgr === CONDITIONAL_REQUIRED_FIELDS.QST_CTGR_AI_SEARCH_MID ||
+          qstCtgr === CONDITIONAL_REQUIRED_FIELDS.QST_CTGR_AI_SEARCH_STORY
+        ) {
+          requiredFields.push(...conditionalRequiredFieldsForQuestionCategory);
+        }
+
+        // 조건적 필수: service_nm이 'ai_calc'일 때 age_grp 필수
+        const serviceNm = currentData.service_nm;
+        if (serviceNm === CONDITIONAL_REQUIRED_FIELDS.SERVICE_AI_CALC) {
+          requiredFields.push(...conditionalRequiredFieldsForService);
+        }
       }
 
-      // 조건적 필수: service_nm이 'ai_calc'일 때 age_grp 필수
-      const serviceNm = currentData.service_nm;
-      if (serviceNm === 'ai_calc') {
-        requiredFields.push('age_grp');
-      }
-    }
-
-    return requiredFields;
-  }, []);
+      return requiredFields;
+    },
+    [],
+  );
 
   const handleValidate = (data: RecommendedQuestionItem) => {
     // RecommendedQuestionItem을 RecommendedQuestionData로 변환
@@ -193,7 +174,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
         checkChangesBeforeSave={true}
-        excludeFieldsFromChangeCheck={['updatedAt', 'registeredAt', 'no', 'qst_id']}
+        excludeFieldsFromChangeCheck={excludeFieldsFromChangeCheckConfig}
         canEdit={canEdit}
       />
     </Box>

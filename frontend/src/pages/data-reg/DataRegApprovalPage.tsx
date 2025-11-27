@@ -1,5 +1,7 @@
 import { toast } from 'react-toastify';
-import { TOAST_MESSAGES, CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import { TOAST_MESSAGES, ALERT_TITLES, ALERT_MESSAGES } from '@/constants/message';
+import { IN_REVIEW, DONE_REVIEW } from '@/constants/options';
+import { approvalRequestKeys } from '@/constants/queryKey';
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -17,17 +19,9 @@ import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import {
-  fetchApprovalDetailQuestions,
-  updateApprovalRequestStatus,
-  createApprovedQuestions,
-  updateApprovedQuestions,
-  deleteApprovedQuestions,
-} from './recommended-questions/api';
+import { updateApprovalRequestStatus } from './recommended-questions/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
-import type { RecommendedQuestionItem } from './recommended-questions/types';
 
 // 경로 타입 정의
 type ApprovalPageType = 'recommended-questions' | 'app-scheme';
@@ -95,19 +89,19 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
 /**
  * 승인 요청 목록 조회 API
  */
-const fetchApprovalRequests = async (pageType: ApprovalPageType): Promise<ApprovalRequestItem[]> => {
-  const endpoint = pageType === 'app-scheme' 
-    ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
-    : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
+const fetchApprovalRequests = async (
+  pageType: ApprovalPageType,
+): Promise<ApprovalRequestItem[]> => {
+  const endpoint =
+    pageType === 'app-scheme'
+      ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
+      : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
 
-  const response = await getApi<ApprovalRequestItem[]>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      transform: transformApprovalRequests,
-      errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
-    },
-  );
+  const response = await getApi<ApprovalRequestItem[]>(endpoint, {
+    baseURL: env.testURL,
+    transform: transformApprovalRequests,
+    errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
+  });
 
   return response.data;
 };
@@ -115,10 +109,10 @@ const fetchApprovalRequests = async (pageType: ApprovalPageType): Promise<Approv
 const DataRegApprovalPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 경로에 따라 타입 결정
   const pageType = useMemo(() => getApprovalPageType(location.pathname), [location.pathname]);
-  
+
   // 타입에 따른 설정
   const pageConfig = useMemo(() => {
     if (pageType === 'app-scheme') {
@@ -133,7 +127,8 @@ const DataRegApprovalPage: React.FC = () => {
       title: '추천질문 결재 요청',
       searchFields: recommendedQuestionsApprovalSearchFields,
       defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
-      approvalDetailRoute: (id: string | number) => ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
+      approvalDetailRoute: (id: string | number) =>
+        ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
     };
   }, [pageType]);
 
@@ -141,11 +136,11 @@ const DataRegApprovalPage: React.FC = () => {
   const selectFieldsConfig = useMemo(() => {
     const approvalFormField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'approval_form'
+        field.type === 'select' && field.field === 'approval_form',
     );
     const statusField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'status'
+        field.type === 'select' && field.field === 'status',
     );
 
     const approvalFormOptions = approvalFormField?.options || [];
@@ -164,11 +159,16 @@ const DataRegApprovalPage: React.FC = () => {
   }, [pageConfig.searchFields]);
 
   // 승인 요청 목록 조회
-  const { data: approvalRequests = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['approval-requests', pageType],
+  const {
+    data: approvalRequests = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: approvalRequestKeys.list(pageType),
     queryFn: () => fetchApprovalRequests(pageType),
   });
-  
+
   // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
   const isDataLoading = isLoading || isFetching;
 
@@ -185,16 +185,11 @@ const DataRegApprovalPage: React.FC = () => {
 
   // sessionStorage에서 원본 URL 가져오기 (useMemo로 최적화)
   const returnUrl = useMemo(() => {
-    const savedUrl = sessionStorage.getItem('approval_return_url');
-    console.log('🔍 ApprovalPage useMemo - returnUrl from sessionStorage:', savedUrl);
-    return savedUrl;
+    return sessionStorage.getItem('approval_return_url');
   }, []);
 
   const handleBack = useCallback(() => {
-    console.log('🔍 ApprovalPage handleBack - returnUrl:', returnUrl);
-
     if (returnUrl) {
-      console.log('🔍 ApprovalPage handleBack - navigating to saved URL:', returnUrl);
       sessionStorage.removeItem('approval_return_url');
       navigate(returnUrl);
     } else {
@@ -205,14 +200,9 @@ const DataRegApprovalPage: React.FC = () => {
   const handleRowClick = useCallback(
     (params: { id: string | number; row: ApprovalRequestItem }) => {
       const currentApprovalUrl = location.pathname + location.search;
-      console.log(
-        '🔍 ApprovalPage handleRowClick - saving current approval state:',
-        currentApprovalUrl,
-      );
       sessionStorage.setItem('approval_page_state', currentApprovalUrl);
 
       const detailUrl = pageConfig.approvalDetailRoute(params.id);
-      console.log('🔍 ApprovalPage handleRowClick - navigating to:', detailUrl);
       navigate(detailUrl);
     },
     [location.pathname, location.search, navigate, pageConfig],
@@ -225,18 +215,15 @@ const DataRegApprovalPage: React.FC = () => {
   }, []);
 
   const queryClient = useQueryClient();
-  const { showConfirm } = useConfirmDialog();
   const { showAlert } = useAlertDialog();
 
   // 결재 확인 처리
   const handleApproveConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
-      console.log('🔍 handleApproveConfirm 호출됨', { selectedIds, pageType, approvalRequestsLength: approvalRequests.length });
-      
       if (selectedIds.length === 0) {
         showAlert({
-          title: '알림',
-          message: '선택된 항목이 없습니다.',
+          title: ALERT_TITLES.VALIDATION_CHECK,
+          message: ALERT_MESSAGES.NO_ITEMS_SELECTED,
           severity: 'warning',
         });
         return;
@@ -244,7 +231,6 @@ const DataRegApprovalPage: React.FC = () => {
 
       // 추천질문 승인 요청인 경우에만 처리
       if (pageType !== 'recommended-questions') {
-        console.log('🔍 추천질문 승인 요청이 아님, pageType:', pageType);
         toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         handleApproveSelect(false);
         return;
@@ -254,16 +240,15 @@ const DataRegApprovalPage: React.FC = () => {
       const selectedRequests = approvalRequests.filter((request) =>
         selectedIds.includes(request.id),
       );
-      console.log('🔍 선택된 승인 요청들:', selectedRequests);
 
       // done_review 상태인 건은 선택 불가
       const doneReviewRequests = selectedRequests.filter(
-        (request) => request.status === 'done_review',
+        (request) => request.status === DONE_REVIEW,
       );
       if (doneReviewRequests.length > 0) {
         showAlert({
-          title: '알림',
-          message: '승인완료된 항목은 선택할 수 없습니다.',
+          title: ALERT_TITLES.VALIDATION_CHECK,
+          message: ALERT_MESSAGES.APPROVED_ITEMS_CANNOT_SELECT,
           severity: 'warning',
         });
         return;
@@ -272,37 +257,31 @@ const DataRegApprovalPage: React.FC = () => {
       // 선택된 요청이 없으면 return
       if (selectedRequests.length === 0) {
         showAlert({
-          title: '알림',
-          message: '선택된 항목이 없습니다.',
+          title: ALERT_TITLES.VALIDATION_CHECK,
+          message: ALERT_MESSAGES.NO_ITEMS_SELECTED,
           severity: 'warning',
         });
         return;
       }
 
-      // 최종 결재 요청: 모든 선택된 요청의 status를 in_review로 변경 (실제 데이터 작업 없음)
-      // ApprovalConfirmActions에서 이미 showConfirm을 호출하므로 여기서는 직접 API 호출
+      // 최종 결재 요청: 모든 선택된 요청의 status를 in_review로 변경
       try {
-        console.log('🔍 최종 결재 처리 시작, selectedRequests:', selectedRequests);
         const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
         // 모든 선택된 요청의 status를 in_review로 변경
         for (const request of selectedRequests) {
-          console.log('🔍 updateApprovalRequestStatus 호출:', { id: request.id, status: 'in_review', processDate });
-          await updateApprovalRequestStatus(request.id, 'in_review', processDate);
-          console.log('🔍 updateApprovalRequestStatus 완료:', request.id);
+          await updateApprovalRequestStatus(request.id, IN_REVIEW, processDate);
         }
-        console.log('🔍 모든 최종 결재 API 호출 완료');
         toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
         }
-        queryClient.invalidateQueries({ queryKey: ['approval-requests', pageType] });
+        queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
       } catch (error) {
-        console.error('🔍 최종 결재 처리 실패:', error);
         toast.error('최종 결재 처리에 실패했습니다.');
       }
     },
-    [approvalRequests, pageType, showConfirm, showAlert, queryClient, handleApproveSelect],
+    [approvalRequests, pageType, showAlert, queryClient, handleApproveSelect],
   );
 
   return (
@@ -344,7 +323,7 @@ const DataRegApprovalPage: React.FC = () => {
         onApproveSelect={handleApproveSelect}
         isRowSelectable={(params) => {
           // done_review 상태인 행만 선택 불가
-          return params.row.status !== 'done_review';
+          return params.row.status !== DONE_REVIEW && params.row.status !== IN_REVIEW;
         }}
       />
     </Box>
@@ -352,4 +331,3 @@ const DataRegApprovalPage: React.FC = () => {
 };
 
 export default DataRegApprovalPage;
-
