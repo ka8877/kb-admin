@@ -100,8 +100,8 @@ const SideNav: React.FC<SideNavProps> = ({ drawerWidth, items }) => {
       {/* Push below AppBar */}
       <Toolbar />
       <Box sx={{ overflow: 'auto', px: 2, py: 2 }}>
-        {/* Category Title (1depth) */}
-        {shownTop && (
+        {/* Category Title (1depth) - 홈이 아닐 때만 표시 */}
+        {shownTop && shownTop.path !== '/' && (
           <Typography
             variant="caption"
             sx={{

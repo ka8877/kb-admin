@@ -37,6 +37,7 @@ export const ROUTES = {
   QUESTIONS_CATEGORY: '/management/questions-category',
   AGE_GROUP: '/management/age-group',
   ADMIN_AUTH: '/management/admin-auth',
+  MENU_MANAGEMENT: '/management/menu',
   PERMISSION_MANAGEMENT: '/management/permission',
 
   // === 이력 ===
@@ -82,6 +83,10 @@ export const frontMenus: MenuItem[] = [
       {
         label: '사용자 관리',
         path: ROUTES.ADMIN_AUTH,
+      },
+      {
+        label: '메뉴 관리',
+        path: ROUTES.MENU_MANAGEMENT,
       },
       {
         label: '권한 관리',

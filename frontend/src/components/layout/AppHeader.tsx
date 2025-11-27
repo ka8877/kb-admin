@@ -2,7 +2,10 @@ import type React from 'react';
 import { AppBar, Box, Toolbar, Typography, Button } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { APP_TITLE } from '@/constants';
-import { frontMenus, type MenuItem } from '@/routes/menu';
+import type { MenuItem } from '@/routes/menu';
+import { useEffect, useState } from 'react';
+import { menuMockDb } from '@/mocks/menuDb';
+import { buildMenuTree } from '@/utils/menuUtils';
 
 // Global application top bar (앱 전역 헤더)
 
@@ -13,18 +16,32 @@ export type AppHeaderProps = {
 };
 
 const isPathUnderMenu = (menu: MenuItem, pathname: string): boolean => {
+  // 홈('/') 경로는 정확히 일치할 때만
+  if (menu.path === '/') {
+    return pathname === '/';
+  }
   if (menu.path === pathname) return true;
   if (menu.children) {
     for (const c of menu.children) {
       if (isPathUnderMenu(c, pathname)) return true;
     }
   }
-  if (pathname.startsWith(menu.path === '/' ? '/' : menu.path + '/')) return true;
+  if (pathname.startsWith(menu.path + '/')) return true;
   return false;
 };
 
 const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 0, right }) => {
   const { pathname } = useLocation();
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+
+  useEffect(() => {
+    const loadMenus = async () => {
+      const menuItems = await menuMockDb.listAll();
+      const tree = buildMenuTree(menuItems);
+      setMenus(tree);
+    };
+    loadMenus();
+  }, []);
 
   return (
     <AppBar
@@ -57,7 +74,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 
         </Typography>
 
         <Box sx={{ ml: 3, display: 'flex', gap: 1 }}>
-          {frontMenus.map((m) => {
+          {menus.map((m) => {
             const active = isPathUnderMenu(m, pathname);
             return (
               <Button
