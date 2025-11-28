@@ -52,6 +52,8 @@ export const ALERT_MESSAGES = {
   // 경고 메시지
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
   NO_ITEMS_TO_APPROVE: '최종 결재할 항목이 없습니다.',
+  NO_ITEMS_SELECTED: '선택된 항목이 없습니다.',
+  APPROVED_ITEMS_CANNOT_SELECT: '승인완료된 항목은 선택할 수 없습니다.',
 
   // Validation 관련
   VALIDATION_MISSING_REQUIRED: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.',

@@ -336,9 +336,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         }
         onCreate={onCreate}
         onRequestApproval={onRequestApproval}
-        onDeleteConfirm={handleDeleteConfirm}
         onDownloadAll={handleExportAll}
-        size={size}
       />
 
       <Box sx={MANAGEMENT_LIST_GRID_WRAPPER_SX}>

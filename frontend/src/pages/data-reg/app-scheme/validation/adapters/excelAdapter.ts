@@ -68,9 +68,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
           message: '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
-      // URL 형식 검증
+      // URL 형식 검증 (http/https 없어도 허용)
       try {
-        new URL(strValue);
+        let urlToTest = strValue;
+        // http:// 또는 https://가 없으면 임시로 추가해서 검증
+        if (!/^https?:\/\//i.test(strValue)) {
+          urlToTest = `https://${strValue}`;
+        }
+        new URL(urlToTest);
       } catch {
         return {
           isValid: false,
@@ -92,9 +97,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
           message: '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
-      // URL 형식 검증
+      // URL 형식 검증 (http/https 없어도 허용)
       try {
-        new URL(strValue);
+        let urlToTest = strValue;
+        // http:// 또는 https://가 없으면 임시로 추가해서 검증
+        if (!/^https?:\/\//i.test(strValue)) {
+          urlToTest = `https://${strValue}`;
+        }
+        new URL(urlToTest);
       } catch {
         return {
           isValid: false,

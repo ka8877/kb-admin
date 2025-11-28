@@ -8,6 +8,35 @@ import * as yup from 'yup';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 
 /**
+ * URL 유효성 검증 (http/https 없어도 허용)
+ */
+const isValidUrlFormat = (value: string): boolean => {
+  if (!value || typeof value !== 'string') {
+    return false;
+  }
+
+  const trimmedValue = value.trim();
+
+  // 빈 문자열 체크
+  if (trimmedValue === '') {
+    return false;
+  }
+
+  // http:// 또는 https://가 없으면 임시로 추가해서 검증
+  let urlToTest = trimmedValue;
+  if (!/^https?:\/\//i.test(trimmedValue)) {
+    urlToTest = `https://${trimmedValue}`;
+  }
+
+  try {
+    new URL(urlToTest);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * 앱스킴 Yup 스키마 생성
  */
 export const createAppSchemeYupSchema = () => {
@@ -32,7 +61,26 @@ export const createAppSchemeYupSchema = () => {
       .trim()
       .min(1, '앱스킴 주소는 필수입니다')
       .max(500, '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다')
-      .url('앱스킴 주소는 올바른 URL 형식이어야 합니다'),
+      .test(
+        'url-format',
+        '앱스킴 주소는 올바른 URL 형식이어야 합니다',
+        function (value) {
+          if (!value) return false;
+          try {
+            const isValid = isValidUrlFormat(value);
+            if (!isValid) {
+              return this.createError({
+                message: '앱스킴 주소는 올바른 URL 형식이어야 합니다',
+              });
+            }
+            return true;
+          } catch (error) {
+            return this.createError({
+              message: '앱스킴 주소 형식을 확인할 수 없습니다',
+            });
+          }
+        },
+      ),
 
     one_link: yup
       .string()
@@ -40,7 +88,26 @@ export const createAppSchemeYupSchema = () => {
       .trim()
       .min(1, '원링크 주소는 필수입니다')
       .max(500, '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다')
-      .url('원링크 주소는 올바른 URL 형식이어야 합니다'),
+      .test(
+        'url-format',
+        '원링크 주소는 올바른 URL 형식이어야 합니다',
+        function (value) {
+          if (!value) return false;
+          try {
+            const isValid = isValidUrlFormat(value);
+            if (!isValid) {
+              return this.createError({
+                message: '원링크 주소는 올바른 URL 형식이어야 합니다',
+              });
+            }
+            return true;
+          } catch (error) {
+            return this.createError({
+              message: '원링크 주소 형식을 확인할 수 없습니다',
+            });
+          }
+        },
+      ),
 
     goods_name_list: yup
       .string()
@@ -65,8 +132,16 @@ export const createAppSchemeYupSchema = () => {
       .nullable()
       .required('노출 시작 일시는 필수입니다')
       .test('start_date', '노출 시작 일시 형식이 올바르지 않습니다', function (value) {
-        if (!value) return false;
-        return isValidDate(value as any);
+        if (!value) {
+          return false;
+        }
+        try {
+          return isValidDate(value as any);
+        } catch (error) {
+          return this.createError({
+            message: '노출 시작 일시를 확인할 수 없습니다',
+          });
+        }
       }),
 
     end_date: yup
@@ -74,28 +149,45 @@ export const createAppSchemeYupSchema = () => {
       .nullable()
       .required('노출 종료 일시는 필수입니다')
       .test('end_date', '노출 종료 일시 형식이 올바르지 않습니다', function (value) {
-        if (!value) return false;
-        if (!isValidDate(value as any)) return false;
-
-        // 노출 시작일시 < 노출 종료일시 체크
-        const formData = this.parent;
-        if (formData?.start_date) {
-          const startDate = toISOString(formData.start_date);
-          const endDate = toISOString(value);
-
-          if (startDate && endDate) {
-            const startDateTime = new Date(startDate);
-            const endDateTime = new Date(endDate);
-
-            if (endDateTime <= startDateTime) {
-              return this.createError({
-                message: '노출 종료 일시는 노출 시작 일시보다 커야 합니다',
-              });
-            }
-          }
+        if (!value) {
+          return false;
         }
 
-        return true;
+        try {
+          if (!isValidDate(value as any)) {
+            return false;
+          }
+
+          // 노출 시작일시 < 노출 종료일시 체크
+          const formData = this.parent;
+          if (formData?.start_date) {
+            const startDate = toISOString(formData.start_date as any);
+            const endDate = toISOString(value as any);
+
+            if (startDate && endDate) {
+              const startDateTime = new Date(startDate);
+              const endDateTime = new Date(endDate);
+
+              if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+                return this.createError({
+                  message: '날짜 변환 중 오류가 발생했습니다',
+                });
+              }
+
+              if (endDateTime <= startDateTime) {
+                return this.createError({
+                  message: '노출 종료 일시는 노출 시작 일시보다 커야 합니다',
+                });
+              }
+            }
+          }
+
+          return true;
+        } catch (error) {
+          return this.createError({
+            message: '노출 종료 일시를 확인할 수 없습니다',
+          });
+        }
       }),
   });
 };

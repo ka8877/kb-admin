@@ -333,7 +333,7 @@ export const fetchApprovalDetailQuestions = async (
 };
 
 /**
- * 추천질문 생성 (승인 요청만 전송)
+ * 추천질문 생성 (승인 요청 전송 후 실제 데이터 생성)
  */
 export const createRecommendedQuestion = async (
   data: Partial<RecommendedQuestionItem>,
@@ -347,14 +347,17 @@ export const createRecommendedQuestion = async (
     { index: 0, fallbackId: tempId },
   );
 
-  // 승인 요청만 전송 (실제 데이터 생성은 승인 후 처리)
+  // 승인 요청 전송
   await sendApprovalRequest('data_registration', [item]);
+
+  // 결재 요청 성공 후 실제 데이터 생성 (같은 qst_id로)
+  await createApprovedQuestions([item]);
 
   return item;
 };
 
 /**
- * 추천질문 일괄 생성 (승인 요청만 전송)
+ * 추천질문 일괄 생성 (승인 요청 전송 후 실제 데이터 생성)
  * @param items - 생성할 추천질문 아이템 배열
  */
 export const createRecommendedQuestionsBatch = async (
@@ -376,8 +379,11 @@ export const createRecommendedQuestionsBatch = async (
     );
   });
 
-  // 승인 요청만 전송 (실제 데이터 생성은 승인 후 처리)
+  // 승인 요청 전송
   await sendApprovalRequest('data_registration', createdItems);
+
+  // 결재 요청 성공 후 실제 데이터 생성 (같은 qst_id로)
+  await createApprovedQuestions(createdItems);
 };
 
 /**
@@ -743,25 +749,28 @@ export const deleteApprovedQuestions = async (
 };
 
 /**
- * 추천질문 수정
+ * 추천질문 수정 (승인 요청 전송 후 실제 데이터 수정)
  */
 export const updateRecommendedQuestion = async (
   id: string | number,
   data: Partial<RecommendedQuestionItem>,
 ): Promise<RecommendedQuestionItem> => {
-  // 실제 데이터 수정 API 호출을 제거하고 승인 요청만 전송
   const updatedItem = transformItem(
     { ...data, qst_id: String(id) } as Partial<RecommendedQuestionItem> & Record<string, any>,
     { index: 0, fallbackId: id },
   );
   
+  // 승인 요청 전송
   await sendApprovalRequest('data_modification', [updatedItem]);
+  
+  // 결재 요청 성공 후 실제 데이터 수정
+  await updateApprovedQuestions([updatedItem]);
 
-  return updatedItem; // 승인 요청에 포함된 항목 반환
+  return updatedItem;
 };
 
 /**
- * 추천질문 삭제 (승인 요청만 전송)
+ * 추천질문 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  */
 export const deleteRecommendedQuestion = async (
   id: string | number,
@@ -775,16 +784,19 @@ export const deleteRecommendedQuestion = async (
     throw new Error('삭제할 데이터를 조회하지 못했습니다.');
   }
 
-  // 실제 삭제 API 호출을 제거하고 승인 요청만 전송
+  // 승인 요청 전송
   if (deletedItem) {
     await sendApprovalRequest('data_deletion', [deletedItem]);
+    
+    // 결재 요청 성공 후 실제 데이터 삭제
+    await deleteApprovedQuestions([deletedItem]);
   } else {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }
 };
 
 /**
- * 여러 추천질문을 한 번에 삭제 (승인 요청만 전송)
+ * 여러 추천질문을 한 번에 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  * @param itemIdsToDelete - 삭제할 아이템 ID 배열
  */
 export const deleteRecommendedQuestions = async (
@@ -805,9 +817,12 @@ export const deleteRecommendedQuestions = async (
     }
   }
 
-  // 실제 삭제 API 호출을 제거하고 승인 요청만 전송
+  // 승인 요청 전송
   if (deletedItems.length > 0) {
     await sendApprovalRequest('data_deletion', deletedItems);
+    
+    // 결재 요청 성공 후 실제 데이터 삭제
+    await deleteApprovedQuestions(deletedItems);
   } else {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }

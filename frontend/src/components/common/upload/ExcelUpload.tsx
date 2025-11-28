@@ -1,19 +1,16 @@
-// frontend/src/components/common/upload/ExcelUpload.refactored.tsx
+// frontend/src/components/common/upload/ExcelUpload.tsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
-import type { GridColDef } from '@mui/x-data-grid';
 import CreateDataActions from '../actions/CreateDataActions';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { loadWorkbookFromFile } from './utils/excelUtils';
 import { validateWorksheetData } from './utils/validationUtils';
-import type { ValidationFunction } from './utils/validationUtils';
 import {
   generateCSVTemplate,
   generateExcelTemplate,
   downloadCSV,
   downloadWorkbook,
-  type ReferenceData,
 } from './utils/templateGenerators';
 import {
   ALERT_MESSAGES,
@@ -21,33 +18,17 @@ import {
   CONFIRM_MESSAGES,
   getFileFormatErrorMessage,
 } from '@/constants/message';
+import type { ExcelUploadProps } from './type';
+export type { ValidationFunction, ReferenceData } from './type';
+import ExcelPreviewList from '@/components/common/list/ExcelPreviewList';
+import { parseRowData, hasRowData } from './utils/excelUtils';
+import type { GridValidRowModel } from '@mui/x-data-grid';
 
-export type { ValidationFunction } from './utils/validationUtils';
-
-export type ExcelUploadProps = {
-  onSave: (file: File) => void;
-  onCancel: () => void;
-  columns?: GridColDef[];
-  templateFileName?: string;
-  exampleData?: Record<string, unknown>[];
-  fieldGuides?: Record<string, string>;
-  validationRules?: Record<string, ValidationFunction>;
-  referenceData?: ReferenceData;
-  acceptedFormats?: string[];
-  title?: string;
-  description?: string;
-  templateLabel?: string;
-  onTemplateDownload?: () => void;
-  saveLabel?: string;
-  cancelLabel?: string;
-  size?: 'small' | 'medium' | 'large';
-  isLoading?: boolean;
-};
-
-const ExcelUpload: React.FC<ExcelUploadProps> = ({
+const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
   onSave,
   onCancel,
   columns,
+  gridColumns,
   templateFileName = '업로드_템플릿',
   exampleData,
   fieldGuides,
@@ -62,11 +43,47 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
   cancelLabel = '취소',
   size = 'medium',
   isLoading = false,
-}) => {
+  selectFields,
+  dateFields,
+  dateFormat = 'YYYYMMDDHHmmss',
+  validator,
+  getDynamicSelectOptions,
+  onProcessRowUpdate,
+  rowSanitizer,
+  getRequiredFields,
+  readOnlyFields = ['no'],
+  rowIdGetter,
+  dynamicSelectFields,
+}: ExcelUploadProps<T>): JSX.Element => {
+  // 그리드 표시용 컬럼 (gridColumns가 있으면 사용, 없으면 columns 사용)
+  const displayColumns = gridColumns || columns;
   const { showConfirm } = useConfirmDialog();
   const { showAlert } = useAlertDialog();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [parsedData, setParsedData] = useState<Record<string, unknown>[]>([]);
+  const [uploadKey, setUploadKey] = useState(0); // 파일 업로드 시마다 증가
+
+  // 새 행 추가 핸들러
+  const handleAddRow = useCallback(() => {
+    if (!displayColumns) return;
+
+    // 새 행의 no 값 계산
+    const maxNo = parsedData.reduce((max, row) => {
+      const no = typeof row.no === 'number' ? row.no : 0;
+      return Math.max(max, no);
+    }, 0);
+
+    // 빈 행 생성 (no만 설정, 나머지는 빈 값)
+    const newRow: Record<string, unknown> = { no: maxNo + 1 };
+    displayColumns.forEach((col) => {
+      if (col.field !== 'no') {
+        newRow[col.field] = '';
+      }
+    });
+
+    setParsedData([...parsedData, newRow]);
+  }, [parsedData, displayColumns]);
 
   const isValidFileFormat = useCallback(
     (file: File): boolean => {
@@ -76,9 +93,52 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     [acceptedFormats],
   );
 
+  const parseExcelToJSON = useCallback(
+    async (file: File): Promise<Record<string, unknown>[]> => {
+      if (!columns) return [];
+
+      const workbook = await loadWorkbookFromFile(file);
+      const worksheet = workbook.getWorksheet(1);
+
+      if (!worksheet) return [];
+
+      const columnFields = columns.map((col) => col.field);
+      const startRow = 4;
+      const lastRow = worksheet.lastRow?.number || startRow - 1;
+      const data: Record<string, unknown>[] = [];
+
+      let no = 1;
+      for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
+        const row = worksheet.getRow(rowNum);
+        const rowData = parseRowData(row, columnFields);
+
+        if (!hasRowData(rowData, columnFields)) {
+          continue;
+        }
+
+        // 날짜 필드를 문자열로 변환
+        if (dateFields) {
+          dateFields.forEach((field) => {
+            if (rowData[field] !== null && rowData[field] !== undefined) {
+              // 숫자나 Date 객체를 문자열로 변환
+              rowData[field] = String(rowData[field]);
+            }
+          });
+        }
+
+        // no 필드 추가
+        data.push({ no, ...rowData });
+        no++;
+      }
+
+      return data;
+    },
+    [columns, dateFields],
+  );
+
   const validateFile = useCallback(
     async (file: File): Promise<boolean> => {
-      if (!validationRules || !columns) return true;
+      if (!columns) return true;
 
       try {
         const workbook = await loadWorkbookFromFile(file);
@@ -93,14 +153,25 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
           return false;
         }
 
-        const error = validateWorksheetData(worksheet, columns, validationRules);
+        // 4행부터 데이터가 하나라도 있는지 확인
+        const columnFields = columns.map((col) => col.field);
+        const startRow = 4;
+        const lastRow = worksheet.lastRow?.number || startRow - 1;
 
-        if (error) {
-          const message =
-            error.rowNumber > 0 ? `${error.rowNumber}행: ${error.message}` : error.message;
+        let hasData = false;
+        for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
+          const row = worksheet.getRow(rowNum);
+          const rowData = parseRowData(row, columnFields);
+          if (hasRowData(rowData, columnFields)) {
+            hasData = true;
+            break;
+          }
+        }
+
+        if (!hasData) {
           showAlert({
             title: ALERT_MESSAGES.VALIDATION_ERROR,
-            message,
+            message: '데이터가 없습니다. 4행부터 데이터를 입력해주세요.',
             severity: 'error',
           });
           return false;
@@ -117,7 +188,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         return false;
       }
     },
-    [validationRules, columns, showAlert],
+    [columns, showAlert],
   );
 
   const processFile = useCallback(
@@ -138,14 +209,24 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         return;
       }
 
+      // validation 통과 후 데이터 파싱
+      const jsonData = await parseExcelToJSON(file);
+
+      console.log('📄 파싱된 엑셀 데이터:', jsonData);
+      console.log('📄 첫 번째 행:', jsonData[0]);
+
+      // 기존 데이터 초기화하고 새 데이터로 덮어쓰기 (새 배열 참조 생성)
+      setParsedData([...jsonData]);
       setSelectedFile(file);
+      setUploadKey((prev) => prev + 1); // 키를 증가시켜 강제 리렌더링
+
       showAlert({
         title: ALERT_MESSAGES.FILE_VALIDATION_COMPLETE,
         message: ALERT_MESSAGES.FILE_UPLOAD_SUCCESS,
         severity: 'success',
       });
     },
-    [isValidFileFormat, validateFile, acceptedFormats, showAlert],
+    [isValidFileFormat, validateFile, parseExcelToJSON, acceptedFormats, showAlert],
   );
 
   const handleFileChange = useCallback(
@@ -183,8 +264,18 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
     [processFile],
   );
 
+  const handleDataChange = useCallback((updatedData: Record<string, unknown>[]) => {
+    console.log('🔄 handleDataChange 호출됨 - 업데이트된 데이터:', updatedData);
+    // no 필드를 오름차순으로 재설정
+    const reindexedData = updatedData.map((row, index) => ({
+      ...row,
+      no: index + 1,
+    }));
+    setParsedData(reindexedData);
+  }, []);
+
   const handleSave = useCallback(() => {
-    if (!selectedFile) {
+    if (!selectedFile || parsedData.length === 0) {
       showAlert({
         title: ALERT_MESSAGES.FILE_SELECT_REQUIRED,
         message: ALERT_MESSAGES.PLEASE_SELECT_FILE,
@@ -193,13 +284,48 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
       return;
     }
 
+    console.log('🔍 ExcelUpload handleSave - parsedData:', parsedData);
+
+    // Validation 체크 (confirm 전에 먼저 실행)
+    if (validator && parsedData.length > 0) {
+      console.log('🔍 validation 시작');
+      for (let rowIndex = 0; rowIndex < parsedData.length; rowIndex++) {
+        const row = parsedData[rowIndex];
+        const validationResults = validator(row as any);
+
+        // 컴럼 순서대로 validation 체크
+        if (displayColumns) {
+          for (const col of displayColumns) {
+            const fieldName = col.field;
+            const result = validationResults[fieldName];
+
+            if (result && !result.isValid) {
+              // 첫 번째 에러 발견 시 즉시 alert 표시하고 return
+              const rowNumber = rowIndex + 1;
+              const errorMessage = `${rowNumber}행: ${result.message}`;
+              console.log('🔍 validation 실패:', errorMessage);
+              showAlert({
+                title: '입력값 확인',
+                message: errorMessage,
+                severity: 'error',
+              });
+              return;
+            }
+          }
+        }
+      }
+      console.log('🔍 모든 validation 통과');
+    }
+
+    // Validation 통과 후 confirm 표시
     showConfirm({
       title: CONFIRM_TITLES.SAVE,
       message: CONFIRM_MESSAGES.SAVE,
       onConfirm: () => {
         try {
-          onSave(selectedFile);
-          
+          console.log('🔍 저장 확인 - onSave에 전달할 데이터:', parsedData);
+          // ExcelListPreview에서 편집된 데이터를 전달
+          onSave(parsedData as any);
         } catch (error) {
           showAlert({
             title: ALERT_MESSAGES.UPLOAD_FAILED,
@@ -209,7 +335,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         }
       },
     });
-  }, [selectedFile, showAlert, showConfirm, onSave]);
+  }, [selectedFile, parsedData, showAlert, showConfirm, onSave, validator, displayColumns]);
 
   const handleTemplateDownloadCSV = useCallback(() => {
     if (!columns || columns.length === 0) {
@@ -337,9 +463,38 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         </Typography>
         <Button variant="outlined" component="label">
           파일 선택
-          <input type="file" accept={acceptString} hidden onChange={handleFileChange} />
+          <input
+            type="file"
+            accept={acceptString}
+            hidden
+            onChange={handleFileChange}
+            onClick={(e) => {
+              // 같은 파일을 다시 선택해도 onChange가 발생하도록 value 초기화
+              (e.target as HTMLInputElement).value = '';
+            }}
+          />
         </Button>
       </Box>
+
+      {parsedData.length > 0 && columns && (
+        <ExcelPreviewList
+          key={uploadKey}
+          data={parsedData as any}
+          columns={displayColumns as any}
+          rowIdGetter={rowIdGetter as any}
+          readOnlyFields={readOnlyFields}
+          selectFields={selectFields}
+          dateFields={dateFields}
+          dateFormat={dateFormat}
+          validator={validator as any}
+          getDynamicSelectOptions={getDynamicSelectOptions as any}
+          dynamicSelectFields={dynamicSelectFields}
+          onProcessRowUpdate={onProcessRowUpdate || (rowSanitizer as any)}
+          getRequiredFields={getRequiredFields as any}
+          onDataChange={handleDataChange}
+          onAddRow={handleAddRow}
+        />
+      )}
 
       <CreateDataActions
         onSave={handleSave}
@@ -348,7 +503,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({
         cancelLabel={cancelLabel}
         size={size}
         isLoading={isLoading}
-        disabled={!selectedFile}
+        disabled={!selectedFile || parsedData.length === 0}
       />
     </Stack>
   );

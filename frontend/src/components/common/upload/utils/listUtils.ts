@@ -1,15 +1,8 @@
 import React from 'react';
-import type {
-  GridColDef,
-  GridRenderEditCellParams,
-  GridValidRowModel,
-} from '@mui/x-data-grid';
-import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage, formatDateWithDots } from '@/utils/dateUtils';
+import type { GridColDef, GridRenderEditCellParams, GridValidRowModel } from '@mui/x-data-grid';
+import { formatDateForDisplay, formatDateWithDots } from '@/utils/dateUtils';
 import type { SelectFieldOption } from '@/types/types';
+import DateEditCell from '@/components/common/grid/DateEditCell';
 
 export type CreateProcessedColumnsOptions<T extends GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -24,13 +17,18 @@ export type CreateProcessedColumnsOptions<T extends GridValidRowModel> = {
    */
   dateDisplayFormat?: 'default' | 'dots';
   /**
-   * (선택) 행별로 qst_ctgr 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
+   * (선택) 행별로 특정 필드 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
    * EditableList에서만 사용
    */
   getDynamicSelectOptions?: (row: T) => SelectFieldOption[];
   /**
+   * (선택) 동적 옵션을 적용할 필드 목록 (기본: ['qst_ctgr'])
+   * EditableList에서만 사용
+   */
+  dynamicSelectFields?: string[];
+  /**
    * (선택) 행 업데이트 시 사용할 데이터/rowId
-   * qst_ctgr + getDynamicSelectOptions 에서만 사용
+   * dynamicSelectFields + getDynamicSelectOptions 에서만 사용
    */
   data?: T[];
   getRowId?: (row: T) => string | number;
@@ -59,6 +57,7 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
   dateFormat = 'YYYYMMDDHHmmss',
   dateDisplayFormat = 'default',
   getDynamicSelectOptions,
+  dynamicSelectFields = ['qst_ctgr'],
   data,
   getRowId,
   renderSelectEditCell,
@@ -68,13 +67,12 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
   return columns.map((col) => {
     const isSelectField = selectFields && selectFields[col.field];
     const isDateField = dateFields && dateFields.includes(col.field);
+    const isDynamicSelectField = dynamicSelectFields.includes(col.field);
 
     // 필수 필드인 경우 (EditableList에서만 headerName에 * 추가)
     const isRequired = requiredFields.includes(col.field);
     const headerName =
-      addRequiredMark && isRequired && col.headerName
-        ? `${col.headerName} *`
-        : col.headerName;
+      addRequiredMark && isRequired && col.headerName ? `${col.headerName} *` : col.headerName;
 
     // 날짜 필드인 경우
     if (isDateField) {
@@ -89,41 +87,14 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
           return formatDateForDisplay(params.value, dateFormat);
         },
         renderEditCell: (params: GridRenderEditCellParams) => {
-          const handleDateChange = (value: unknown) => {
-            const newValue = value as dayjs.Dayjs | null;
-            const dateObj = newValue ? newValue.toDate() : null;
-            const formattedValue = formatDateForStorage(dateObj, dateFormat);
-            params.api.setEditCellValue({
-              id: params.id,
-              field: params.field,
-              value: formattedValue,
-            });
-          };
-
-          const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
-
-          return React.createElement(
-            LocalizationProvider,
-            { dateAdapter: AdapterDayjs },
-            React.createElement(DateTimePicker, {
-              value: currentValue,
-              onChange: handleDateChange,
-              format: 'YYYY-MM-DD HH:mm',
-              slotProps: {
-                textField: {
-                  size: 'small',
-                  fullWidth: true,
-                },
-              },
-            }),
-          );
+          return React.createElement(DateEditCell, { params, dateFormat });
         },
       };
     }
 
-    // qst_ctgr 필드: 편집 모드에서 행별로 옵션 다르게 (EditableList 전용)
+    // 동적 셀렉트 필드: 편집 모드에서 행별로 옵션 다르게 (EditableList 전용)
     if (
-      col.field === 'qst_ctgr' &&
+      isDynamicSelectField &&
       isEditMode &&
       typeof getDynamicSelectOptions === 'function' &&
       data &&
@@ -160,8 +131,7 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
         editable: isEditMode && !readOnlyFields.includes(col.field),
         renderEditCell:
           renderSelectEditCell && isEditMode
-            ? (params: GridRenderEditCellParams) =>
-                renderSelectEditCell(params, isSelectField)
+            ? (params: GridRenderEditCellParams) => renderSelectEditCell(params, isSelectField)
             : col.renderEditCell,
       };
     }
@@ -174,5 +144,3 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
     };
   });
 };
-
-

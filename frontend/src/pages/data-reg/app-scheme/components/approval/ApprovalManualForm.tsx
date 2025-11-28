@@ -3,12 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import DateInput from '@/components/common/input/DateInput';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createAppSchemeYupSchema } from '../../validation';
+import { useCreateAppScheme } from '../../hooks';
+import { transformToApiFormat } from '../../api';
+import { toast } from 'react-toastify';
+import { ROUTES } from '@/routes/menu';
 
 // 앱스킴 폼 검증 스키마
 const schema = createAppSchemeYupSchema();
@@ -28,6 +32,7 @@ type FormData = {
 const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
+  const createMutation = useCreateAppScheme();
 
   // validation 모드 상태 관리
   const [hasTriedSubmit, setHasTriedSubmit] = React.useState(false);
@@ -48,15 +53,45 @@ const ApprovalManualForm: React.FC = () => {
       goods_name_list: null,
       parent_id: null,
       parent_title: null,
-      start_date: null,
-      end_date: null,
+      start_date:dayjs().add(30, 'minute'), // 현재 일시 + 30분
+      end_date: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
   });
 
-  const onSubmit = useCallback((data: FormData) => {
-    // TODO: 폼 데이터 검증 및 저장 로직
-    console.log('앱스킴 직접 입력 저장:', data);
-  }, []);
+  const onSubmit = useCallback(
+    async (data: FormData) => {
+      try {
+        // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
+        const apiData = transformToApiFormat({
+          product_menu_name: data.product_menu_name,
+          description: data.description,
+          app_scheme_link: data.app_scheme_link,
+          one_link: data.one_link,
+          goods_name_list: data.goods_name_list,
+          parent_id: data.parent_id,
+          parent_title: data.parent_title,
+          start_date: data.start_date,
+          end_date: data.end_date,
+        });
+
+        await createMutation.mutateAsync(apiData);
+        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem('approval_return_url');
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem('approval_return_url');
+        } else {
+          navigate(ROUTES.APP_SCHEME);
+        }
+      } catch (error) {
+        console.error('앱스킴 생성 실패:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+      }
+    },
+    [createMutation, navigate],
+  );
 
   const handleSaveClick = useCallback(async () => {
     // 첫 번째 submit 시도 표시
