@@ -20,7 +20,7 @@ import {
 } from '@/constants/message';
 import type { ExcelUploadProps } from './type';
 export type { ValidationFunction, ReferenceData } from './type';
-import ExcelListPreview from './ExcelListPreview';
+import ExcelPreviewList from '@/components/common/list/ExcelPreviewList';
 import { parseRowData, hasRowData } from './utils/excelUtils';
 import type { GridValidRowModel } from '@mui/x-data-grid';
 
@@ -477,7 +477,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
       </Box>
 
       {parsedData.length > 0 && columns && (
-        <ExcelListPreview
+        <ExcelPreviewList
           key={uploadKey}
           data={parsedData as any}
           columns={displayColumns as any}

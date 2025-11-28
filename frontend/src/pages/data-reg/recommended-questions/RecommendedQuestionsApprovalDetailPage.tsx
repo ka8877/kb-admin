@@ -2,13 +2,10 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
-import type { GridValidRowModel } from '@mui/x-data-grid';
-import { DataGrid } from '@mui/x-data-grid';
 import type { RecommendedQuestionItem } from './types';
 import { recommendedQuestionColumns } from './components/columns/columns';
 import PageHeader from '@/components/common/PageHeader';
-import DetailNavigationActions from '@/components/common/actions/DetailNavigationActions';
-import MediumButton from '@/components/common/button/MediumButton';
+import ApprovalDetailList from '@/components/common/list/ApprovalDetailList';
 import { ROUTES } from '@/routes/menu';
 import {
   loadServiceOptions,
@@ -18,15 +15,13 @@ import {
 } from './data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
-import { RecommendedQuestionValidator } from './validation/recommendedQuestionValidation';
 import { toast } from 'react-toastify';
 import { useApprovalDetailQuestions } from './hooks';
 import { fetchApprovalRequest, updateApprovalRequestStatus } from './api';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateForStorage } from '@/utils/dateUtils';
-import { APPROVAL_STATUS_OPTIONS, IN_REVIEW, DONE_REVIEW } from '@/constants/options';
+import { IN_REVIEW, DONE_REVIEW } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
-import GlobalLoadingSpinner from '@/components/common/spinner/GlobalLoadingSpinner';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
@@ -135,38 +130,15 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     <Box>
       <PageHeader title="추천질문 결재 상세" />
 
-      {/* 목록으로 버튼 */}
-      <DetailNavigationActions onBack={handleBack} />
-
-      {/* 조회용 그리드 */}
-      <Box sx={{ height: 600, width: '100%', mb: 2 }}>
-        <DataGrid<RecommendedQuestionItem>
-          rows={data}
-          columns={processedColumns}
-          getRowId={getRowId}
-          disableRowSelectionOnClick
-          density="standard"
-          rowHeight={46}
-          columnHeaderHeight={46}
-          autoHeight={false}
-          loading={isLoading}
-          sx={{
-            '& .MuiDataGrid-footerContainer': {
-              minHeight: '42px',
-              maxHeight: '42px',
-            },
-          }}
-        />
-      </Box>
-
-      {/* 최종 결재 버튼 (그리드 오른쪽 하단) - status가 in_review 또는 done_review인 경우 숨김 */}
-      {canShowFinalApprovalButton && (
-        <Box display="flex" justifyContent="flex-end">
-          <MediumButton variant="contained" onClick={handleFinalApproval} size="medium">
-            최종 결재 요청
-          </MediumButton>
-        </Box>
-      )}
+      <ApprovalDetailList<RecommendedQuestionItem>
+        rows={data}
+        columns={processedColumns}
+        getRowId={getRowId}
+        onBack={handleBack}
+        onFinalApproval={handleFinalApproval}
+        showFinalApprovalButton={canShowFinalApprovalButton}
+        isLoading={isLoading}
+      />
     </Box>
   );
 };

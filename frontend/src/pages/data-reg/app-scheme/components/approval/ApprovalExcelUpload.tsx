@@ -94,6 +94,23 @@ const ApprovalExcelUpload: React.FC = () => {
   // 공통 validation을 사용한 엑셀 검증 규칙
   const validationRules = createExcelValidationRules();
 
+  // Validation 함수 (ExcelUpload의 validator prop 형식에 맞춤)
+  const handleValidate = useCallback(
+    (data: any): Record<string, { isValid: boolean; message?: string }> => {
+      const results: Record<string, { isValid: boolean; message?: string }> = {};
+
+      // 각 필드에 대해 validation 실행
+      Object.keys(validationRules).forEach((field) => {
+        const validator = validationRules[field];
+        const value = data[field];
+        results[field] = validator(value, data);
+      });
+
+      return results;
+    },
+    [validationRules],
+  );
+
   // 날짜 필드 설정
   const dateFieldsConfig = ['start_date', 'end_date'];
 
@@ -105,6 +122,7 @@ const ApprovalExcelUpload: React.FC = () => {
       templateFileName="앱스킴_업로드템플릿"
       fieldGuides={fieldGuides}
       validationRules={validationRules}
+      validator={handleValidate}
       exampleData={exampleData}
       acceptedFormats={['.xlsx', '.csv']}
       description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"

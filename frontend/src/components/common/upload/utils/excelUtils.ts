@@ -57,12 +57,32 @@ export const loadWorkbookFromFile = async (file: File): Promise<ExcelJS.Workbook
 
 /**
  * 행 데이터를 파싱
+ * 하이퍼링크나 객체 형태의 셀 값을 텍스트로 변환
  */
 export const parseRowData = (row: ExcelJS.Row, columnFields: string[]): Record<string, unknown> => {
   const rowData: Record<string, unknown> = {};
 
   columnFields.forEach((field, colIndex) => {
-    const cellValue = row.getCell(colIndex + 1).value;
+    const cell = row.getCell(colIndex + 1);
+    let cellValue: unknown = cell.value;
+
+    // 하이퍼링크나 객체 형태의 값을 텍스트로 변환
+    // cell.text는 항상 텍스트 형태로 반환 (하이퍼링크 포함)
+    if (cell.text !== undefined && cell.text !== null && cell.text !== '') {
+      cellValue = cell.text;
+    } else if (cellValue && typeof cellValue === 'object') {
+      // 객체인 경우 텍스트 추출 시도
+      if ('text' in cellValue && typeof (cellValue as { text: string }).text === 'string') {
+        cellValue = (cellValue as { text: string }).text;
+      } else if ('hyperlink' in cellValue && typeof (cellValue as { hyperlink: string }).hyperlink === 'string') {
+        // 하이퍼링크만 있는 경우
+        cellValue = (cellValue as { hyperlink: string }).hyperlink;
+      } else {
+        // 객체를 문자열로 변환 시도
+        cellValue = String(cellValue);
+      }
+    }
+
     rowData[field] = cellValue;
   });
 

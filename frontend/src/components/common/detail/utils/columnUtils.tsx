@@ -2,7 +2,7 @@ import React from 'react';
 import type { GridColDef, GridRenderEditCellParams } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
-import DateEditCell from '../components/DateEditCell';
+import DateEditCell from '@/components/common/grid/DateEditCell';
 
 type ProcessColumnParams<T> = {
   col: GridColDef<T>;
@@ -129,4 +129,3 @@ export const isSelectField = <T extends Record<string, unknown>>(
     (dynamicSelectFields && dynamicSelectFields[field]) !== undefined
   );
 };
-

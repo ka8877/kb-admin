@@ -7,15 +7,13 @@ import type {
 } from '@mui/x-data-grid';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
+import ListSelect from '../select/ListSelect';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import ApprovalListActions from '../actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '../actions/ApprovalConfirmActions';
-import ExcelEditActions from '../actions/ExcelEditActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { useGridCellNavigation } from '@/hooks/useGridCellNavigation';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import type { SelectFieldOption } from '@/types/types';
 import type { ValidationResult } from '@/types/types';
@@ -69,11 +67,6 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
   onApproveCancel?: () => void; // 결재 취소 (기본: 선택 모드 해제)
   isLoading?: boolean; // 로딩 상태
-  /**
-   * (선택) 엑셀 업로드 모드 관련
-   */
-  showExcelActions?: boolean; // 엑셀 편집 액션 표시 여부 (행 추가/삭제)
-  onAddRow?: () => void; // 행 추가 핸들러
 };
 
 const defaultGetRowId =
@@ -87,75 +80,6 @@ const defaultGetRowId =
     return row[getter as keyof T] as string | number;
   };
 
-type SelectEditCellProps = {
-  params: GridRenderEditCellParams;
-  options: SelectFieldOption[];
-};
-
-const SelectEditCell: React.FC<SelectEditCellProps> = ({ params, options }) => {
-  const [open, setOpen] = useState(true);
-  const committedRef = useRef(false);
-
-  const handleChange = useCallback(
-    async (event: SelectChangeEvent<string>) => {
-      setOpen(false);
-      committedRef.current = true;
-      await params.api.setEditCellValue({
-        id: params.id,
-        field: params.field,
-        value: event.target.value,
-      });
-      try {
-        params.api.stopCellEditMode({
-          id: params.id,
-          field: params.field,
-        });
-      } catch (error) {
-        console.debug('Cell not in edit mode:', error);
-      }
-    },
-    [params],
-  );
-
-  const handleClose = useCallback(() => {
-    setOpen(false);
-    try {
-      params.api.stopCellEditMode({
-        id: params.id,
-        field: params.field,
-        ignoreModifications: !committedRef.current,
-      });
-    } catch (error) {
-      console.debug('Cell not in edit mode:', error);
-    }
-    committedRef.current = false;
-  }, [params]);
-
-  return (
-    <Select
-      value={params.value ?? ''}
-      onChange={handleChange}
-      onClose={handleClose}
-      open={open}
-      fullWidth
-      autoFocus
-      size="small"
-      MenuProps={{
-        PaperProps: {
-          sx: {
-            maxHeight: 240,
-          },
-        },
-      }}
-    >
-      {options.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </Select>
-  );
-};
 
 const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
@@ -188,8 +112,6 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   onApproveConfirm,
   onApproveCancel,
   isLoading = false,
-  showExcelActions = false,
-  onAddRow,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -198,15 +120,13 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   });
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
   const { showAlert } = useAlertDialog();
-  const tabKeyPressedRef = useRef<{ field: string; rowId: string | number } | null>(null);
-  const shouldMoveToNextCellRef = useRef(false);
   const dataGridRef = useGridApiRef();
 
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
 
   const renderSelectEditCell = useCallback(
     (params: GridRenderEditCellParams, options: SelectFieldOption[]) => {
-      return <SelectEditCell params={params} options={options} />;
+      return <ListSelect params={params} options={options} />;
     },
     [],
   );
@@ -358,263 +278,18 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     }
   }, [onDeleteConfirm, selectionModel]);
 
-  // 엑셀 모드에서 행 삭제 (API 호출 없이 로컬에서만 삭제)
-  const handleExcelDeleteClick = useCallback(() => {
-    if (selectionModel.length > 0) {
-      const updatedData = data.filter((row) => !selectionModel.includes(getRowId(row)));
-      setData(updatedData);
-      setSelectionModel([]);
-
-      // 부모 컴포넌트에 변경된 데이터 즉시 전달
-      if (onSave) {
-        onSave(updatedData);
-      }
-    }
-  }, [selectionModel, data, getRowId, onSave]);
-
-  // 엑셀 모드에서 행 추가
-  const handleAddRowClick = useCallback(() => {
-    if (onAddRow) {
-      onAddRow();
-    }
-  }, [onAddRow]);
-
-  // 다음 편집 가능한 셀 찾기
-  const findNextEditableCell = useCallback(
-    (
-      currentField: string,
-      currentRowIndex: number,
-    ): { field: string; rowId: string | number } | null => {
-      const currentColIndex = processedColumns.findIndex((col) => col.field === currentField);
-      if (currentColIndex === -1) return null;
-
-      // 같은 행에서 다음 셀 찾기
-      for (let i = currentColIndex + 1; i < processedColumns.length; i++) {
-        const col = processedColumns[i];
-        if (col.editable && !readOnlyFields.includes(col.field)) {
-          return { field: col.field, rowId: getRowId(data[currentRowIndex]) };
-        }
-      }
-
-      // 다음 행의 첫 번째 편집 가능한 셀 찾기
-      if (currentRowIndex + 1 < data.length) {
-        for (let i = 0; i < processedColumns.length; i++) {
-          const col = processedColumns[i];
-          if (col.editable && !readOnlyFields.includes(col.field)) {
-            return { field: col.field, rowId: getRowId(data[currentRowIndex + 1]) };
-          }
-        }
-      }
-
-      return null;
-    },
-    [processedColumns, readOnlyFields, data, getRowId],
-  );
-
-  // 다음 셀로 이동하는 함수 (포커스만 이동, 편집 모드 진입 안 함)
-  const moveToNextCell = useCallback(
-    (rowId: string | number, currentField: string) => {
-      const currentRowIndex = data.findIndex((row) => getRowId(row) === rowId);
-      if (currentRowIndex === -1) return;
-
-      const nextCell = findNextEditableCell(currentField, currentRowIndex);
-
-      if (nextCell && dataGridRef.current) {
-        setTimeout(() => {
-          if (dataGridRef.current) {
-            dataGridRef.current.setCellFocus(nextCell.rowId, nextCell.field);
-
-            // 셀이 보이도록 스크롤 (가로/세로 모두)
-            const cellElement = dataGridRef.current.getCellElement(nextCell.rowId, nextCell.field);
-            if (cellElement) {
-              cellElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-                inline: 'nearest',
-              });
-            }
-          }
-        }, 50);
-      } else {
-        // 다음 편집 가능한 셀이 없으면 현재 셀에 포커스 유지
-        setTimeout(() => {
-          if (dataGridRef.current) {
-            dataGridRef.current.setCellFocus(rowId, currentField);
-          }
-        }, 50);
-      }
-    },
-    [data, getRowId, findNextEditableCell],
-  );
-
-  // 셀 편집 종료 핸들러
-  const handleCellEditStop = useCallback(
-    (params: any) => {
-      if (!isEditMode) return;
-
-      const currentField = params.field;
-      const rowId = params.id;
-
-      // 현재 셀이 selectbox인지 확인
-      const currentColumn = processedColumns.find((col) => col.field === currentField);
-      const isDynamicSelectField = dynamicSelectFields.includes(currentField);
-      const isSelectField =
-        currentColumn?.type === 'singleSelect' ||
-        (selectFields && selectFields[currentField]) ||
-        isDynamicSelectField;
-
-      if (isSelectField) {
-        // Tab 키가 눌린 경우에만 다음 셀로 포커스 이동
-        if (shouldMoveToNextCellRef.current && tabKeyPressedRef.current) {
-          const { field, rowId: tabRowId } = tabKeyPressedRef.current;
-          if (currentField === field && rowId === tabRowId) {
-            tabKeyPressedRef.current = null;
-            shouldMoveToNextCellRef.current = false;
-            setTimeout(() => {
-              moveToNextCell(rowId, field);
-            }, 50);
-            return;
-          }
-        }
-
-        // 탭 키가 아닌 경우 자동 이동 방지
-        if (
-          tabKeyPressedRef.current &&
-          tabKeyPressedRef.current.field === currentField &&
-          tabKeyPressedRef.current.rowId === rowId
-        ) {
-          tabKeyPressedRef.current = null;
-        }
-        shouldMoveToNextCellRef.current = false;
-
-        // 현재 셀에 포커스를 다시 설정 (자동 이동 방지)
-        setTimeout(() => {
-          if (dataGridRef.current) {
-            dataGridRef.current.setCellFocus(rowId, currentField);
-          }
-        }, 10);
-      }
-    },
-    [isEditMode, moveToNextCell, processedColumns, selectFields, dynamicSelectFields],
-  );
-
-  // 셀 키보드 이벤트 핸들러
-  const handleCellKeyDown = useCallback(
-    (params: any, event: React.KeyboardEvent) => {
-      if (!isEditMode) return;
-
-      // Tab 키 처리
-      if (event.key === 'Tab' && !event.shiftKey) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const currentField = params.field;
-        const rowId = params.id;
-        const isEditing = params.cellMode === 'edit';
-
-        const currentColumn = processedColumns.find((col) => col.field === currentField);
-        const isDynamicSelectField = dynamicSelectFields.includes(currentField);
-        const isSelectField =
-          currentColumn?.type === 'singleSelect' ||
-          (selectFields && selectFields[currentField]) ||
-          isDynamicSelectField;
-
-        if (isEditing) {
-          if (isSelectField) {
-            tabKeyPressedRef.current = { field: currentField, rowId };
-            shouldMoveToNextCellRef.current = true;
-          } else {
-            shouldMoveToNextCellRef.current = true;
-            if (dataGridRef.current) {
-              try {
-                dataGridRef.current.stopCellEditMode({
-                  id: rowId,
-                  field: currentField,
-                  ignoreModifications: false,
-                });
-              } catch (error) {
-                // 셀이 이미 편집 모드가 아닌 경우 무시
-                console.debug('Cell not in edit mode:', error);
-              }
-            }
-            setTimeout(() => {
-              moveToNextCell(rowId, currentField);
-            }, 50);
-          }
-        } else {
-          moveToNextCell(rowId, currentField);
-        }
-      } else if (event.key === 'Enter') {
-        const currentField = params.field;
-        const rowId = params.id;
-        const isEditing = params.cellMode === 'edit';
-        const currentColumn = processedColumns.find((col) => col.field === currentField);
-        const isDynamicSelectField = dynamicSelectFields.includes(currentField);
-        const isSelectField =
-          currentColumn?.type === 'singleSelect' ||
-          (selectFields && selectFields[currentField]) ||
-          isDynamicSelectField;
-        const isDateField = dateFields && dateFields.includes(currentField);
-
-        // 날짜 필드에서 Enter 키를 누른 경우
-        if (isDateField) {
-          // 편집 모드가 아닌 경우: 편집 모드로 진입 (달력 자동 열림)
-          if (!isEditing) {
-            event.preventDefault();
-            event.stopPropagation();
-            // 명시적으로 편집 모드 시작
-            if (dataGridRef.current) {
-              dataGridRef.current.startCellEditMode({
-                id: rowId,
-                field: currentField,
-              });
-            }
-            return;
-          }
-          // 편집 모드인 경우: Enter 키가 DateTimePicker 내부로 전파되어 달력이 열림
-          // preventDefault 하지 않음
-          return;
-        }
-
-        // 일반 인풋 필드에서 Enter 키를 누른 경우 편집 종료 후 현재 셀에 포커스 유지
-        if (!isSelectField && !isDateField && isEditing) {
-          event.preventDefault();
-          event.stopPropagation();
-          if (dataGridRef.current) {
-            try {
-              dataGridRef.current.stopCellEditMode({
-                id: rowId,
-                field: currentField,
-                ignoreModifications: false,
-              });
-            } catch (error) {
-              // 셀이 이미 편집 모드가 아닌 경우 무시
-              console.debug('Cell not in edit mode:', error);
-            }
-          }
-          // 편집 종료 후 현재 셀에 포커스 유지
-          setTimeout(() => {
-            if (dataGridRef.current) {
-              dataGridRef.current.setCellFocus(rowId, currentField);
-            }
-          }, 50);
-          return;
-        }
-
-        if (isSelectField) {
-          shouldMoveToNextCellRef.current = false;
-          if (
-            tabKeyPressedRef.current &&
-            tabKeyPressedRef.current.field === currentField &&
-            tabKeyPressedRef.current.rowId === rowId
-          ) {
-            tabKeyPressedRef.current = null;
-          }
-        }
-      }
-    },
-    [isEditMode, processedColumns, selectFields, dynamicSelectFields, moveToNextCell],
-  );
+  // 셀 네비게이션 hook 사용
+  const { handleCellKeyDown, handleCellEditStop } = useGridCellNavigation<T>({
+    isEditMode,
+    data,
+    processedColumns,
+    readOnlyFields,
+    selectFields,
+    dateFields,
+    dynamicSelectFields,
+    getRowId,
+    dataGridRef,
+  });
 
   // selectedRowNumbers 계산 (useMemo로 최적화)
   const selectedRowNumbers = useMemo(
@@ -690,8 +365,8 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         />
       </Box>
 
-      {/* 편집 모드일 때 하단 액션 버튼들 (일반 모드) */}
-      {isEditMode && onSave && onCancel && !showExcelActions && (
+      {/* 편집 모드일 때 하단 액션 버튼들 */}
+      {isEditMode && onSave && onCancel && (
         <DetailEditActions
           open={isEditMode}
           onSave={handleSaveClick}
@@ -702,18 +377,6 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           selectedCount={selectionModel.length}
           selectedRowNumbers={selectedRowNumbers}
           onDelete={handleDeleteClick}
-        />
-      )}
-
-      {/* 엑셀 업로드 모드일 때 하단 액션 버튼들 */}
-      {isEditMode && showExcelActions && (
-        <ExcelEditActions
-          open={isEditMode}
-          selectedCount={selectionModel.length}
-          selectedRowNumbers={selectedRowNumbers}
-          onDelete={handleExcelDeleteClick}
-          onAddRow={handleAddRowClick}
-          size={size}
         />
       )}
 

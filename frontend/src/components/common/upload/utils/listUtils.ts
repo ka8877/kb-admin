@@ -1,11 +1,8 @@
 import React from 'react';
 import type { GridColDef, GridRenderEditCellParams, GridValidRowModel } from '@mui/x-data-grid';
-import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { formatDateForDisplay, formatDateForStorage, formatDateWithDots } from '@/utils/dateUtils';
+import { formatDateForDisplay, formatDateWithDots } from '@/utils/dateUtils';
 import type { SelectFieldOption } from '@/types/types';
+import DateEditCell from '@/components/common/grid/DateEditCell';
 
 export type CreateProcessedColumnsOptions<T extends GridValidRowModel> = {
   columns: GridColDef<T>[];
@@ -90,64 +87,7 @@ export const createProcessedColumns = <T extends GridValidRowModel>({
           return formatDateForDisplay(params.value, dateFormat);
         },
         renderEditCell: (params: GridRenderEditCellParams) => {
-          const DateEditCell = () => {
-            const [open, setOpen] = React.useState(false);
-
-            // 셀에 포커스가 오면 달력 자동 열기
-            React.useEffect(() => {
-              const timer = setTimeout(() => {
-                setOpen(true);
-              }, 100);
-              return () => clearTimeout(timer);
-            }, []);
-
-            const handleDateChange = (value: unknown) => {
-              const newValue = value as dayjs.Dayjs | null;
-              const dateObj = newValue ? newValue.toDate() : null;
-              const formattedValue = formatDateForStorage(dateObj, dateFormat);
-              params.api.setEditCellValue({
-                id: params.id,
-                field: params.field,
-                value: formattedValue,
-              });
-            };
-
-            const currentValue = params.value ? dayjs(params.value, dateFormat) : null;
-
-            return React.createElement(
-              LocalizationProvider,
-              { dateAdapter: AdapterDayjs },
-              React.createElement(DateTimePicker, {
-                value: currentValue,
-                onChange: handleDateChange,
-                open: open,
-                onOpen: () => setOpen(true),
-                onClose: () => setOpen(false),
-                format: 'YYYY-MM-DD HH:mm',
-                slotProps: {
-                  textField: {
-                    size: 'small',
-                    fullWidth: true,
-                    autoFocus: true,
-                    onKeyDown: (e: React.KeyboardEvent) => {
-                      // Tab 키는 상위에서 처리하도록 전파
-                      if (e.key === 'Tab') {
-                        e.stopPropagation();
-                      }
-                      // Enter 키를 누르면 달력 열기/닫기 토글
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setOpen((prev) => !prev);
-                      }
-                    },
-                  },
-                },
-              }),
-            );
-          };
-
-          return React.createElement(DateEditCell);
+          return React.createElement(DateEditCell, { params, dateFormat });
         },
       };
     }
