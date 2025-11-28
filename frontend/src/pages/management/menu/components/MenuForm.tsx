@@ -1,8 +1,7 @@
 // frontend/src/pages/management/menu/components/MenuForm.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Stack, TextField, MenuItem, Typography } from '@mui/material';
+import { Box, Stack, TextField, MenuItem, Typography, Paper } from '@mui/material';
 import MediumButton from '@/components/common/button/MediumButton';
-import Section from '@/components/layout/Section';
 import type { MenuScreenItem } from '../types';
 import { MenuValidator } from '../validation';
 
@@ -144,7 +143,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
   const parentOptions = allMenuItems.filter((item) => item.id !== menuItem?.id);
 
   return (
-    <Section>
+    <Paper sx={{ p: 3 }}>
       <Stack spacing={1} sx={{ flex: 1 }}>
         <Typography variant="h6" fontWeight="bold">
           {isNew ? '메뉴 추가' : '메뉴 수정'}
@@ -316,7 +315,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
           </Box>
         </Box>
       </Stack>
-    </Section>
+    </Paper>
   );
 };
 

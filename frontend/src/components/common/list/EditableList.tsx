@@ -63,6 +63,7 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   approveSelectionMode?: boolean; // 결재 선택 모드 상태
   onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
   isLoading?: boolean; // 로딩 상태
+  autoHeight?: boolean; // DataGrid의 자동 높이 조정 여부 (기본: false)
 };
 
 const defaultGetRowId =
@@ -167,6 +168,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   approveSelectionMode = false,
   onApproveConfirm,
   isLoading = false,
+  autoHeight = false,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -374,7 +376,12 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         />
       )}
 
-      <Box sx={EDITABLE_LIST_GRID_WRAPPER_SX}>
+      <Box
+        sx={{
+          ...EDITABLE_LIST_GRID_WRAPPER_SX,
+          height: autoHeight ? 'auto' : 545,
+        }}
+      >
         <DataGrid
           key={JSON.stringify(data)}
           rows={data}
@@ -382,7 +389,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={getRowId}
           checkboxSelection={isEditMode || approveSelectionMode}
           rowSelectionModel={isEditMode || approveSelectionMode ? selectionModel : []}
-          onRowSelectionModelChange={isEditMode || approveSelectionMode ? setSelectionModel : undefined}
+          onRowSelectionModelChange={
+            isEditMode || approveSelectionMode ? setSelectionModel : undefined
+          }
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
           pageSizeOptions={pageSizeOptions}
@@ -391,7 +400,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           density="standard"
           rowHeight={46}
           columnHeaderHeight={46}
-          autoHeight={false}
+          autoHeight={autoHeight}
           processRowUpdate={handleProcessRowUpdate}
           onRowClick={onRowClick ? handleRowClick : undefined}
           sx={EDITABLE_LIST_GRID_SX}

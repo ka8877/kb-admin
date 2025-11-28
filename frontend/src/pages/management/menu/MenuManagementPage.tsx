@@ -1,34 +1,53 @@
 // frontend/src/pages/management/menu/MenuManagementPage.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Grid, Typography } from '@mui/material';
-import PageHeader from '@/components/common/PageHeader';
-import MediumButton from '@/components/common/button/MediumButton';
 import { menuMockDb } from '@/mocks/menuDb';
-import SimpleList from '@/components/common/list/SimpleList';
+import EditableList from '@/components/common/list/EditableList';
+import ManagementListDetailLayout from '@/components/layout/list/ManagementListDetailLayout';
 import MenuForm from './components/MenuForm';
 import { menuColumns } from './components/columns';
 import type { MenuScreenItem, RowItem } from './types';
 
+// 상수
+const MESSAGES = {
+  CREATE_SUCCESS: '메뉴가 추가되었습니다.',
+  UPDATE_SUCCESS: '메뉴가 수정되었습니다.',
+  DELETE_SUCCESS: '메뉴가 삭제되었습니다.',
+  SAVE_ERROR: '저장 중 오류가 발생했습니다.',
+  DELETE_ERROR: '삭제 중 오류가 발생했습니다.',
+  EMPTY_STATE: '메뉴를 선택하거나 추가 버튼을 클릭하세요',
+} as const;
+
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 const MenuManagementPage: React.FC = () => {
-  const [rows, setRows] = useState<RowItem[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<MenuScreenItem | null>(null);
   const [isNewMode, setIsNewMode] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [allMenus, setAllMenus] = useState<RowItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const loadData = useCallback(async () => {
-    const data = await menuMockDb.listAll();
-    const rowData: RowItem[] = data.map((item, index) => ({
-      ...item,
-      no: index + 1,
-    }));
-    setRows(rowData);
-    return rowData;
+  const loadAllMenus = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await menuMockDb.listAll();
+      const menuData = data.map((item, index) => ({
+        ...item,
+        no: index + 1,
+      }));
+      setAllMenus(menuData);
+    } catch (error) {
+      console.error('Failed to load menus:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadAllMenus();
+  }, [loadAllMenus, refreshKey]);
 
-  const handleRowClick = useCallback((params: { row: RowItem }) => {
+  const handleRowClick = useCallback((params: { id: string | number; row: RowItem }) => {
     setSelectedMenu(params.row);
     setIsNewMode(false);
   }, []);
@@ -45,17 +64,9 @@ const MenuManagementPage: React.FC = () => {
 
   const handleSave = useCallback(
     async (menuItem: MenuScreenItem) => {
+      setLoading(true);
       try {
         if (isNewMode) {
-          // 중복 체크
-          const allMenus = await menuMockDb.listAll();
-          const isDuplicate = allMenus.some((m) => m.screen_id === menuItem.screen_id);
-
-          if (isDuplicate) {
-            alert('이미 존재하는 화면 ID입니다.');
-            return;
-          }
-
           await menuMockDb.create({
             screen_id: menuItem.screen_id,
             screen_name: menuItem.screen_name,
@@ -66,7 +77,7 @@ const MenuManagementPage: React.FC = () => {
             screen_type: menuItem.screen_type,
             display_yn: menuItem.display_yn,
           });
-          alert('메뉴가 추가되었습니다.');
+          alert(MESSAGES.CREATE_SUCCESS);
         } else {
           await menuMockDb.update(menuItem.id, {
             screen_name: menuItem.screen_name,
@@ -77,101 +88,71 @@ const MenuManagementPage: React.FC = () => {
             screen_type: menuItem.screen_type,
             display_yn: menuItem.display_yn,
           });
-          alert('메뉴가 수정되었습니다.');
+          alert(MESSAGES.UPDATE_SUCCESS);
         }
 
-        // 데이터 다시 로드
-        const updatedRows = await loadData();
-        setRows(updatedRows);
         setSelectedMenu(null);
         setIsNewMode(false);
+        setRefreshKey((prev) => prev + 1);
       } catch (error) {
         console.error('Save error:', error);
-        alert('저장 중 오류가 발생했습니다.');
+        alert(MESSAGES.SAVE_ERROR);
+      } finally {
+        setLoading(false);
       }
     },
-    [isNewMode, loadData],
+    [isNewMode],
   );
 
-  const handleDelete = useCallback(
-    async (id: string | number) => {
-      try {
-        await menuMockDb.delete(id);
-        alert('메뉴가 삭제되었습니다.');
-        const updatedRows = await loadData();
-        setRows(updatedRows);
-        setSelectedMenu(null);
-        setIsNewMode(false);
-      } catch (error) {
-        console.error('Delete error:', error);
-        alert('삭제 중 오류가 발생했습니다.');
-      }
-    },
-    [loadData],
-  );
+  const handleDelete = useCallback(async (id: string | number) => {
+    setLoading(true);
+    try {
+      await menuMockDb.delete(id);
+      alert(MESSAGES.DELETE_SUCCESS);
+      setSelectedMenu(null);
+      setIsNewMode(false);
+      setRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(MESSAGES.DELETE_ERROR);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
-    <Box>
-      <PageHeader title="메뉴 관리" />
-
-      <Grid container spacing={2} sx={{ mt: 2 }}>
-        {/* 좌측: 메뉴 목록 */}
-        <Grid item xs={12} md={7}>
-          <SimpleList<RowItem>
-            columns={menuColumns}
-            rows={rows}
-            rowIdGetter="id"
-            defaultPageSize={10}
-            onRowClick={handleRowClick}
-            enableClientSearch={false}
-            enableStatePreservation={false}
-            autoHeight={false}
-            actionsNode={
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
-                <MediumButton
-                  variant="contained"
-                  onClick={handleAddNew}
-                  sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' } }}
-                >
-                  추가 +
-                </MediumButton>
-              </Box>
-            }
-          />
-        </Grid>
-
-        {/* 우측: 메뉴 상세 정보 */}
-        <Grid item xs={12} md={5}>
-          {selectedMenu || isNewMode ? (
-            <MenuForm
-              menuItem={selectedMenu}
-              allMenuItems={rows}
-              isNew={isNewMode}
-              onSave={handleSave}
-              onCancel={handleCancel}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <Box
-              sx={{
-                minHeight: 400,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                메뉴를 선택하거나 추가 버튼을 클릭하세요
-              </Typography>
-            </Box>
-          )}
-        </Grid>
-      </Grid>
-    </Box>
+    <ManagementListDetailLayout
+      title="메뉴 관리"
+      onAddNew={handleAddNew}
+      disabled={loading}
+      showDetail={!!(selectedMenu || isNewMode)}
+      emptyStateText={MESSAGES.EMPTY_STATE}
+      gridRatio={{ left: 8, right: 4 }}
+      listNode={
+        <EditableList
+          rows={allMenus}
+          columns={menuColumns}
+          rowIdGetter={(r: RowItem) => r.id}
+          defaultPageSize={DEFAULT_PAGE_SIZE}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onRowClick={handleRowClick}
+          isEditMode={false}
+          autoHeight={true}
+          isLoading={loading}
+        />
+      }
+      detailNode={
+        <MenuForm
+          menuItem={selectedMenu}
+          allMenuItems={allMenus}
+          isNew={isNewMode}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onDelete={handleDelete}
+          disabled={loading}
+        />
+      }
+    />
   );
 };
 

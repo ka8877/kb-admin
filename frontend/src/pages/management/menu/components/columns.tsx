@@ -8,6 +8,8 @@ export const menuColumns: GridColDef<RowItem>[] = [
     headerName: 'No',
     width: 70,
     sortable: false,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     field: 'screen_id',
@@ -22,7 +24,7 @@ export const menuColumns: GridColDef<RowItem>[] = [
   {
     field: 'path',
     headerName: 'PATH',
-    width: 300,
+    width: 250,
     flex: 1,
   },
   {
@@ -43,7 +45,7 @@ export const menuColumns: GridColDef<RowItem>[] = [
     field: 'parent_screen_id',
     headerName: '상위화면 ID',
     width: 150,
-    valueGetter: (value, row) => row?.parent_screen_id || '-',
+    valueGetter: (params) => params.row?.parent_screen_id || '-',
   },
   {
     field: 'screen_type',
