@@ -6,5 +6,4 @@
 
 export { createAppSchemeYupSchema } from './appSchemeValidation';
 export { createExcelValidationRules } from './adapters/excelAdapter';
-export type { ValidationResult, ValidationFunction, AppSchemeData } from './adapters/excelAdapter';
-
+export type { ValidationFunction } from './adapters/excelAdapter';

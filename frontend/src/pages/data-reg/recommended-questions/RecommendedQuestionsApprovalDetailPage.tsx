@@ -2,8 +2,8 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
-import type { RecommendedQuestionItem } from './types';
-import { recommendedQuestionColumns } from './components/columns/columns';
+import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
+import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questions/components/columns/columns';
 import PageHeader from '@/components/common/PageHeader';
 import ApprovalDetailList from '@/components/common/list/ApprovalDetailList';
 import { ROUTES } from '@/routes/menu';
@@ -12,22 +12,23 @@ import {
   loadAgeGroupOptions,
   createSelectFieldsConfig,
   dateFieldsConfig,
-} from './data';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
+} from '@/pages/data-reg/recommended-questions/data';
+import { TOAST_MESSAGES } from '@/constants/message';
 import { toast } from 'react-toastify';
-import { useApprovalDetailQuestions } from './hooks';
-import { fetchApprovalRequest, updateApprovalRequestStatus } from './api';
+import { useApprovalDetailQuestions } from '@/pages/data-reg/recommended-questions/hooks';
+import {
+  fetchApprovalRequest,
+  updateApprovalRequestStatus,
+} from '@/pages/data-reg/recommended-questions/api';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateForStorage } from '@/utils/dateUtils';
-import { IN_REVIEW, DONE_REVIEW } from '@/constants/options';
+import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { showConfirm } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
   const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
@@ -35,7 +36,10 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   // 옵션 데이터 로드
   useEffect(() => {
     const loadOptions = async () => {
-      const [services, ageGroups] = await Promise.all([loadServiceOptions(), loadAgeGroupOptions()]);
+      const [services, ageGroups] = await Promise.all([
+        loadServiceOptions(),
+        loadAgeGroupOptions(),
+      ]);
       setServiceOptions(services);
       setAgeGroupOptions(ageGroups);
     };
@@ -53,11 +57,11 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   });
 
   // sessionStorage 접근 최적화
-  const savedApprovalState = useMemo(() => sessionStorage.getItem('approval_page_state'), []);
+  const savedApprovalState = useMemo(() => sessionStorage.getItem(APPROVAL_PAGE_STATE), []);
 
   const handleBack = useCallback(() => {
     if (savedApprovalState) {
-      sessionStorage.removeItem('approval_page_state');
+      sessionStorage.removeItem(APPROVAL_PAGE_STATE);
       navigate(savedApprovalState);
     } else {
       navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
@@ -83,7 +87,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   );
 
   // rowId getter
-  const getRowId = useCallback((row: RecommendedQuestionItem) => row.qst_id, []);
+  const getRowId = useCallback((row: RecommendedQuestionItem) => row.qstId, []);
 
   // status가 in_review 또는 done_review인 경우 최종 결재 버튼 숨김
   const canShowFinalApprovalButton = useMemo(() => {
@@ -92,39 +96,33 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
     return status !== IN_REVIEW && status !== DONE_REVIEW;
   }, [approvalRequest]);
 
-
   // 최종 결재 처리
-  const handleFinalApproval = useCallback(() => {
-    showConfirm({
-      title: CONFIRM_TITLES.APPROVAL_REQUEST,
-      message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
-      onConfirm: async () => {
-        try {
-          if (!id) {
-            toast.error('승인 요청 ID가 없습니다.');
-            return;
-          }
+  const handleFinalApproval = useCallback(async () => {
+    try {
+      if (!id) {
+        toast.error('승인 요청 ID가 없습니다.');
+        return;
+      }
 
-          // status를 in_review로 업데이트
-          const inReviewStatus = IN_REVIEW;
-          const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-          await updateApprovalRequestStatus(id, inReviewStatus, processDate);
+      // status를 in_review로 업데이트
+      const inReviewStatus = IN_REVIEW;
+      const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+      await updateApprovalRequestStatus(id, inReviewStatus, processDate);
 
-          // 모든 관련 쿼리 무효화
-          queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detail(id) });
-          queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detailQuestions(id) });
-          queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('recommended-questions') });
+      // 모든 관련 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detailQuestions(id) });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
 
-          toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
-          handleBack();
-        } catch (error) {
-          console.error('결재 승인 실패:', error);
-          toast.error('결재 승인에 실패했습니다.');
-        }
-      },
-    });
-  }, [showConfirm, queryClient, id, handleBack]);
-
+      toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
+      handleBack();
+    } catch (error) {
+      console.error('결재 승인 실패:', error);
+      toast.error('결재 승인에 실패했습니다.');
+    }
+  }, [queryClient, id, handleBack]);
 
   return (
     <Box>

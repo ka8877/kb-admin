@@ -41,7 +41,7 @@ const isValidUrlFormat = (value: string): boolean => {
  */
 export const createAppSchemeYupSchema = () => {
   return yup.object({
-    product_menu_name: yup
+    productMenuName: yup
       .string()
       .required('AI검색 노출버튼명은 필수입니다')
       .trim()
@@ -55,83 +55,75 @@ export const createAppSchemeYupSchema = () => {
       .min(1, '앱스킴 설명은 필수입니다')
       .max(2000, '앱스킴 설명은 2000자(공백 포함)를 초과할 수 없습니다'),
 
-    app_scheme_link: yup
+    appSchemeLink: yup
       .string()
       .required('앱스킴 주소는 필수입니다')
       .trim()
       .min(1, '앱스킴 주소는 필수입니다')
       .max(500, '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다')
-      .test(
-        'url-format',
-        '앱스킴 주소는 올바른 URL 형식이어야 합니다',
-        function (value) {
-          if (!value) return false;
-          try {
-            const isValid = isValidUrlFormat(value);
-            if (!isValid) {
-              return this.createError({
-                message: '앱스킴 주소는 올바른 URL 형식이어야 합니다',
-              });
-            }
-            return true;
-          } catch (error) {
+      .test('url-format', '앱스킴 주소는 올바른 URL 형식이어야 합니다', function (value) {
+        if (!value) return false;
+        try {
+          const isValid = isValidUrlFormat(value);
+          if (!isValid) {
             return this.createError({
-              message: '앱스킴 주소 형식을 확인할 수 없습니다',
+              message: '앱스킴 주소는 올바른 URL 형식이어야 합니다',
             });
           }
-        },
-      ),
+          return true;
+        } catch (error) {
+          return this.createError({
+            message: '앱스킴 주소 형식을 확인할 수 없습니다',
+          });
+        }
+      }),
 
-    one_link: yup
+    oneLink: yup
       .string()
       .required('원링크 주소는 필수입니다')
       .trim()
       .min(1, '원링크 주소는 필수입니다')
       .max(500, '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다')
-      .test(
-        'url-format',
-        '원링크 주소는 올바른 URL 형식이어야 합니다',
-        function (value) {
-          if (!value) return false;
-          try {
-            const isValid = isValidUrlFormat(value);
-            if (!isValid) {
-              return this.createError({
-                message: '원링크 주소는 올바른 URL 형식이어야 합니다',
-              });
-            }
-            return true;
-          } catch (error) {
+      .test('url-format', '원링크 주소는 올바른 URL 형식이어야 합니다', function (value) {
+        if (!value) return false;
+        try {
+          const isValid = isValidUrlFormat(value);
+          if (!isValid) {
             return this.createError({
-              message: '원링크 주소 형식을 확인할 수 없습니다',
+              message: '원링크 주소는 올바른 URL 형식이어야 합니다',
             });
           }
-        },
-      ),
+          return true;
+        } catch (error) {
+          return this.createError({
+            message: '원링크 주소 형식을 확인할 수 없습니다',
+          });
+        }
+      }),
 
-    goods_name_list: yup
+    goodsNameList: yup
       .string()
       .nullable()
       .max(200, '연관 상품/서비스 리스트는 200자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    parent_id: yup
+    parentId: yup
       .string()
       .nullable()
       .max(50, 'MID는 50자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    parent_title: yup
+    parentTitle: yup
       .string()
       .nullable()
       .max(200, 'MID 상품/서비스명은 200자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    start_date: yup
+    startDate: yup
       .mixed()
       .nullable()
       .required('노출 시작 일시는 필수입니다')
-      .test('start_date', '노출 시작 일시 형식이 올바르지 않습니다', function (value) {
+      .test('startDate', '노출 시작 일시 형식이 올바르지 않습니다', function (value) {
         if (!value) {
           return false;
         }
@@ -144,11 +136,11 @@ export const createAppSchemeYupSchema = () => {
         }
       }),
 
-    end_date: yup
+    endDate: yup
       .mixed()
       .nullable()
       .required('노출 종료 일시는 필수입니다')
-      .test('end_date', '노출 종료 일시 형식이 올바르지 않습니다', function (value) {
+      .test('endDate', '노출 종료 일시 형식이 올바르지 않습니다', function (value) {
         if (!value) {
           return false;
         }
@@ -160,8 +152,8 @@ export const createAppSchemeYupSchema = () => {
 
           // 노출 시작일시 < 노출 종료일시 체크
           const formData = this.parent;
-          if (formData?.start_date) {
-            const startDate = toISOString(formData.start_date as any);
+          if (formData?.startDate) {
+            const startDate = toISOString(formData.startDate as any);
             const endDate = toISOString(value as any);
 
             if (startDate && endDate) {
@@ -191,4 +183,3 @@ export const createAppSchemeYupSchema = () => {
       }),
   });
 };
-

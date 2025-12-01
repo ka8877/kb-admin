@@ -8,9 +8,9 @@ import {
   updateAppScheme,
   createAppScheme,
   fetchApprovalDetailAppSchemes,
-  FetchAppSchemesParams,
-} from './api';
-import type { AppSchemeItem } from './types';
+} from '@/pages/data-reg/app-scheme/api';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
+import { appSchemeKeys } from '@/constants/queryKey';
 
 /**
  * 앱스킴 목록 조회 훅 파라미터 타입
@@ -29,7 +29,7 @@ export interface UseAppSchemesParams {
  */
 export const useAppSchemes = (params?: UseAppSchemesParams) => {
   return useQuery({
-    queryKey: ['app-scheme', params?.page, params?.pageSize, params?.searchParams],
+    queryKey: appSchemeKeys.list(params),
     queryFn: () => fetchAppSchemes(params),
   });
 };
@@ -39,7 +39,7 @@ export const useAppSchemes = (params?: UseAppSchemesParams) => {
  */
 export const useAppScheme = (id: string | number | undefined) => {
   return useQuery({
-    queryKey: ['app-scheme', id],
+    queryKey: appSchemeKeys.detail(id!),
     queryFn: () => fetchAppScheme(id!),
     enabled: !!id,
   });
@@ -55,7 +55,7 @@ export const useCreateAppScheme = () => {
     mutationFn: createAppScheme,
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
-      queryClient.invalidateQueries({ queryKey: ['app-scheme'] });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
     },
   });
 };
@@ -65,7 +65,7 @@ export const useCreateAppScheme = () => {
  */
 export const useApprovalDetailAppSchemes = (approvalId: string | number | undefined) => {
   return useQuery({
-    queryKey: ['app-scheme-approval-detail-questions', approvalId],
+    queryKey: appSchemeKeys.approvalDetailQuestions(approvalId!),
     queryFn: () => fetchApprovalDetailAppSchemes(approvalId!),
     enabled: !!approvalId,
   });
@@ -82,8 +82,8 @@ export const useUpdateAppScheme = () => {
       updateAppScheme(id, data),
     onSuccess: (_, variables) => {
       // 목록 및 상세 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['app-scheme'] });
-      queryClient.invalidateQueries({ queryKey: ['app-scheme', variables.id] });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.detail(variables.id) });
     },
   });
 };
@@ -98,7 +98,7 @@ export const useDeleteAppScheme = () => {
     mutationFn: deleteAppScheme,
     onSuccess: () => {
       // 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['app-scheme'] });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
     },
   });
 };
@@ -113,8 +113,7 @@ export const useDeleteAppSchemes = () => {
     mutationFn: deleteAppSchemes,
     onSuccess: () => {
       // 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['app-scheme'] });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
     },
   });
 };
-

@@ -2,12 +2,33 @@
 // 반환 타입, 엔드포인트 등을 props로 전달받아 유동적으로 사용 가능
 
 import { useLoadingStore } from '@/store/loading';
+import { env } from '@/config';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 // CUD 작업인지 확인하는 헬퍼 함수
 const isCudOperation = (method: HttpMethod): boolean => {
   return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+};
+
+/**
+ * 공통 헤더를 반환하는 헬퍼 함수
+ * Authorization 토큰 등 모든 요청에 포함되어야 할 헤더를 정의합니다.
+ */
+const getCommonHeaders = (): Record<string, string> => {
+  // TODO: 실제 토큰 관리 로직에 맞게 수정 필요 (예: localStorage, cookie, zustand store 등)
+  const token = localStorage.getItem('accessToken');
+
+  const headers: Record<string, string> = {
+    // 필요한 공통 헤더 정의
+    // 'X-App-Version': '1.0.0',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
 };
 
 export interface FetchApiOptions<T = unknown> {
@@ -27,6 +48,13 @@ export interface FetchApiOptions<T = unknown> {
   errorMessage?: string;
 }
 
+export interface StandardApiResponse<T> {
+  HEADER: Record<string, unknown>;
+  COMMON: Record<string, unknown>;
+  DATA: T;
+  MESSAGE: Record<string, unknown>;
+}
+
 export interface FetchApiResponse<T> {
   data: T;
   status: number;
@@ -44,7 +72,7 @@ export async function fetchApi<T = unknown>(
   const {
     method = 'GET',
     endpoint,
-    baseURL = '',
+    baseURL = env.testURL,
     body,
     headers = {},
     transform,
@@ -54,6 +82,7 @@ export async function fetchApi<T = unknown>(
   const url = `${baseURL}${endpoint}`;
   const requestHeaders: HeadersInit = {
     'Content-Type': 'application/json',
+    ...getCommonHeaders(),
     ...headers,
   };
 
@@ -80,6 +109,15 @@ export async function fetchApi<T = unknown>(
     }
 
     const rawData = await response.json();
+
+    // TODO: 백엔드 응답 구조 변경 시 아래 주석 해제 및 로직 적용
+    /*
+    const standardResponse = rawData as StandardApiResponse<T>;
+    // 필요한 경우 HEADER, COMMON, MESSAGE 처리 로직 추가
+    const data = transform ? transform(standardResponse.DATA) : (standardResponse.DATA as T);
+    */
+
+    // 현재 로직 (변경 전)
     const data = transform ? transform(rawData) : (rawData as T);
 
     return {
@@ -185,9 +223,7 @@ export async function deleteApi<T = unknown>(
  * const searchParams = parseSearchParams(listState.searchFieldsState);
  * // { field1: 'value1', field2: 123 }
  */
-export function parseSearchParams(
-  searchFieldsState?: string,
-): Record<string, string | number> {
+export function parseSearchParams(searchFieldsState?: string): Record<string, string | number> {
   if (!searchFieldsState) return {};
   try {
     return JSON.parse(searchFieldsState) as Record<string, string | number>;
@@ -226,7 +262,9 @@ export async function deleteItems(
   itemIds.forEach((id) => {
     // 각 아이템의 경로를 지정하고 값을 null로 설정하여 삭제
     // Firebase 경로는 앞의 슬래시와 .json을 제거해야 함
-    const deletePath = getDeletePath(id).replace(/^\//, '').replace(/\.json$/, '');
+    const deletePath = getDeletePath(id)
+      .replace(/^\//, '')
+      .replace(/\.json$/, '');
     updates[deletePath] = null;
   });
 
@@ -260,4 +298,3 @@ export async function deleteItems(
     useLoadingStore.getState().stop();
   }
 }
-

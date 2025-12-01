@@ -11,17 +11,16 @@ import { approvalRequestColumns } from '@/constants/columns';
 import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { approvalSearchFields as recommendedQuestionsApprovalSearchFields } from './recommended-questions/data';
-import { approvalSearchFields as appSchemeApprovalSearchFields } from './app-scheme/data';
-import ApprovalListActions from '../../components/common/actions/ApprovalListActions';
+import ApprovalListActions from '@/components/common/actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import { updateApprovalRequestStatus } from './recommended-questions/api';
+import { updateApprovalRequestStatus } from '@/pages/data-reg/recommended-questions/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
+import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 
 // 경로 타입 정의
 type ApprovalPageType = 'recommended-questions' | 'app-scheme';
@@ -118,14 +117,14 @@ const DataRegApprovalPage: React.FC = () => {
     if (pageType === 'app-scheme') {
       return {
         title: '앱스킴 결재 요청',
-        searchFields: appSchemeApprovalSearchFields,
+        searchFields: APPROVAL_SEARCH_FIELDS,
         defaultReturnRoute: ROUTES.APP_SCHEME,
         approvalDetailRoute: (id: string | number) => ROUTES.APP_SCHEME_APPROVAL_DETAIL(id),
       };
     }
     return {
       title: '추천질문 결재 요청',
-      searchFields: recommendedQuestionsApprovalSearchFields,
+      searchFields: APPROVAL_SEARCH_FIELDS,
       defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
       approvalDetailRoute: (id: string | number) =>
         ROUTES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL(id),
@@ -200,7 +199,7 @@ const DataRegApprovalPage: React.FC = () => {
   const handleRowClick = useCallback(
     (params: { id: string | number; row: ApprovalRequestItem }) => {
       const currentApprovalUrl = location.pathname + location.search;
-      sessionStorage.setItem('approval_page_state', currentApprovalUrl);
+      sessionStorage.setItem(APPROVAL_PAGE_STATE, currentApprovalUrl);
 
       const detailUrl = pageConfig.approvalDetailRoute(params.id);
       navigate(detailUrl);

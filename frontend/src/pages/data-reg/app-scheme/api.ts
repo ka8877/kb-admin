@@ -8,8 +8,20 @@ import { env } from '@/config';
 import type { AppSchemeItem } from './types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
-import { APPROVAL_STATUS_OPTIONS } from '@/constants/options';
+import {
+  APPROVAL_STATUS_OPTIONS,
+  CREATE_REQUESTED,
+  UPDATE_REQUESTED,
+  DELETE_REQUESTED,
+  IN_REVIEW,
+  DONE_REVIEW,
+  DATA_REGISTRATION,
+  DATA_MODIFICATION,
+  DATA_DELETION,
+} from '@/constants/options';
+import type { ApprovalFormType, ApprovalRequestType } from '@/types/types';
 
+const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
 /**
  * Firebase 응답 데이터를 AppSchemeItem으로 변환하는 헬퍼 함수
  */
@@ -21,18 +33,18 @@ const transformItem = (
 
   return {
     no: v.no ?? index + 1,
-    id: String(v.id ?? fallbackId ?? index + 1),
-    product_menu_name: v.product_menu_name ?? '',
+    appSchemeId: String(v.id ?? fallbackId ?? index + 1),
+    productMenuName: v.product_menu_name ?? v.productMenuName ?? '',
     description: v.description ?? '',
-    app_scheme_link: v.app_scheme_link ?? '',
-    one_link: v.one_link ?? '',
-    goods_name_list: v.goods_name_list ?? null,
-    parent_id: v.parent_id ?? null,
-    parent_title: v.parent_title ?? null,
-    start_date: v.start_date ? String(v.start_date) : '',
-    end_date: v.end_date ? String(v.end_date) : '',
+    appSchemeLink: v.app_scheme_link ?? v.appSchemeLink ?? '',
+    oneLink: v.one_link ?? v.oneLink ?? '',
+    goodsNameList: v.goods_name_list ?? v.goodsNameList ?? null,
+    parentId: v.parent_id ?? v.parentId ?? null,
+    parentTitle: v.parent_title ?? v.parentTitle ?? null,
+    startDate: v.start_date ? String(v.start_date) : v.startDate ? String(v.startDate) : '',
+    endDate: v.end_date ? String(v.end_date) : v.endDate ? String(v.endDate) : '',
     updatedAt: v.updatedAt ? String(v.updatedAt) : '',
-    registeredAt: v.registeredAt ? String(v.registeredAt) : '',
+    createdAt: v.createdAt ? String(v.createdAt) : '',
     status: (v.status as AppSchemeItem['status']) ?? 'in_service',
   };
 };
@@ -82,9 +94,7 @@ export interface FetchAppSchemesParams {
 /**
  * 앱스킴 목록 조회
  */
-export const fetchAppSchemes = async (
-  params?: FetchAppSchemesParams,
-): Promise<AppSchemeItem[]> => {
+export const fetchAppSchemes = async (params?: FetchAppSchemesParams): Promise<AppSchemeItem[]> => {
   const { page = 0, pageSize = 20, searchParams = {} } = params || {};
 
   // 현재는 Firebase Realtime을 사용하므로 파라미터는 console.log로만 출력
@@ -105,17 +115,13 @@ export const fetchAppSchemes = async (
   //     queryParams.append(key, String(value));
   //   }
   // });
-  
+
   // const endpoint = `${API_ENDPOINTS.APP_SCHEME.LIST}?${queryParams.toString()}`;
 
-  const response = await getApi<AppSchemeItem[]>(
-    API_ENDPOINTS.APP_SCHEME.LIST,
-    {
-      baseURL: env.testURL,
-      transform: transformAppSchemes,
-      errorMessage: '앱스킴 데이터를 불러오지 못했습니다.',
-    },
-  );
+  const response = await getApi<AppSchemeItem[]>(API_ENDPOINTS.APP_SCHEME.LIST, {
+    transform: transformAppSchemes,
+    errorMessage: '앱스킴 데이터를 불러오지 못했습니다.',
+  });
 
   return response.data;
 };
@@ -127,7 +133,6 @@ export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem
   const response = await getApi<Partial<AppSchemeItem> & Record<string, any>>(
     API_ENDPOINTS.APP_SCHEME.DETAIL(id),
     {
-      baseURL: env.testURL,
       errorMessage: '앱스킴 상세 데이터를 불러오지 못했습니다.',
     },
   );
@@ -136,17 +141,17 @@ export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem
   return transformItem(response.data, { index: 0, fallbackId: id });
 };
 
-/**
- * 승인 요청 데이터 타입
- */
-type ApprovalFormType = 'data_registration' | 'data_modification' | 'data_deletion';
-
 interface ApprovalRequestData {
   approval_form: ApprovalFormType;
   title: string;
   content: string;
   request_date: string;
-  status: 'create_requested' | 'update_requested' | 'delete_requested' | 'in_review' | 'done_review';
+  status:
+    | typeof CREATE_REQUESTED
+    | typeof UPDATE_REQUESTED
+    | typeof DELETE_REQUESTED
+    | typeof IN_REVIEW
+    | typeof DONE_REVIEW;
   list: AppSchemeItem[];
 }
 
@@ -158,22 +163,22 @@ const sendApprovalRequest = async (
   items: AppSchemeItem[],
 ): Promise<void> => {
   const titleMap: Record<ApprovalFormType, string> = {
-    data_registration: '데이터 등록',
-    data_modification: '데이터 수정',
-    data_deletion: '데이터 삭제',
+    [DATA_REGISTRATION]: '데이터 등록',
+    [DATA_MODIFICATION]: '데이터 수정',
+    [DATA_DELETION]: '데이터 삭제',
   };
 
   const contentMap: Record<ApprovalFormType, string> = {
-    data_registration: '앱스킴 등록 요청드립니다',
-    data_modification: '앱스킴 수정 요청드립니다',
-    data_deletion: '앱스킴 삭제 요청드립니다',
+    [DATA_REGISTRATION]: '앱스킴 등록 요청드립니다',
+    [DATA_MODIFICATION]: '앱스킴 수정 요청드립니다',
+    [DATA_DELETION]: '앱스킴 삭제 요청드립니다',
   };
 
-  // approval_form에 따라 적절한 status 설정 (상수에서 value 추출)
-  const statusMap: Record<ApprovalFormType, 'create_requested' | 'update_requested' | 'delete_requested'> = {
-    data_registration: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'create_requested')?.value as 'create_requested',
-    data_modification: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'update_requested')?.value as 'update_requested',
-    data_deletion: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'delete_requested')?.value as 'delete_requested',
+  // approval_form에 따라 적절한 status 설정
+  const statusMap: Record<ApprovalFormType, ApprovalRequestType> = {
+    [DATA_REGISTRATION]: CREATE_REQUESTED,
+    [DATA_MODIFICATION]: UPDATE_REQUESTED,
+    [DATA_DELETION]: DELETE_REQUESTED,
   };
 
   const approvalData: ApprovalRequestData = {
@@ -186,14 +191,9 @@ const sendApprovalRequest = async (
   };
 
   try {
-    await postApi(
-      API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST,
-      approvalData,
-      {
-        baseURL: env.testURL,
-        errorMessage: '승인 요청 전송에 실패했습니다.',
-      },
-    );
+    await postApi(API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST, approvalData, {
+      errorMessage: '승인 요청 전송에 실패했습니다.',
+    });
     console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
   } catch (error) {
     console.error('승인 요청 전송 오류:', error);
@@ -204,57 +204,55 @@ const sendApprovalRequest = async (
 /**
  * 입력 데이터를 API 전송 형식으로 변환하는 공통 함수
  * 폼 데이터와 엑셀 데이터 모두를 변환할 수 있도록 지원
- * 
+ *
  * @param inputData - 폼 또는 엑셀에서 입력된 데이터
  * @returns API 전송 형식의 데이터
  */
-export const transformToApiFormat = (
-  inputData: {
-    product_menu_name?: string | null;
-    description?: string | null;
-    app_scheme_link?: string | null;
-    one_link?: string | null;
-    goods_name_list?: string | null;
-    parent_id?: string | null;
-    parent_title?: string | null;
-    start_date?: string | Date | Dayjs | null;
-    end_date?: string | Date | Dayjs | null;
-    status?: string | null;
-  },
-): Partial<AppSchemeItem> => {
+export const transformToApiFormat = (inputData: {
+  productMenuName?: string | null;
+  description?: string | null;
+  appSchemeLink?: string | null;
+  oneLink?: string | null;
+  goodsNameList?: string | null;
+  parentId?: string | null;
+  parentTitle?: string | null;
+  startDate?: string | Date | Dayjs | null;
+  endDate?: string | Date | Dayjs | null;
+  status?: string | null;
+}): Partial<AppSchemeItem> => {
   // 날짜 변환
-  let start_date = '';
-  if (inputData.start_date) {
-    if (typeof inputData.start_date === 'object' && 'toDate' in inputData.start_date) {
+  let startDate = '';
+  if (inputData.startDate) {
+    if (typeof inputData.startDate === 'object' && 'toDate' in inputData.startDate) {
       // Dayjs 객체인 경우
-      start_date = toCompactFormat((inputData.start_date as Dayjs).toDate()) || '';
+      startDate = toCompactFormat((inputData.startDate as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      start_date = toCompactFormat(inputData.start_date) || '';
+      startDate = toCompactFormat(inputData.startDate) || '';
     }
   }
 
-  let end_date = '';
-  if (inputData.end_date) {
-    if (typeof inputData.end_date === 'object' && 'toDate' in inputData.end_date) {
+  let endDate = '';
+  if (inputData.endDate) {
+    if (typeof inputData.endDate === 'object' && 'toDate' in inputData.endDate) {
       // Dayjs 객체인 경우
-      end_date = toCompactFormat((inputData.end_date as Dayjs).toDate()) || '';
+      endDate = toCompactFormat((inputData.endDate as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      end_date = toCompactFormat(inputData.end_date) || '';
+      endDate = toCompactFormat(inputData.endDate) || '';
     }
   }
 
   return {
-    product_menu_name: inputData.product_menu_name ? String(inputData.product_menu_name) : '',
+    productMenuName: inputData.productMenuName ? String(inputData.productMenuName) : '',
     description: inputData.description ? String(inputData.description) : '',
-    app_scheme_link: inputData.app_scheme_link ? String(inputData.app_scheme_link) : '',
-    one_link: inputData.one_link ? String(inputData.one_link) : '',
-    goods_name_list: inputData.goods_name_list ? String(inputData.goods_name_list) : null,
-    parent_id: inputData.parent_id ? String(inputData.parent_id) : null,
-    parent_title: inputData.parent_title ? String(inputData.parent_title) : null,
-    start_date,
-    end_date,
+    appSchemeLink: inputData.appSchemeLink ? String(inputData.appSchemeLink) : '',
+    oneLink: inputData.oneLink ? String(inputData.oneLink) : '',
+    goodsNameList: inputData.goodsNameList ? String(inputData.goodsNameList) : null,
+    parentId: inputData.parentId ? String(inputData.parentId) : null,
+    parentTitle: inputData.parentTitle ? String(inputData.parentTitle) : null,
+    startDate,
+    endDate,
     status: (inputData.status as AppSchemeItem['status']) || 'in_service',
   };
 };
@@ -263,9 +261,7 @@ export const transformToApiFormat = (
  * 승인된 항목들을 실제 데이터로 등록 (data_registration인 경우)
  * @param items - 등록할 앱스킴 아이템 배열 (id 포함)
  */
-const createApprovedAppSchemes = async (
-  items: AppSchemeItem[],
-): Promise<void> => {
+const createApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 createApprovedAppSchemes: items가 비어있음');
     return;
@@ -273,11 +269,10 @@ const createApprovedAppSchemes = async (
 
   // Firebase Multi-Path Update를 사용하여 각 항목을 지정된 id로 등록
   const updates: { [key: string]: Partial<AppSchemeItem> } = {};
-  const basePath = 'data-reg/app-scheme';
-  
+
   items.forEach((item) => {
     // list에 있는 id를 그대로 사용하여 등록
-    const id = item.id;
+    const id = item.appSchemeId;
     updates[`${basePath}/${id}`] = item;
   });
 
@@ -320,12 +315,10 @@ const createApprovedAppSchemes = async (
 /**
  * 앱스킴 생성 (승인 요청 전송 후 실제 데이터 생성)
  */
-export const createAppScheme = async (
-  data: Partial<AppSchemeItem>,
-): Promise<AppSchemeItem> => {
+export const createAppScheme = async (data: Partial<AppSchemeItem>): Promise<AppSchemeItem> => {
   // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
   const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // AppSchemeItem 형식으로 변환
   const item = transformItem(
     { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, any>,
@@ -333,7 +326,7 @@ export const createAppScheme = async (
   );
 
   // 승인 요청 전송
-  await sendApprovalRequest('data_registration', [item]);
+  await sendApprovalRequest(DATA_REGISTRATION, [item]);
 
   // 결재 요청 성공 후 실제 데이터 생성 (같은 id로)
   await createApprovedAppSchemes([item]);
@@ -347,14 +340,10 @@ export const createAppScheme = async (
 export const fetchApprovalRequest = async (
   approvalId: string | number,
 ): Promise<Partial<ApprovalRequestData> & Record<string, any>> => {
-  const endpoint = `/approval/app-scheme/${approvalId}.json`;
-  const response = await getApi<Partial<ApprovalRequestData> & Record<string, any>>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
-    },
-  );
+  const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
+  const response = await getApi<Partial<ApprovalRequestData> & Record<string, any>>(endpoint, {
+    errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
+  });
 
   return response.data;
 };
@@ -368,18 +357,13 @@ export const fetchApprovalDetailAppSchemes = async (
   const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL_LIST(approvalId);
   console.log('🔍 fetchApprovalDetailAppSchemes API 호출:', {
     endpoint,
-    baseURL: env.testURL,
     fullUrl: `${env.testURL}${endpoint}`,
   });
-  
-  const response = await getApi<AppSchemeItem[]>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      transform: transformAppSchemes,
-      errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
-    },
-  );
+
+  const response = await getApi<AppSchemeItem[]>(endpoint, {
+    transform: transformAppSchemes,
+    errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
+  });
 
   console.log('🔍 fetchApprovalDetailAppSchemes API 완료, data:', response.data);
   return response.data;
@@ -396,29 +380,23 @@ export const updateApprovalRequestStatus = async (
   status: string,
   processDate?: string,
 ): Promise<void> => {
-  const endpoint = `/approval/app-scheme/${approvalId}.json`;
-  
+  const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
+
   const updateData: { status: string; process_date?: string } = { status };
   if (processDate) {
     updateData.process_date = processDate;
   }
-  
+
   console.log('🔍 updateApprovalRequestStatus API 호출:', {
     endpoint,
     updateData,
-    baseURL: env.testURL,
     fullUrl: `${env.testURL}${endpoint}`,
   });
-  
-  await patchApi(
-    endpoint,
-    updateData,
-    {
-      baseURL: env.testURL,
-      errorMessage: '승인 요청 상태 수정에 실패했습니다.',
-    },
-  );
-  
+
+  await patchApi(endpoint, updateData, {
+    errorMessage: '승인 요청 상태 수정에 실패했습니다.',
+  });
+
   console.log('🔍 updateApprovalRequestStatus API 완료');
 };
 
@@ -426,9 +404,7 @@ export const updateApprovalRequestStatus = async (
  * 승인된 항목들을 실제 데이터로 삭제 (data_deletion인 경우)
  * @param items - 삭제할 앱스킴 아이템 배열 (id 포함)
  */
-const deleteApprovedAppSchemes = async (
-  items: AppSchemeItem[],
-): Promise<void> => {
+const deleteApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 deleteApprovedAppSchemes: items가 비어있음');
     return;
@@ -439,7 +415,7 @@ const deleteApprovedAppSchemes = async (
   // 각 항목의 id 추출 (null, undefined, 빈 문자열 제외)
   const idsToDelete = items
     .map((item) => {
-      const id = item.id;
+      const id = item.appSchemeId;
       console.log('🔍 deleteApprovedAppSchemes - item.id:', id, 'item:', item);
       return id;
     })
@@ -466,8 +442,7 @@ const deleteApprovedAppSchemes = async (
   // Firebase Multi-Path Update를 사용하여 일괄 삭제
   const updates: { [key: string]: null } = {};
   // DELETE 엔드포인트에서 경로 추출: '/data-reg/app-scheme/${id}.json' -> 'data-reg/app-scheme'
-  const basePath = 'data-reg/app-scheme';
-  
+
   idsToDelete.forEach((id) => {
     // Firebase 경로는 앞의 슬래시를 제거하고 .json도 제거해야 함
     // 예: data-reg/app-scheme/temp_1764052479281_1_l8gsmmdv1
@@ -521,9 +496,7 @@ const deleteApprovedAppSchemes = async (
  * 승인된 항목들을 실제 데이터로 수정 (data_modification인 경우)
  * @param items - 수정할 앱스킴 아이템 배열 (id 포함)
  */
-const updateApprovedAppSchemes = async (
-  items: AppSchemeItem[],
-): Promise<void> => {
+const updateApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 updateApprovedAppSchemes: items가 비어있음');
     return;
@@ -531,7 +504,7 @@ const updateApprovedAppSchemes = async (
 
   console.log('🔍 updateApprovedAppSchemes API 호출:', {
     itemsCount: items.length,
-    items: items.map((item) => ({ id: item.id })),
+    items: items.map((item) => ({ appSchemeId: item.appSchemeId })),
   });
 
   // 로딩 시작
@@ -540,7 +513,7 @@ const updateApprovedAppSchemes = async (
   try {
     // 각 항목을 개별적으로 UPDATE 엔드포인트로 수정
     for (const item of items) {
-      const id = item.id;
+      const id = item.appSchemeId;
       if (!id) {
         console.warn('🔍 id가 없는 항목 건너뜀:', item);
         continue;
@@ -549,14 +522,9 @@ const updateApprovedAppSchemes = async (
       const endpoint = API_ENDPOINTS.APP_SCHEME.UPDATE(id);
       console.log('🔍 개별 항목 수정:', { id, endpoint });
 
-      await putApi<AppSchemeItem>(
-        endpoint,
-        item,
-        {
-          baseURL: env.testURL,
-          errorMessage: `앱스킴 수정에 실패했습니다. (id: ${id})`,
-        },
-      );
+      await putApi<AppSchemeItem>(endpoint, item, {
+        errorMessage: `앱스킴 수정에 실패했습니다. (id: ${id})`,
+      });
     }
 
     console.log(`🔍 승인된 항목 ${items.length}개가 수정되었습니다.`);
@@ -576,10 +544,10 @@ export const updateAppScheme = async (
     { ...data, id: String(id) } as Partial<AppSchemeItem> & Record<string, any>,
     { index: 0, fallbackId: id },
   );
-  
+
   // 승인 요청 전송
-  await sendApprovalRequest('data_modification', [updatedItem]);
-  
+  await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
+
   // 결재 요청 성공 후 실제 데이터 수정
   await updateApprovedAppSchemes([updatedItem]);
 
@@ -589,9 +557,7 @@ export const updateAppScheme = async (
 /**
  * 앱스킴 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  */
-export const deleteAppScheme = async (
-  id: string | number,
-): Promise<void> => {
+export const deleteAppScheme = async (id: string | number): Promise<void> => {
   // 삭제 전에 데이터 조회 (승인 요청에 사용)
   let deletedItem: AppSchemeItem | null = null;
   try {
@@ -603,8 +569,8 @@ export const deleteAppScheme = async (
 
   // 승인 요청 전송
   if (deletedItem) {
-    await sendApprovalRequest('data_deletion', [deletedItem]);
-    
+    await sendApprovalRequest(DATA_DELETION, [deletedItem]);
+
     // 결재 요청 성공 후 실제 데이터 삭제
     await deleteApprovedAppSchemes([deletedItem]);
   } else {
@@ -634,14 +600,11 @@ export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Pr
 
   // 승인 요청 전송
   if (deletedItems.length > 0) {
-    await sendApprovalRequest('data_deletion', deletedItems);
-    
+    await sendApprovalRequest(DATA_DELETION, deletedItems);
+
     // 결재 요청 성공 후 실제 데이터 삭제
     await deleteApprovedAppSchemes(deletedItems);
   } else {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }
 };
-
-
-

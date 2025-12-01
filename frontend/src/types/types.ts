@@ -1,3 +1,12 @@
+import {
+  DATA_DELETION,
+  DATA_MODIFICATION,
+  DATA_REGISTRATION,
+  CREATE_REQUESTED,
+  UPDATE_REQUESTED,
+  DELETE_REQUESTED,
+} from '@/constants/options';
+
 // 결재 요청 관련 타입 정의
 export type ApprovalRequestItem = {
   no: number; // 번호
@@ -56,3 +65,15 @@ export type SearchField =
       position: 'start' | 'end';
       dataField?: string;
     };
+
+/**
+ * 승인 요청 데이터 타입
+ */
+export type ApprovalFormType =
+  | typeof DATA_REGISTRATION
+  | typeof DATA_MODIFICATION
+  | typeof DATA_DELETION;
+export type ApprovalRequestType =
+  | typeof CREATE_REQUESTED
+  | typeof UPDATE_REQUESTED
+  | typeof DELETE_REQUESTED;

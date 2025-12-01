@@ -6,19 +6,26 @@ import {
   serviceOptions,
   ageGroupOptions,
   under17Options,
-  questionCategoryOptions,
-} from '../../data';
-import { recommendedQuestionColumns } from '../../components/columns/columns';
-import { createExcelValidationRules } from '../../validation';
-import { RecommendedQuestionValidator } from '../../validation/recommendedQuestionValidation';
+} from '@/pages/data-reg/recommended-questions/data';
+import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questions/components/columns/columns';
+import { RecommendedQuestionValidator } from '@/pages/data-reg/recommended-questions/validation/recommendedQuestionValidation';
 import {
   useCreateRecommendedQuestionsBatch,
   useQuestionCategoryOptionsMap,
-} from '../../hooks';
-import { transformToApiFormat } from '../../api';
+} from '@/pages/data-reg/recommended-questions/hooks';
+import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
+import { excludeFields } from '@/pages/data-reg/recommended-questions/data';
+import { APPROVAL_RETURN_URL } from '@/constants/options';
+import {
+  exampleData,
+  fieldGuides,
+  excelDateFieldsConfig,
+  excelExcludeFields,
+  excelReferenceData,
+} from '@/pages/data-reg/recommended-questions/data';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -27,18 +34,15 @@ const ApprovalExcelUpload: React.FC = () => {
   // 서비스 코드별 질문 카테고리 옵션 맵 로드 (공통 훅 사용)
   const questionCategoryOptionsMap = useQuestionCategoryOptionsMap();
 
-  // 템플릿에서 제외할 자동 생성 필드들 (no 포함)
-  const excludeFields = ['no', 'qst_id', 'updatedAt', 'registeredAt', 'status'];
-
-  // 템플릿용 컬럼 (엑셀 파일용 - no 제외, service_nm을 service_cd로 교체)
+  // 템플릿용 컬럼 (엑셀 파일용 - no 제외, serviceNm을 serviceCd로 교체)
   const templateColumns: GridColDef[] = useMemo(() => {
     const filtered = recommendedQuestionColumns.filter((col) => !excludeFields.includes(col.field));
 
     const result = filtered.map((col) => {
-      // service_nm을 service_cd로 교체
-      if (col.field === 'service_nm') {
+      // serviceNm을 serviceCd로 교체
+      if (col.field === 'serviceNm') {
         return {
-          field: 'service_cd',
+          field: 'serviceCd',
           headerName: '서비스코드',
           width: 140,
         };
@@ -49,15 +53,15 @@ const ApprovalExcelUpload: React.FC = () => {
     return result;
   }, []);
 
-  // 그리드 표시용 컬럼 (no 포함, service_nm을 service_cd로 교체)
+  // 그리드 표시용 컬럼 (no 포함, serviceNm을 serviceCd로 교체)
   const gridColumns: GridColDef[] = useMemo(() => {
     const result = recommendedQuestionColumns
-      .filter((col) => !['qst_id', 'updatedAt', 'registeredAt', 'status'].includes(col.field))
+      .filter((col) => !excelExcludeFields.includes(col.field))
       .map((col) => {
-        // service_nm을 service_cd로 교체
-        if (col.field === 'service_nm') {
+        // serviceNm을 serviceCd로 교체
+        if (col.field === 'serviceNm') {
           return {
-            field: 'service_cd',
+            field: 'serviceCd',
             headerName: '서비스코드',
             width: 140,
           };
@@ -77,18 +81,18 @@ const ApprovalExcelUpload: React.FC = () => {
 
         // API 형식으로 데이터 변환
         const apiDataList = data.map((rowData) => {
-          // age_grp: 숫자로 변환
+          // ageGrp: 숫자로 변환
           if (
-            rowData.age_grp !== null &&
-            rowData.age_grp !== undefined &&
-            String(rowData.age_grp).trim() !== ''
+            rowData.ageGrp !== null &&
+            rowData.ageGrp !== undefined &&
+            String(rowData.ageGrp).trim() !== ''
           ) {
-            rowData.age_grp = String(Number(rowData.age_grp));
+            rowData.ageGrp = String(Number(rowData.ageGrp));
           }
 
-          // under_17_yn: 대문자로 변환
-          if (rowData.under_17_yn) {
-            rowData.under_17_yn = String(rowData.under_17_yn).toUpperCase();
+          // showU17: 대문자로 변환
+          if (rowData.showU17) {
+            rowData.showU17 = String(rowData.showU17).toUpperCase();
           }
 
           return transformToApiFormat(rowData);
@@ -99,10 +103,10 @@ const ApprovalExcelUpload: React.FC = () => {
         toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiDataList.length}개 항목)`);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
-        const returnUrl = sessionStorage.getItem('approval_return_url');
+        const returnUrl = sessionStorage.getItem(APPROVAL_RETURN_URL);
         if (returnUrl) {
           navigate(returnUrl);
-          sessionStorage.removeItem('approval_return_url');
+          sessionStorage.removeItem(APPROVAL_RETURN_URL);
         } else {
           navigate(ROUTES.RECOMMENDED_QUESTIONS);
         }
@@ -119,49 +123,8 @@ const ApprovalExcelUpload: React.FC = () => {
     navigate(-1);
   }, [navigate]);
 
-  // 필드별 가이드 메시지 (필요한 필드만)
-  const fieldGuides: Record<string, string> = {
-    service_cd: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
-    display_ctnt: '필수 | 5-500자',
-    prompt_ctnt: '선택 | 1000자 이하',
-    qst_ctgr: '필수 | 참조 데이터 확인',
-    qst_style: '선택 | 질문 관련 태그나 스타일',
-    parent_id: '조건부 필수 | AI검색 mid/story인 경우 필수 (예: M020011)',
-    parent_nm: '조건부 필수 | AI검색 mid/story인 경우 필수',
-    age_grp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
-    under_17_yn: '필수 | Y 또는 N',
-    imp_start_date: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
-    imp_end_date:
-      '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
-  };
-
-  // 예시 데이터 (자동 생성 필드 제외)
-  const exampleData = [
-    {
-      service_cd: 'ai_search',
-      display_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-      prompt_ctnt: '적금 상품의 금리 정보를 알려주세요',
-      qst_ctgr: 'ai_search_mid',
-      qst_style: '적금, 금리',
-      parent_id: 'M020011',
-      parent_nm: '26주 적금',
-      age_grp: 10,
-      under_17_yn: 'N',
-      imp_start_date: '20251125000000',
-      imp_end_date: '99991231000000',
-    },
-  ];
-
   // Sheet2에 표시할 참조 데이터
-  const referenceData = useMemo(
-    () => ({
-      서비스코드: serviceOptions,
-      연령대: ageGroupOptions,
-      '17세미만노출여부': under17Options,
-      질문카테고리: questionCategoryOptions,
-    }),
-    [],
-  );
+  const referenceData = excelReferenceData;
 
   // 서비스 코드에 따른 질문 카테고리 옵션 getter (공통 훅 사용)
   const getQuestionCategoryOptionsByService = useCallback(
@@ -174,16 +137,16 @@ const ApprovalExcelUpload: React.FC = () => {
 
   // 동적 질문 카테고리 옵션 getter
   const dynamicQuestionCategoryOptionsGetter = useCallback(
-    (row: any) => getQuestionCategoryOptionsByService(row.service_cd),
+    (row: any) => getQuestionCategoryOptionsByService(row.serviceCd),
     [getQuestionCategoryOptionsByService],
   );
 
   // 서비스 코드가 변경되면 질문 카테고리 초기화
   const handleRowSanitizer = useCallback((newRow: any, oldRow: any) => {
-    if (newRow.service_cd !== oldRow.service_cd) {
+    if (newRow.serviceCd !== oldRow.serviceCd) {
       return {
         ...newRow,
-        qst_ctgr: '',
+        qstCtgr: '',
       };
     }
     return newRow;
@@ -192,23 +155,20 @@ const ApprovalExcelUpload: React.FC = () => {
   // ExcelListPreview용 selectFields 설정
   const selectFieldsConfig = useMemo(
     () => ({
-      service_cd: serviceOptions,
-      age_grp: ageGroupOptions,
-      under_17_yn: under17Options,
-      qst_ctgr: [], // 동적으로 변경되므로 빈 배열
+      serviceCd: serviceOptions,
+      ageGrp: ageGroupOptions,
+      showU17: under17Options,
+      qstCtgr: [], // 동적으로 변경되므로 빈 배열
     }),
     [],
   );
 
-  // 날짜 필드 설정
-  const dateFieldsConfig = ['imp_start_date', 'imp_end_date'];
-
-  // Validation 함수 (service_cd를 service_nm으로 변환하여 체크)
+  // Validation 함수 (serviceCd를 serviceNm으로 변환하여 체크)
   const handleValidate = useCallback((data: any) => {
     const normalized = { ...data };
-    // service_cd를 service_nm으로 변환 (빈 문자열도 변환)
-    if (normalized.service_cd !== undefined && normalized.service_cd !== null) {
-      normalized.service_nm = normalized.service_cd;
+    // serviceCd를 serviceNm으로 변환 (빈 문자열도 변환)
+    if (normalized.serviceCd !== undefined && normalized.serviceCd !== null) {
+      normalized.serviceNm = normalized.serviceCd;
     }
     return RecommendedQuestionValidator.validateAll(normalized);
   }, []);
@@ -229,12 +189,12 @@ const ApprovalExcelUpload: React.FC = () => {
       templateLabel="엑셀 양식 다운로드"
       size="medium"
       selectFields={selectFieldsConfig}
-      dateFields={dateFieldsConfig}
+      dateFields={excelDateFieldsConfig}
       dateFormat="YYYYMMDDHHmmss"
       rowIdGetter="no"
       readOnlyFields={['no']}
       getDynamicSelectOptions={dynamicQuestionCategoryOptionsGetter}
-      dynamicSelectFields={['qst_ctgr']}
+      dynamicSelectFields={['qstCtgr']}
       onProcessRowUpdate={handleRowSanitizer}
     />
   );
