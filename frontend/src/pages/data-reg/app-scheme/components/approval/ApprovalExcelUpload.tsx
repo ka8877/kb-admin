@@ -4,7 +4,6 @@ import type { GridColDef } from '@mui/x-data-grid';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import { appSchemeColumns } from '../../components/columns/columns';
 import { createExcelValidationRules } from '../../validation';
-import { importExcelToJson, type ExcelRowData } from '@/utils/excelUtils';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -14,56 +13,51 @@ const ApprovalExcelUpload: React.FC = () => {
 
   // 템플릿용 컬럼 (자동 생성 필드 제외)
   const templateColumns: GridColDef[] = useMemo(
-    () =>
-      appSchemeColumns.filter((col) => !excludeFields.includes(col.field)),
+    () => appSchemeColumns.filter((col) => !excludeFields.includes(col.field)),
     [],
   );
 
-  const handleSave = useCallback(
-    async (file: File) => {
-      try {
-        const columnFields = templateColumns.map((col) => col.field);
+  const handleSave = useCallback(async (data: any[]) => {
+    try {
+      console.log('ExcelListPreview에서 전달받은 데이터:', data);
+      console.log(`총 ${data.length}개 행`);
 
-        // 엑셀 파일을 읽어서 JSON 데이터로 변환
-        const data = await importExcelToJson({
-          file,
-          columnFields,
-          startRow: 4, // 4행부터 데이터 시작
-          dateFields: ['start_date', 'end_date'], // 날짜 필드: 14자리 숫자 형식만 허용
-          transformRow: (rowData: ExcelRowData) => {
-            // 문자열 필드: trim 처리
-            ['product_menu_name', 'description', 'app_scheme_link', 'one_link', 'goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
-              if (rowData[field] !== null && rowData[field] !== undefined) {
-                rowData[field] = String(rowData[field]).trim();
-              }
-            });
-
-            // 빈 문자열을 null로 변환 (선택 필드)
-            ['goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
-              if (rowData[field] === '') {
-                rowData[field] = null;
-              }
-            });
-
-            // 날짜 필드: 문자열 형태로 유지 (YYYY-MM-DD HH:mm:ss 또는 YYYYMMDDHHmmss)
-            // validation에서 날짜 형태 체크함
-
-            return rowData;
-          },
+      // 데이터 전처리
+      const processedData = data.map((rowData) => {
+        // 문자열 필드: trim 처리
+        [
+          'product_menu_name',
+          'description',
+          'app_scheme_link',
+          'one_link',
+          'goods_name_list',
+          'parent_id',
+          'parent_title',
+        ].forEach((field) => {
+          if (rowData[field] !== null && rowData[field] !== undefined) {
+            rowData[field] = String(rowData[field]).trim();
+          }
         });
 
-        console.log('변환된 데이터:', data);
-        console.log('엑셀 업로드 저장:', file.name, `총 ${data.length}개 행`);
+        // 빈 문자열을 null로 변환 (선택 필드)
+        ['goods_name_list', 'parent_id', 'parent_title'].forEach((field) => {
+          if (rowData[field] === '') {
+            rowData[field] = null;
+          }
+        });
 
-        // TODO: 백엔드 API 호출
-        // await api.saveAppSchemes(data);
-      } catch (error) {
-        console.error('파일 처리 오류:', error);
-        throw error;
-      }
-    },
-    [templateColumns],
-  );
+        return rowData;
+      });
+
+      console.log('전처리된 데이터:', processedData);
+
+      // TODO: 백엔드 API 호출
+      // await api.saveAppSchemes(processedData);
+    } catch (error) {
+      console.error('데이터 처리 오류:', error);
+      throw error;
+    }
+  }, []);
 
   const handleCancel = useCallback(() => {
     navigate(-1);
@@ -100,6 +94,26 @@ const ApprovalExcelUpload: React.FC = () => {
   // 공통 validation을 사용한 엑셀 검증 규칙
   const validationRules = createExcelValidationRules();
 
+  // Validation 함수 (ExcelUpload의 validator prop 형식에 맞춤)
+  const handleValidate = useCallback(
+    (data: any): Record<string, { isValid: boolean; message?: string }> => {
+      const results: Record<string, { isValid: boolean; message?: string }> = {};
+
+      // 각 필드에 대해 validation 실행
+      Object.keys(validationRules).forEach((field) => {
+        const validator = validationRules[field];
+        const value = data[field];
+        results[field] = validator(value, data);
+      });
+
+      return results;
+    },
+    [validationRules],
+  );
+
+  // 날짜 필드 설정
+  const dateFieldsConfig = ['start_date', 'end_date'];
+
   return (
     <ExcelUpload
       onSave={handleSave}
@@ -108,14 +122,18 @@ const ApprovalExcelUpload: React.FC = () => {
       templateFileName="앱스킴_업로드템플릿"
       fieldGuides={fieldGuides}
       validationRules={validationRules}
+      validator={handleValidate}
       exampleData={exampleData}
       acceptedFormats={['.xlsx', '.csv']}
       description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
       templateLabel="엑셀 양식 다운로드"
       size="medium"
+      dateFields={dateFieldsConfig}
+      dateFormat="YYYYMMDDHHmmss"
+      rowIdGetter="no"
+      readOnlyFields={['no']}
     />
   );
 };
 
 export default ApprovalExcelUpload;
-

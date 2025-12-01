@@ -191,3 +191,18 @@ export const approvalSearchFields: SearchField[] = [
     position: 'end',
   },
 ];
+
+const selectFieldsConfig = {
+  status: statusOptions,
+};
+
+const readOnlyFieldsConfig = ['no', 'id', 'updatedAt', 'registeredAt'];
+
+const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
+
+export { selectFieldsConfig, dateFieldsConfig, readOnlyFieldsConfig };
+
+
+
+
+

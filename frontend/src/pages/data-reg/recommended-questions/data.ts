@@ -124,6 +124,69 @@ export const questionCategoryOptions = questionCategoryGroupedOptions.flatMap(
   (group) => group.options,
 );
 
+// 셀렉트 필드 설정 (정적 옵션 사용)
+export const selectFieldsConfig = {
+  service_nm: serviceOptions,
+  age_grp: ageGroupOptions,
+  under_17_yn: under17Options,
+  status: statusOptions,
+  qst_ctgr: questionCategoryOptions,
+};
+
+// 동적으로 로드된 옵션으로 셀렉트 필드 설정 생성
+export const createSelectFieldsConfig = (options: {
+  serviceOptions: Array<{ label: string; value: string }>;
+  ageGroupOptions: Array<{ label: string; value: string }>;
+}) => ({
+  service_nm: options.serviceOptions,
+  age_grp: options.ageGroupOptions,
+  under_17_yn: under17Options,
+  status: statusOptions,
+  qst_ctgr: questionCategoryOptions,
+});
+
+// 날짜 필드 설정
+export const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
+
+// 읽기 전용 필드 설정
+export const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+
+// 변경 체크에서 제외할 필드 설정
+export const excludeFieldsFromChangeCheckConfig = ['updatedAt', 'registeredAt', 'no', 'qst_id'];
+
+// 기본 필수 필드 설정
+export const baseRequiredFieldsConfig = [
+  'service_nm',
+  'qst_ctgr',
+  'display_ctnt',
+  'under_17_yn',
+  'imp_start_date',
+  'imp_end_date',
+];
+
+// 조건적 필수 필드 관련 상수
+export const CONDITIONAL_REQUIRED_FIELDS = {
+  // 질문 카테고리 값
+  QST_CTGR_AI_SEARCH_MID: 'ai_search_mid',
+  QST_CTGR_AI_SEARCH_STORY: 'ai_search_story',
+  // 서비스명 값
+  SERVICE_AI_CALC: 'ai_calc',
+  // 필드명
+  PARENT_ID: 'parent_id',
+  PARENT_NM: 'parent_nm',
+  AGE_GRP: 'age_grp',
+} as const;
+
+// 조건부 필수 필드 설정
+// qst_ctgr가 'ai_search_mid' 또는 'ai_search_story'일 때 필수인 필드
+export const conditionalRequiredFieldsForQuestionCategory = [
+  CONDITIONAL_REQUIRED_FIELDS.PARENT_ID,
+  CONDITIONAL_REQUIRED_FIELDS.PARENT_NM,
+];
+
+// service_nm이 'ai_calc'일 때 필수인 필드
+export const conditionalRequiredFieldsForService = [CONDITIONAL_REQUIRED_FIELDS.AGE_GRP];
+
 export const mockRecommendedQuestions: RecommendedQuestionItem[] = [
   {
     no: 560,

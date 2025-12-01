@@ -225,8 +225,8 @@ export async function deleteItems(
   const updates: { [key: string]: null } = {};
   itemIds.forEach((id) => {
     // 각 아이템의 경로를 지정하고 값을 null로 설정하여 삭제
-    // Firebase 경로는 앞의 슬래시를 제거해야 함
-    const deletePath = getDeletePath(id).replace(/^\//, '');
+    // Firebase 경로는 앞의 슬래시와 .json을 제거해야 함
+    const deletePath = getDeletePath(id).replace(/^\//, '').replace(/\.json$/, '');
     updates[deletePath] = null;
   });
 
