@@ -10,6 +10,11 @@ export type ValidationResult = {
   message?: string;
 };
 
+// 필드별 validation 결과 타입
+export type FieldValidationResult = {
+  [key: string]: ValidationResult;
+};
+
 // 공통 validation 규칙 인터페이스
 export interface PermissionData {
   permission_id?: string;
@@ -101,6 +106,15 @@ export class PermissionValidator {
     return {
       isValid: errors.length === 0,
       errors,
+    };
+  }
+
+  // 필드별 validation 결과 반환
+  static validateByField(data: PermissionData): FieldValidationResult {
+    return {
+      permission_id: this.validatePermissionId(data.permission_id),
+      permission_name: this.validatePermissionName(data.permission_name),
+      status: this.validateStatus(data.status),
     };
   }
 }

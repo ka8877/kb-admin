@@ -30,6 +30,7 @@ import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import { ManagedCategoryList } from '@/components/common/list/CategoryList';
 import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { ROUTES } from '@/routes/menu';
 import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
 import { ALERT_MESSAGES } from '@/constants/message';
@@ -218,6 +219,7 @@ const CommonCodeEditPage: React.FC = () => {
   const location = useLocation();
   const apiRef = useGridApiRef();
   const { showAlert } = useAlertDialog();
+  const { showConfirm } = useConfirmDialog();
 
   // location.state에서 codeType 가져오기
   const initialCodeType = (location.state as { codeType?: CodeType })?.codeType || '';
@@ -647,9 +649,15 @@ const CommonCodeEditPage: React.FC = () => {
       const serviceList = newServiceNames
         .map((s) => `${s.service_nm} (${s.service_cd})`)
         .join(', ');
-      const confirmed = window.confirm(
-        `서비스명 신규 입력이 감지되었습니다.\n\n새로운 서비스: ${serviceList}\n\n저장하시겠습니까?`,
-      );
+
+      const confirmed = await new Promise<boolean>((resolve) => {
+        showConfirm({
+          title: '신규 서비스 확인',
+          message: `서비스명 신규 입력이 감지되었습니다.\n\n새로운 서비스: ${serviceList}\n\n저장하시겠습니까?`,
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false),
+        });
+      });
 
       if (!confirmed) {
         return;

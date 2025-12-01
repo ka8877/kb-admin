@@ -5,6 +5,7 @@ import EditableList from '@/components/common/list/EditableList';
 import ManagementListDetailLayout from '@/components/layout/list/ManagementListDetailLayout';
 import MenuForm from './components/MenuForm';
 import { menuColumns } from './components/columns';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import type { MenuScreenItem, RowItem } from './types';
 
 // 상수
@@ -21,6 +22,7 @@ const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const MenuManagementPage: React.FC = () => {
+  const { showAlert } = useAlertDialog();
   const [selectedMenu, setSelectedMenu] = useState<MenuScreenItem | null>(null);
   const [isNewMode, setIsNewMode] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -77,7 +79,11 @@ const MenuManagementPage: React.FC = () => {
             screen_type: menuItem.screen_type,
             display_yn: menuItem.display_yn,
           });
-          alert(MESSAGES.CREATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.CREATE_SUCCESS,
+            severity: 'success',
+          });
         } else {
           await menuMockDb.update(menuItem.id, {
             screen_name: menuItem.screen_name,
@@ -88,7 +94,11 @@ const MenuManagementPage: React.FC = () => {
             screen_type: menuItem.screen_type,
             display_yn: menuItem.display_yn,
           });
-          alert(MESSAGES.UPDATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.UPDATE_SUCCESS,
+            severity: 'success',
+          });
         }
 
         setSelectedMenu(null);
@@ -96,7 +106,11 @@ const MenuManagementPage: React.FC = () => {
         setRefreshKey((prev) => prev + 1);
       } catch (error) {
         console.error('Save error:', error);
-        alert(MESSAGES.SAVE_ERROR);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.SAVE_ERROR,
+          severity: 'error',
+        });
       } finally {
         setLoading(false);
       }
@@ -104,21 +118,32 @@ const MenuManagementPage: React.FC = () => {
     [isNewMode],
   );
 
-  const handleDelete = useCallback(async (id: string | number) => {
-    setLoading(true);
-    try {
-      await menuMockDb.delete(id);
-      alert(MESSAGES.DELETE_SUCCESS);
-      setSelectedMenu(null);
-      setIsNewMode(false);
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert(MESSAGES.DELETE_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      try {
+        await menuMockDb.delete(id);
+        showAlert({
+          title: '완료',
+          message: MESSAGES.DELETE_SUCCESS,
+          severity: 'success',
+        });
+        setSelectedMenu(null);
+        setIsNewMode(false);
+        setRefreshKey((prev) => prev + 1);
+      } catch (error) {
+        console.error('Delete error:', error);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.DELETE_ERROR,
+          severity: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showAlert],
+  );
 
   return (
     <ManagementListDetailLayout

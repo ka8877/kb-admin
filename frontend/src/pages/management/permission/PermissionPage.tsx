@@ -3,6 +3,7 @@ import EditableList from '@/components/common/list/EditableList';
 import ManagementListDetailLayout from '@/components/layout/list/ManagementListDetailLayout';
 import PermissionForm from './components/PermissionForm';
 import { permissionMockDb } from '@/mocks/permissionDb';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import type { PermissionItem, RowItem } from './types';
 import { listColumns } from './components/columns';
 
@@ -21,6 +22,7 @@ const DEFAULT_PAGE_SIZE = 25;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const PermissionPage: React.FC = () => {
+  const { showAlert } = useAlertDialog();
   const [selectedPermission, setSelectedPermission] = useState<PermissionItem | null>(null);
   const [isNewMode, setIsNewMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,7 +69,11 @@ const PermissionPage: React.FC = () => {
         );
 
         if (isDuplicate) {
-          alert(MESSAGES.DUPLICATE_ID);
+          showAlert({
+            title: '알림',
+            message: MESSAGES.DUPLICATE_ID,
+            severity: 'warning',
+          });
           return;
         }
 
@@ -77,13 +83,21 @@ const PermissionPage: React.FC = () => {
             permission_name: permission.permission_name,
             status: permission.status,
           });
-          alert(MESSAGES.CREATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.CREATE_SUCCESS,
+            severity: 'success',
+          });
         } else {
           await permissionMockDb.update(permission.id, {
             permission_name: permission.permission_name,
             status: permission.status,
           });
-          alert(MESSAGES.UPDATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.UPDATE_SUCCESS,
+            severity: 'success',
+          });
         }
 
         setSelectedPermission(null);
@@ -91,12 +105,16 @@ const PermissionPage: React.FC = () => {
         setRefreshKey((prev) => prev + 1);
       } catch (error) {
         console.error('Failed to save permission:', error);
-        alert(MESSAGES.SAVE_ERROR);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.SAVE_ERROR,
+          severity: 'error',
+        });
       } finally {
         setLoading(false);
       }
     },
-    [isNewMode, allPermissions],
+    [isNewMode, allPermissions, showAlert],
   );
 
   const handleCancel = useCallback(() => {
@@ -104,21 +122,32 @@ const PermissionPage: React.FC = () => {
     setIsNewMode(false);
   }, []);
 
-  const handleDelete = useCallback(async (id: string | number) => {
-    setLoading(true);
-    try {
-      await permissionMockDb.delete(id);
-      setSelectedPermission(null);
-      setIsNewMode(false);
-      alert(MESSAGES.DELETE_SUCCESS);
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error('Failed to delete permission:', error);
-      alert(MESSAGES.DELETE_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      try {
+        await permissionMockDb.delete(id);
+        setSelectedPermission(null);
+        setIsNewMode(false);
+        showAlert({
+          title: '완료',
+          message: MESSAGES.DELETE_SUCCESS,
+          severity: 'success',
+        });
+        setRefreshKey((prev) => prev + 1);
+      } catch (error) {
+        console.error('Failed to delete permission:', error);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.DELETE_ERROR,
+          severity: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showAlert],
+  );
 
   return (
     <ManagementListDetailLayout

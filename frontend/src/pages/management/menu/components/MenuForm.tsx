@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Stack, TextField, MenuItem, Typography, Paper } from '@mui/material';
 import MediumButton from '@/components/common/button/MediumButton';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import type { MenuScreenItem } from '../types';
 import { MenuValidator } from '../validation';
 
@@ -46,6 +47,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
   onDelete,
   disabled = false,
 }) => {
+  const { showConfirm } = useConfirmDialog();
   const [formData, setFormData] = useState<Partial<MenuScreenItem>>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -130,10 +132,16 @@ const MenuForm: React.FC<MenuFormProps> = ({
   }, [formData, menuItem, onSave, isNew, allMenuItems]);
 
   const handleDelete = useCallback(() => {
-    if (menuItem && onDelete && window.confirm('정말 삭제하시겠습니까?')) {
-      onDelete(menuItem.id);
+    if (menuItem && onDelete) {
+      showConfirm({
+        title: '삭제 확인',
+        message: '정말 삭제하시겠습니까?',
+        onConfirm: () => {
+          onDelete(menuItem.id);
+        },
+      });
     }
-  }, [menuItem, onDelete]);
+  }, [menuItem, onDelete, showConfirm]);
 
   if (!menuItem && !isNew) {
     return null;
@@ -210,6 +218,8 @@ const MenuForm: React.FC<MenuFormProps> = ({
               onChange={(e) => handleChange('depth', parseInt(e.target.value) || 0)}
               disabled={disabled}
               inputProps={{ min: 0 }}
+              error={!!errors.depth}
+              helperText={errors.depth}
             />
           </Box>
 
@@ -225,6 +235,8 @@ const MenuForm: React.FC<MenuFormProps> = ({
               onChange={(e) => handleChange('order', parseInt(e.target.value) || 1)}
               disabled={disabled}
               inputProps={{ min: 1 }}
+              error={!!errors.order}
+              helperText={errors.order}
             />
           </Box>
         </Box>
@@ -240,6 +252,8 @@ const MenuForm: React.FC<MenuFormProps> = ({
             value={formData.parent_screen_id || ''}
             onChange={(e) => handleChange('parent_screen_id', e.target.value)}
             disabled={disabled}
+            error={!!errors.parent_screen_id}
+            helperText={errors.parent_screen_id}
           >
             <MenuItem value="">
               <em>없음 (최상위)</em>
@@ -263,6 +277,8 @@ const MenuForm: React.FC<MenuFormProps> = ({
             value={formData.screen_type || '페이지'}
             onChange={(e) => handleChange('screen_type', e.target.value)}
             disabled={disabled}
+            error={!!errors.screen_type}
+            helperText={errors.screen_type}
           >
             {SCREEN_TYPE_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -283,6 +299,8 @@ const MenuForm: React.FC<MenuFormProps> = ({
             value={formData.display_yn || 'Y'}
             onChange={(e) => handleChange('display_yn', e.target.value)}
             disabled={disabled}
+            error={!!errors.display_yn}
+            helperText={errors.display_yn}
           >
             {DISPLAY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
