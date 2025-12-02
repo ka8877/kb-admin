@@ -7,7 +7,7 @@
 
 // 공통 validation
 export { RecommendedQuestionValidator } from './recommendedQuestionValidation';
-export type { ValidationResult, RecommendedQuestionData } from './recommendedQuestionValidation';
+export type { RecommendedQuestionData } from './recommendedQuestionValidation';
 
 // 어댑터들
 export { createRecommendedQuestionYupSchema } from './adapters/yupAdapter';

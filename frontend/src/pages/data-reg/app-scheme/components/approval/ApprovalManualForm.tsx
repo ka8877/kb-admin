@@ -3,31 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Dayjs } from 'dayjs';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import DateInput from '@/components/common/input/DateInput';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
-import { createAppSchemeYupSchema } from '../../validation';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
+import { createAppSchemeYupSchema } from '@/pages/data-reg/app-scheme/validation';
+import { useCreateAppScheme } from '@/pages/data-reg/app-scheme/hooks';
+import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
+import { toast } from 'react-toastify';
+import { ROUTES } from '@/routes/menu';
+import type { FormData } from '@/pages/data-reg/app-scheme/types';
+import { defaultApprovalData } from '@/pages/data-reg/app-scheme/data';
 
 // 앱스킴 폼 검증 스키마
 const schema = createAppSchemeYupSchema();
 
-type FormData = {
-  product_menu_name: string;
-  description: string;
-  app_scheme_link: string;
-  one_link: string;
-  goods_name_list?: string | null;
-  parent_id?: string | null;
-  parent_title?: string | null;
-  start_date: Dayjs | null;
-  end_date: Dayjs | null;
-};
-
 const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
+  const createMutation = useCreateAppScheme();
 
   // validation 모드 상태 관리
   const [hasTriedSubmit, setHasTriedSubmit] = React.useState(false);
@@ -40,23 +34,43 @@ const ApprovalManualForm: React.FC = () => {
   } = useForm<FormData>({
     resolver: yupResolver(schema) as unknown as Resolver<FormData>,
     mode: 'onChange', // 항상 실시간 validation 활성화
-    defaultValues: {
-      product_menu_name: '',
-      description: '',
-      app_scheme_link: '',
-      one_link: '',
-      goods_name_list: null,
-      parent_id: null,
-      parent_title: null,
-      start_date: null,
-      end_date: null,
-    },
+    defaultValues: defaultApprovalData,
   });
 
-  const onSubmit = useCallback((data: FormData) => {
-    // TODO: 폼 데이터 검증 및 저장 로직
-    console.log('앱스킴 직접 입력 저장:', data);
-  }, []);
+  const onSubmit = useCallback(
+    async (data: FormData) => {
+      try {
+        // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
+        const apiData = transformToApiFormat({
+          productMenuName: data.productMenuName,
+          description: data.description,
+          appSchemeLink: data.appSchemeLink,
+          oneLink: data.oneLink,
+          goodsNameList: data.goodsNameList,
+          parentId: data.parentId,
+          parentTitle: data.parentTitle,
+          startDate: data.startDate,
+          endDate: data.endDate,
+        });
+
+        await createMutation.mutateAsync(apiData);
+        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem('approval_return_url');
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem('approval_return_url');
+        } else {
+          navigate(ROUTES.APP_SCHEME);
+        }
+      } catch (error) {
+        console.error('앱스킴 생성 실패:', error);
+        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+      }
+    },
+    [createMutation, navigate],
+  );
 
   const handleSaveClick = useCallback(async () => {
     // 첫 번째 submit 시도 표시
@@ -88,7 +102,7 @@ const ApprovalManualForm: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3}>
             <Controller
-              name="product_menu_name"
+              name="productMenuName"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -98,8 +112,8 @@ const ApprovalManualForm: React.FC = () => {
                   fullWidth
                   required
                   inputProps={{ maxLength: 200 }}
-                  error={hasTriedSubmit && !!errors.product_menu_name}
-                  helperText={hasTriedSubmit ? errors.product_menu_name?.message : undefined}
+                  error={hasTriedSubmit && !!errors.productMenuName}
+                  helperText={hasTriedSubmit ? errors.productMenuName?.message : undefined}
                 />
               )}
             />
@@ -124,7 +138,7 @@ const ApprovalManualForm: React.FC = () => {
             />
 
             <Controller
-              name="app_scheme_link"
+              name="appSchemeLink"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -134,14 +148,14 @@ const ApprovalManualForm: React.FC = () => {
                   fullWidth
                   required
                   inputProps={{ maxLength: 500 }}
-                  error={hasTriedSubmit && !!errors.app_scheme_link}
-                  helperText={hasTriedSubmit ? errors.app_scheme_link?.message : undefined}
+                  error={hasTriedSubmit && !!errors.appSchemeLink}
+                  helperText={hasTriedSubmit ? errors.appSchemeLink?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="one_link"
+              name="oneLink"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -151,14 +165,14 @@ const ApprovalManualForm: React.FC = () => {
                   fullWidth
                   required
                   inputProps={{ maxLength: 500 }}
-                  error={hasTriedSubmit && !!errors.one_link}
-                  helperText={hasTriedSubmit ? errors.one_link?.message : undefined}
+                  error={hasTriedSubmit && !!errors.oneLink}
+                  helperText={hasTriedSubmit ? errors.oneLink?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="goods_name_list"
+              name="goodsNameList"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -167,14 +181,14 @@ const ApprovalManualForm: React.FC = () => {
                   placeholder="연관 상품/서비스 리스트를 입력하세요 (예: 자유적금, 햇살론 15)"
                   fullWidth
                   inputProps={{ maxLength: 200 }}
-                  error={hasTriedSubmit && !!errors.goods_name_list}
-                  helperText={hasTriedSubmit ? errors.goods_name_list?.message : undefined}
+                  error={hasTriedSubmit && !!errors.goodsNameList}
+                  helperText={hasTriedSubmit ? errors.goodsNameList?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="parent_id"
+              name="parentId"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -183,14 +197,14 @@ const ApprovalManualForm: React.FC = () => {
                   placeholder="MID를 입력하세요 (예: M020011)"
                   fullWidth
                   inputProps={{ maxLength: 50 }}
-                  error={hasTriedSubmit && !!errors.parent_id}
-                  helperText={hasTriedSubmit ? errors.parent_id?.message : undefined}
+                  error={hasTriedSubmit && !!errors.parentId}
+                  helperText={hasTriedSubmit ? errors.parentId?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="parent_title"
+              name="parentTitle"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -199,14 +213,14 @@ const ApprovalManualForm: React.FC = () => {
                   placeholder="MID 상품/서비스명을 입력하세요 (예: 26주 적금)"
                   fullWidth
                   inputProps={{ maxLength: 200 }}
-                  error={hasTriedSubmit && !!errors.parent_title}
-                  helperText={hasTriedSubmit ? errors.parent_title?.message : undefined}
+                  error={hasTriedSubmit && !!errors.parentTitle}
+                  helperText={hasTriedSubmit ? errors.parentTitle?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="start_date"
+              name="startDate"
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -214,15 +228,15 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.start_date}
-                  helperText={hasTriedSubmit ? errors.start_date?.message : undefined}
+                  error={hasTriedSubmit && !!errors.startDate}
+                  helperText={hasTriedSubmit ? errors.startDate?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
             />
 
             <Controller
-              name="end_date"
+              name="endDate"
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -230,8 +244,8 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.end_date}
-                  helperText={hasTriedSubmit ? errors.end_date?.message : undefined}
+                  error={hasTriedSubmit && !!errors.endDate}
+                  helperText={hasTriedSubmit ? errors.endDate?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
@@ -246,4 +260,3 @@ const ApprovalManualForm: React.FC = () => {
 };
 
 export default ApprovalManualForm;
-

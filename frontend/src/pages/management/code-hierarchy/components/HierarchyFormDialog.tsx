@@ -13,8 +13,10 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  FormHelperText,
 } from '@mui/material';
 import { commonCodeMockDb } from '@/mocks/commonCodeDb';
+import { HierarchyValidator } from '../validation';
 import type { HierarchyDefinition } from '../types';
 
 interface HierarchyFormDialogProps {
@@ -40,7 +42,7 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
   const [availableCodeTypes, setAvailableCodeTypes] = useState<
     Array<{ type: string; label: string }>
   >([]);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   // 관계 필드명 자동 생성 (useMemo로 최적화)
@@ -99,7 +101,7 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
         relationField: '',
       });
     }
-    setError(null);
+    setFieldErrors({});
   }, [open, editData]);
 
   const handleSelectChange = useCallback(
@@ -114,7 +116,12 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
         setFormData((prev) => ({ ...prev, [labelField]: selectedType.label }));
       }
 
-      setError(null);
+      // 해당 필드 오류 제거
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     },
     [availableCodeTypes],
   );
@@ -122,44 +129,35 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
   const handleTextChange = useCallback(
     (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-      setError(null);
+      // 해당 필드 오류 제거
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     },
     [],
   );
 
+  const validateAndShowErrors = useCallback((): boolean => {
+    const fieldValidationResults = HierarchyValidator.validateByField(formData);
+
+    const errors: Record<string, string> = {};
+    let hasErrors = false;
+
+    Object.entries(fieldValidationResults).forEach(([field, result]) => {
+      if (!result.isValid && result.message) {
+        errors[field] = result.message;
+        hasErrors = true;
+      }
+    });
+
+    setFieldErrors(errors);
+    return !hasErrors;
+  }, [formData]);
+
   const handleSubmit = useCallback(async () => {
-    // 유효성 검증
-    if (!formData.parentType.trim()) {
-      setError('부모 코드 타입을 선택하세요.');
-      return;
-    }
-    if (!formData.parentLabel.trim()) {
-      setError('부모 레이블을 입력하세요.');
-      return;
-    }
-    if (!formData.childType.trim()) {
-      setError('자식 코드 타입을 선택하세요.');
-      return;
-    }
-    if (!formData.childLabel.trim()) {
-      setError('자식 레이블을 입력하세요.');
-      return;
-    }
-    if (!formData.relationField.trim()) {
-      setError('관계 필드명을 입력하세요.');
-      return;
-    }
-
-    // 부모와 자식이 같은 타입인지 체크
-    if (formData.parentType === formData.childType) {
-      setError('부모와 자식 코드 타입은 달라야 합니다.');
-      return;
-    }
-
-    // 관계 필드명은 snake_case 형식
-    const fieldPattern = /^[a-z][a-z0-9_]*$/;
-    if (!fieldPattern.test(formData.relationField)) {
-      setError('관계 필드명은 소문자, 숫자, 언더스코어(_)만 사용하며 소문자로 시작해야 합니다.');
+    if (!validateAndShowErrors()) {
       return;
     }
 
@@ -168,20 +166,20 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
       await onSave(formData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '저장에 실패했습니다.');
+      setFieldErrors((prev) => ({
+        ...prev,
+        _global: err instanceof Error ? err.message : '저장에 실패했습니다.',
+      }));
     } finally {
       setLoading(false);
     }
-  }, [formData, onSave, onClose]);
-
-  return (
+  }, [formData, onSave, onClose, validateAndShowErrors]);
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{editData ? '계층 구조 수정' : '계층 구조 등록'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          {error && <Alert severity="error">{error}</Alert>}
-
-          <FormControl fullWidth required disabled={!!editData}>
+          {fieldErrors._global && <Alert severity="error">{fieldErrors._global}</Alert>}
+          <FormControl fullWidth required disabled={!!editData} error={!!fieldErrors.parentType}>
             <InputLabel>부모 코드 타입 (카테고리)</InputLabel>
             <Select
               value={formData.parentType}
@@ -194,6 +192,7 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
                 </MenuItem>
               ))}
             </Select>
+            {fieldErrors.parentType && <FormHelperText>{fieldErrors.parentType}</FormHelperText>}
           </FormControl>
 
           <TextField
@@ -201,12 +200,13 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
             value={formData.parentLabel}
             onChange={handleTextChange('parentLabel')}
             placeholder="예: 서비스명, 지역"
-            helperText="화면에 표시될 부모 항목의 이름 (자동 입력됨)"
+            helperText={fieldErrors.parentLabel || '화면에 표시될 부모 항목의 이름 (자동 입력됨)'}
             fullWidth
             required
+            error={!!fieldErrors.parentLabel}
           />
 
-          <FormControl fullWidth required disabled={!!editData}>
+          <FormControl fullWidth required disabled={!!editData} error={!!fieldErrors.childType}>
             <InputLabel>자식 코드 타입 (카테고리)</InputLabel>
             <Select
               value={formData.childType}
@@ -221,6 +221,7 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
                   </MenuItem>
                 ))}
             </Select>
+            {fieldErrors.childType && <FormHelperText>{fieldErrors.childType}</FormHelperText>}
           </FormControl>
 
           <TextField
@@ -228,9 +229,10 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
             value={formData.childLabel}
             onChange={handleTextChange('childLabel')}
             placeholder="예: 질문 카테고리, 지점"
-            helperText="화면에 표시될 자식 항목의 이름 (자동 입력됨)"
+            helperText={fieldErrors.childLabel || '화면에 표시될 자식 항목의 이름 (자동 입력됨)'}
             fullWidth
             required
+            error={!!fieldErrors.childLabel}
           />
 
           <TextField
@@ -238,11 +240,16 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
             value={formData.relationField}
             onChange={handleTextChange('relationField')}
             placeholder="예: parent_service_cd"
-            helperText="자식 데이터에서 부모를 참조하는 필드명 (자동 생성됨)"
+            helperText={fieldErrors.relationField || '자식 데이터에서 부모를 참조하는 필드명 (자동 생성됨)'}
             disabled
             fullWidth
             required
+            error={!!fieldErrors.relationField}
           />
+
+          {fieldErrors.typesDifferent && (
+            <Alert severity="error">{fieldErrors.typesDifferent}</Alert>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>

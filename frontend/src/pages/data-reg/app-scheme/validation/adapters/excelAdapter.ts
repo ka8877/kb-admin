@@ -2,19 +2,7 @@
 
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
-
-// 엑셀 validation 함수 타입 정의
-export type AppSchemeData = {
-  product_menu_name?: string | null;
-  description?: string | null;
-  app_scheme_link?: string | null;
-  one_link?: string | null;
-  goods_name_list?: string | null;
-  parent_id?: string | null;
-  parent_title?: string | null;
-  start_date?: string | Date | null;
-  end_date?: string | Date | null;
-};
+import type { AppSchemeData } from '@/pages/data-reg/app-scheme/types';
 
 export type ValidationFunction = (
   value: string | number | Date | null | undefined,
@@ -26,8 +14,8 @@ export type ValidationFunction = (
  */
 export const createExcelValidationRules = (): Record<string, ValidationFunction> => {
   return {
-    // product_menu_name: 필수, 200자 이하
-    product_menu_name: (value, row) => {
+    // productMenuName: 필수, 200자 이하
+    productMenuName: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: 'AI검색 노출버튼명은 필수입니다' };
       }
@@ -56,8 +44,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // app_scheme_link: 필수, URL 형식, 500자 이하
-    app_scheme_link: (value, row) => {
+    // appSchemeLink: 필수, URL 형식, 500자 이하
+    appSchemeLink: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '앱스킴 주소는 필수입니다' };
       }
@@ -68,9 +56,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
           message: '앱스킴 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
-      // URL 형식 검증
+      // URL 형식 검증 (http/https 없어도 허용)
       try {
-        new URL(strValue);
+        let urlToTest = strValue;
+        // http:// 또는 https://가 없으면 임시로 추가해서 검증
+        if (!/^https?:\/\//i.test(strValue)) {
+          urlToTest = `https://${strValue}`;
+        }
+        new URL(urlToTest);
       } catch {
         return {
           isValid: false,
@@ -80,8 +73,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // one_link: 필수, URL 형식, 500자 이하
-    one_link: (value, row) => {
+    // oneLink: 필수, URL 형식, 500자 이하
+    oneLink: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '원링크 주소는 필수입니다' };
       }
@@ -92,9 +85,14 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
           message: '원링크 주소는 500자(공백 포함)를 초과할 수 없습니다',
         };
       }
-      // URL 형식 검증
+      // URL 형식 검증 (http/https 없어도 허용)
       try {
-        new URL(strValue);
+        let urlToTest = strValue;
+        // http:// 또는 https://가 없으면 임시로 추가해서 검증
+        if (!/^https?:\/\//i.test(strValue)) {
+          urlToTest = `https://${strValue}`;
+        }
+        new URL(urlToTest);
       } catch {
         return {
           isValid: false,
@@ -104,8 +102,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // goods_name_list: 선택, 200자 이하
-    goods_name_list: (value, row) => {
+    // goodsNameList: 선택, 200자 이하
+    goodsNameList: (value, row) => {
       if (value && String(value).length > 200) {
         return {
           isValid: false,
@@ -115,8 +113,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // parent_id: 선택, 50자 이하
-    parent_id: (value, row) => {
+    // parentId: 선택, 50자 이하
+    parentId: (value, row) => {
       if (value && String(value).length > 50) {
         return {
           isValid: false,
@@ -126,8 +124,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // parent_title: 선택, 200자 이하
-    parent_title: (value, row) => {
+    // parentTitle: 선택, 200자 이하
+    parentTitle: (value, row) => {
       if (value && String(value).length > 200) {
         return {
           isValid: false,
@@ -137,19 +135,20 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // start_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    start_date: (value, row) => {
+    // startDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
+    startDate: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 시작 일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
-      
+
       // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
       if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+          message:
+            '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
         };
       }
 
@@ -164,19 +163,20 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // end_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    end_date: (value, row) => {
+    // endDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
+    endDate: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 종료 일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
-      
+
       // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
       if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+          message:
+            '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
         };
       }
 
@@ -190,8 +190,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
       // 시작일과 비교
       const rowData = row as Record<string, unknown>;
-      if (rowData?.start_date) {
-        const startDate = toISOString(rowData.start_date as string | Date | null);
+      if (rowData?.startDate) {
+        const startDate = toISOString(rowData.startDate as string | Date | null);
         const endDate = toISOString(value as string | Date | null);
 
         if (startDate && endDate && endDate <= startDate) {
@@ -206,4 +206,3 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
   };
 };
-

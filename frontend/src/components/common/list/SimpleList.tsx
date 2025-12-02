@@ -71,6 +71,11 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
    * true를 반환하면 선택 가능, false를 반환하면 선택 불가
    */
   isRowSelectable?: (params: { row: T }) => boolean;
+  /**
+   * (선택) DataGrid의 자동 높이 조정 여부 (기본: false)
+   * true로 설정하면 행 개수에 맞춰 높이가 자동 조정되어 세로 스크롤이 생기지 않음
+   */
+  autoHeight?: boolean;
 };
 
 const defaultGetRowId =
@@ -106,6 +111,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   dateDisplayFormat = 'default',
   isLoading = false,
   isRowSelectable,
+  autoHeight = false,
 }: SimpleListProps<T>): JSX.Element => {
   const { listState, updateListState } = useListState(defaultPageSize);
   const [data, setData] = useState<T[]>(rows ?? []);
@@ -322,7 +328,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           density="standard"
           rowHeight={46}
           columnHeaderHeight={46}
-          autoHeight={false}
+          autoHeight={autoHeight}
           onRowClick={onRowClick ? handleRowClick : undefined}
           loading={isLoading}
           sx={SIMPLE_LIST_GRID_SX}

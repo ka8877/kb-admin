@@ -3,11 +3,10 @@ import React from 'react';
 import { Box } from '@mui/material';
 import DualTabs from '@/components/common/tabs/DualTabs';
 import PageHeader from '@/components/common/PageHeader';
-import ApprovalExcelUpload from './components/approval/ApprovalExcelUpload';
-import ApprovalManualForm from './components/approval/ApprovalManualForm';
+import ApprovalExcelUpload from '@/pages/data-reg/recommended-questions/components/approval/ApprovalExcelUpload';
+import ApprovalManualForm from '@/pages/data-reg/recommended-questions/components/approval/ApprovalManualForm';
 
 const RecommendedQuestionsCreatePage: React.FC = () => {
-  
   return (
     <Box>
       <PageHeader title="추천질문 등록" />

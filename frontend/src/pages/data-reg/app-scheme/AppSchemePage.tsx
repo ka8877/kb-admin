@@ -1,24 +1,47 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { AppSchemeItem } from './types';
-import { appSchemeColumns } from './components/columns/columns';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
+import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { mockAppSchemes, statusOptions, searchFields } from './data';
+import { searchFields } from '@/pages/data-reg/app-scheme/data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
-
-const listApi = {
-  list: async (): Promise<AppSchemeItem[]> => {
-    return Promise.resolve(mockAppSchemes);
-  },
-};
+import { useDeleteAppSchemes, useAppSchemes } from '@/pages/data-reg/app-scheme/hooks';
+import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
+import { useListState } from '@/hooks/useListState';
+import { parseSearchParams } from '@/utils/apiUtils';
 
 const AppSchemePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listState } = useListState(20);
+  const deleteMutation = useDeleteAppSchemes();
+
+  // 검색 조건을 객체로 변환
+  const searchParams = useMemo(
+    () => parseSearchParams(listState.searchFieldsState),
+    [listState.searchFieldsState],
+  );
+
+  const {
+    data: rows = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useAppSchemes({
+    page: listState.page,
+    pageSize: listState.pageSize,
+    searchParams,
+  });
+  const isDataLoading = isLoading || isFetching;
+
+  // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
+  useEffect(() => {
+    refetch();
+  }, [location.pathname, refetch]);
 
   const handleCreate = useCallback(() => {
     navigate(ROUTES.APP_SCHEME_CREATE);
@@ -26,16 +49,24 @@ const AppSchemePage: React.FC = () => {
 
   const handleRequestApproval = useCallback(() => {
     const currentUrl = location.pathname + location.search;
-    console.log('🔍 AppSchemePage - saving currentUrl to sessionStorage:', currentUrl);
     sessionStorage.setItem('approval_return_url', currentUrl);
     navigate(ROUTES.APP_SCHEME_APPROVAL);
   }, [location.pathname, location.search, navigate]);
 
-  const handleDeleteConfirm = useCallback((ids: (string | number)[]) => {
-    console.log('삭제 요청 ids:', ids);
-    // 실제 삭제 처리 후 필요 시 재요청
-    toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-  }, []);
+  const handleDeleteConfirm = useCallback(
+    async (ids: (string | number)[]) => {
+      if (ids.length === 0) {
+        return;
+      }
+      try {
+        await deleteMutation.mutateAsync(ids);
+        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+      } catch (error) {
+        toast.error(TOAST_MESSAGES.DELETE_FAILED);
+      }
+    },
+    [deleteMutation],
+  );
 
   const handleRowClick = useCallback(
     (params: { id: string | number; row: AppSchemeItem }) => {
@@ -44,29 +75,25 @@ const AppSchemePage: React.FC = () => {
     [navigate],
   );
 
-  const selectFieldsConfig = {
-    status: statusOptions,
-  };
-
-  const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
-
   return (
     <Box>
       <PageHeader title="앱스킴 관리" />
       <ManagementList<AppSchemeItem>
         onRowClick={handleRowClick}
         columns={appSchemeColumns}
-        fetcher={listApi.list}
-        rowIdGetter={'id'}
+        rows={rows}
+        rowIdGetter={'appSchemeId'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
+        enableClientSearch={false}
         exportFileName="앱스킴목록"
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"
         searchFields={searchFields}
+        isLoading={isDataLoading}
       />
     </Box>
   );

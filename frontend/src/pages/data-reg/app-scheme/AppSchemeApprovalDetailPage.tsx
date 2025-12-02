@@ -1,269 +1,114 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Box } from '@mui/material';
-import type { AppSchemeItem } from './types';
-import { appSchemeColumns } from './components/columns/columns';
-import EditableList from '@/components/common/list/EditableList';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
+import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
 import PageHeader from '@/components/common/PageHeader';
+import ApprovalDetailList from '@/components/common/list/ApprovalDetailList';
 import { ROUTES } from '@/routes/menu';
-import { mockAppSchemes, statusOptions } from './data';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
-import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
-import type { ValidationResult } from '@/types/types';
+import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
+import { TOAST_MESSAGES } from '@/constants/message';
 import { toast } from 'react-toastify';
-import { getApi } from '@/utils/apiUtils';
-import { env } from '@/config';
-import GlobalLoadingSpinner from '@/components/common/spinner/GlobalLoadingSpinner';
-
-// 결재 요청에 포함된 앱스킴 데이터를 가져오는 API
-const approvalDetailApi = {
-  getAppSchemes: async (approvalId: string): Promise<AppSchemeItem[]> => {
-    // 실제로는 결재 요청 ID를 통해 관련된 앱스킴들을 조회
-    return Promise.resolve(mockAppSchemes);
-  },
-
-  approve: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 앱스킴들을 승인 처리
-    console.log('승인 처리:', approvalId, selectedIds);
-  },
-
-  reject: async (approvalId: string, selectedIds: (string | number)[]): Promise<void> => {
-    // 실제로는 선택된 앱스킴들을 거부 처리
-    console.log('거부 처리:', approvalId, selectedIds);
-  },
-};
-
-/**
- * 앱스킴 승인 요청 정보 조회
- */
-const fetchAppSchemeApprovalRequest = async (
-  approvalId: string | number,
-): Promise<Partial<{ status: string }> & Record<string, any>> => {
-  const endpoint = `/approval/app-scheme/${approvalId}.json`;
-  const response = await getApi<Partial<{ status: string }> & Record<string, any>>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
-    },
-  );
-
-  return response.data;
-};
+import { useApprovalDetailAppSchemes } from '@/pages/data-reg/app-scheme/hooks';
+import { fetchApprovalRequest, updateApprovalRequestStatus } from '@/pages/data-reg/app-scheme/api';
+import { useQuery } from '@tanstack/react-query';
+import { formatDateForStorage } from '@/utils/dateUtils';
+import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
+import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import { appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
 
 const AppSchemeApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { showConfirm } = useConfirmDialog();
   const queryClient = useQueryClient();
-  const [isEditMode, setIsEditMode] = useState(false);
 
-  // React Query로 데이터 fetching (자동 캐싱, loading 상태 관리)
-  const { data = [], isLoading } = useQuery({
-    queryKey: ['appSchemeApprovalDetail', id],
-    queryFn: () => {
-      if (!id) {
-        navigate(ROUTES.APP_SCHEME_APPROVAL);
-        return Promise.reject('Invalid ID');
-      }
-      return approvalDetailApi.getAppSchemes(id);
-    },
-    enabled: !!id,
-  });
+  // React Query로 데이터 fetching
+  const { data = [], isLoading } = useApprovalDetailAppSchemes(id);
 
-  // 승인 요청 정보 조회 (status 확인용)
+  // 승인 요청 정보 조회
   const { data: approvalRequest } = useQuery({
-    queryKey: ['app-scheme-approval-request', id],
-    queryFn: () => fetchAppSchemeApprovalRequest(id!),
+    queryKey: appSchemeKeys.approvalRequest(id!),
+    queryFn: () => fetchApprovalRequest(id!),
     enabled: !!id,
   });
 
-  // status가 done_review 또는 in_review인 경우 편집 불가
-  const canEdit = useMemo(() => {
-    if (!approvalRequest) return true; // 데이터 로딩 전에는 편집 가능으로 설정
-    const status = approvalRequest.status;
-    return status !== 'done_review' && status !== 'in_review';
-  }, [approvalRequest]);
-
-  // sessionStorage 접근 최적화 (useMemo로 한 번만 읽기)
-  const savedApprovalState = useMemo(() => sessionStorage.getItem('approval_page_state'), []);
-
-  // Mutation for reject (삭제)
-  const rejectMutation = useMutation({
-    mutationFn: (selectedIds: (string | number)[]) => {
-      if (!id) return Promise.reject('Invalid ID');
-      return approvalDetailApi.reject(id, selectedIds);
-    },
-    onSuccess: () => {
-      // React Query 캐시 무효화하여 데이터 자동 refetch
-      queryClient.invalidateQueries({ queryKey: ['appSchemeApprovalDetail', id] });
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-      setIsEditMode(false);
-      console.log('선택된 항목들이 거부되었습니다.');
-    },
-    onError: (error) => {
-      console.error('거부 처리 실패:', error);
-    },
-  });
-
-  // Mutation for approve all
-  const approveMutation = useMutation({
-    mutationFn: () => {
-      if (!id) return Promise.reject('Invalid ID');
-      const allIds = data.map((item) => item.id);
-      return approvalDetailApi.approve(id, allIds);
-    },
-    onSuccess: () => {
-      console.log('모든 항목이 승인되었습니다.');
-      handleBack();
-    },
-    onError: (error) => {
-      console.error('승인 처리 실패:', error);
-    },
-  });
+  // sessionStorage 접근 최적화
+  const savedApprovalState = useMemo(() => sessionStorage.getItem(APPROVAL_PAGE_STATE), []);
 
   const handleBack = useCallback(() => {
-    console.log('🔍 DetailPage handleBack - savedApprovalState:', savedApprovalState);
-
     if (savedApprovalState) {
-      console.log(
-        '🔍 DetailPage handleBack - navigating to saved approval state:',
-        savedApprovalState,
-      );
-      sessionStorage.removeItem('approval_page_state');
+      sessionStorage.removeItem(APPROVAL_PAGE_STATE);
       navigate(savedApprovalState);
     } else {
-      console.log('🔍 DetailPage handleBack - no saved state, going to default approval page');
       navigate(ROUTES.APP_SCHEME_APPROVAL);
     }
   }, [savedApprovalState, navigate]);
 
-  const handleEdit = useCallback(() => {
-    setIsEditMode(true);
-  }, []);
-
-  const handleCancelEdit = useCallback(() => {
-    setIsEditMode(false);
-  }, []);
-
-  const handleSave = useCallback(() => {
-    showConfirm({
-      title: CONFIRM_TITLES.APPROVAL_REQUEST,
-      message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
-      onConfirm: () => {
-        console.log('편집 내용 저장 및 결재 요청');
-        toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
-        setIsEditMode(false);
-        // TODO: 실제 저장 및 결재 요청 API 호출
-      },
-    });
-  }, [showConfirm]);
-
-  const handleDeleteConfirm = useCallback(
-    async (selectedIds: (string | number)[]) => {
-      rejectMutation.mutate(selectedIds);
-    },
-    [rejectMutation],
+  // 조회용 컬럼 처리 (편집 모드 false)
+  const processedColumns = useMemo(
+    () =>
+      createProcessedColumns<AppSchemeItem>({
+        columns: appSchemeColumns,
+        isEditMode: false,
+        selectFields: selectFieldsConfig,
+        dateFields: dateFieldsConfig,
+        dateFormat: 'YYYYMMDDHHmmss',
+      }),
+    [selectFieldsConfig, dateFieldsConfig],
   );
 
-  const handleApproveAll = useCallback(() => {
-    approveMutation.mutate();
-  }, [approveMutation]);
+  // rowId getter
+  const getRowId = useCallback((row: AppSchemeItem) => row.appSchemeId, []);
 
-  const selectFieldsConfig = {
-    status: statusOptions,
-  };
+  // status가 in_review 또는 done_review인 경우 최종 결재 버튼 숨김
+  const canShowFinalApprovalButton = useMemo(() => {
+    if (!approvalRequest) return true; // 데이터 로딩 전에는 표시
+    const status = approvalRequest.approvalStatus;
+    return status !== IN_REVIEW && status !== DONE_REVIEW;
+  }, [approvalRequest]);
 
-  const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
-
-  // 삭제 요청인 경우 모든 필드를 읽기 전용으로 설정
-  const readOnlyFieldsConfig = useMemo(() => {
-    const baseReadOnlyFields = ['no', 'id', 'updatedAt', 'registeredAt'];
-    
-    // 삭제 요청인 경우 모든 컬럼 필드를 읽기 전용으로 추가
-    if (approvalRequest?.approval_form === 'data_deletion' && isEditMode) {
-      const allFields = appSchemeColumns.map((col) => col.field);
-      return [...new Set([...baseReadOnlyFields, ...allFields])];
-    }
-    
-    return baseReadOnlyFields;
-  }, [approvalRequest?.approval_form, isEditMode]);
-
-  // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
-  const getRequiredFields = useCallback((row: AppSchemeItem): string[] => {
-    // 앱스킴 필수 필드: yup 스키마의 required 필드들
-    return [
-      'product_menu_name',
-      'description',
-      'app_scheme_link',
-      'one_link',
-      'start_date',
-      'end_date',
-    ];
-  }, []);
-
-  // Validation 함수
-  const handleValidate = useCallback((data: AppSchemeItem): Record<string, ValidationResult> => {
-    const schema = createAppSchemeYupSchema();
-    const results: Record<string, ValidationResult> = {};
-
-    // yup의 동기 validation 사용
+  // 최종 결재 처리
+  const handleFinalApproval = useCallback(async () => {
     try {
-      schema.validateSync(data, { abortEarly: false });
-      // 모든 필드가 유효한 경우
-      Object.keys(schema.fields).forEach((field) => {
-        results[field] = { isValid: true };
-      });
-    } catch (err: any) {
-      // validation 실패 시 에러 메시지 수집
-      const errors = err.inner || [];
-      const fieldErrors: Record<string, string> = {};
+      if (!id) {
+        toast.error('승인 요청 ID가 없습니다.');
+        return;
+      }
 
-      errors.forEach((error: any) => {
-        if (error.path) {
-          fieldErrors[error.path] = error.message;
-        }
-      });
+      // status를 in_review로 업데이트
+      const inReviewStatus = IN_REVIEW;
+      const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
+      await updateApprovalRequestStatus(id, inReviewStatus, processDate);
 
-      // 모든 필드에 대해 결과 생성
-      Object.keys(schema.fields).forEach((field) => {
-        if (fieldErrors[field]) {
-          results[field] = { isValid: false, message: fieldErrors[field] };
-        } else {
-          results[field] = { isValid: true };
-        }
-      });
+      // 모든 관련 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalRequest(id!) });
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalDetailQuestions(id!) });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+
+      toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
+      handleBack();
+    } catch (error) {
+      console.error('결재 승인 실패:', error);
+      toast.error('결재 승인에 실패했습니다.');
     }
-
-    return results;
-  }, []);
+  }, [queryClient, id, handleBack]);
 
   return (
     <Box>
       <PageHeader title="앱스킴 결재 상세" />
-      <GlobalLoadingSpinner isLoading={isLoading} />
-      <EditableList<AppSchemeItem>
+
+      <ApprovalDetailList<AppSchemeItem>
         rows={data}
-        columns={appSchemeColumns}
-        rowIdGetter="id"
+        columns={processedColumns}
+        getRowId={getRowId}
         onBack={handleBack}
-        onEdit={canEdit ? handleEdit : undefined}
-        isEditMode={isEditMode}
-        onSave={handleSave}
-        onCancel={handleCancelEdit}
-        onDeleteConfirm={handleDeleteConfirm}
-        readOnlyFields={readOnlyFieldsConfig}
-        selectFields={selectFieldsConfig}
-        dateFields={dateFieldsConfig}
-        dateFormat="YYYYMMDDHHmmss"
-        validator={handleValidate}
-        externalRows={data}
-        getRequiredFields={getRequiredFields}
-        isLoading={false}
+        onFinalApproval={handleFinalApproval}
+        showFinalApprovalButton={canShowFinalApprovalButton}
+        isLoading={isLoading}
       />
     </Box>
   );
 };
+
 export default AppSchemeApprovalDetailPage;

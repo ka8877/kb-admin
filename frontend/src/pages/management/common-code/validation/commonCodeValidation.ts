@@ -4,6 +4,11 @@
  * 공통 코드 관리 Validation 규칙
  */
 
+// 필드별 validation 결과 타입
+export type FieldValidationResult = {
+  [key: string]: ValidationResult;
+};
+
 // 공통 validation 결과 타입
 export type ValidationResult = {
   isValid: boolean;
@@ -147,6 +152,17 @@ export class CommonCodeValidator {
     return {
       isValid: errors.length === 0,
       errors,
+    };
+  }
+
+  // 필드별 validation 결과 반환
+  static validateByField(data: CommonCodeData): FieldValidationResult {
+    return {
+      code_type: this.validateCodeType(data.code_type),
+      category_nm: this.validateCategoryName(data.category_nm),
+      service_cd: this.validateServiceCode(data.service_cd),
+      status_code: this.validateStatusCode(data.status_code),
+      parent_service_cd: this.validateParentServiceCode(data.parent_service_cd, data.code_type),
     };
   }
 }

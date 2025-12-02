@@ -48,6 +48,7 @@ const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/Admi
 const AdminAuthEditPage = React.lazy(
   () => import('@pages/management/admin-auth/AdminAuthEditPage'),
 );
+const MenuManagementPage = React.lazy(() => import('@pages/management/menu/MenuManagementPage'));
 const PermissionPage = React.lazy(() => import('@pages/management/permission/PermissionPage'));
 
 // === 이력 ===
@@ -98,6 +99,9 @@ export const frontRoutes: AppRoute[] = [
   { path: ROUTES.ADMIN_AUTH, Component: AdminAuthPage },
   { path: `${ROUTES.ADMIN_AUTH}/edit`, Component: AdminAuthEditPage },
   { path: `${ROUTES.ADMIN_AUTH}/detail/:id`, Component: AdminAuthPage }, // 상세는 목록 페이지 재사용
+
+  // 메뉴 관리
+  { path: ROUTES.MENU_MANAGEMENT, Component: MenuManagementPage },
 
   // 권한 관리
   { path: ROUTES.PERMISSION_MANAGEMENT, Component: PermissionPage },

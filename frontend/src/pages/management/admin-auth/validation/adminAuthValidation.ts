@@ -10,6 +10,11 @@ export type ValidationResult = {
   message?: string;
 };
 
+// 필드별 validation 결과 타입
+export type FieldValidationResult = {
+  [key: string]: ValidationResult;
+};
+
 // 공통 validation 규칙 인터페이스
 export interface AdminAuthData {
   user_name?: string;
@@ -192,6 +197,19 @@ export class AdminAuthValidator {
     return {
       isValid: errors.length === 0,
       errors,
+    };
+  }
+
+  // 필드별 validation 결과 반환
+  static validateByField(data: AdminAuthData): FieldValidationResult {
+    return {
+      user_name: this.validateUserName(data.user_name),
+      position: this.validatePosition(data.position),
+      team_1st: this.validateTeam1st(data.team_1st),
+      team_2nd: this.validateTeam2nd(data.team_2nd),
+      use_permission: this.validateUsePermission(data.use_permission),
+      approval_permission: this.validateApprovalPermission(data.approval_permission),
+      status: this.validateStatus(data.status),
     };
   }
 }

@@ -1,179 +1,319 @@
-import React, { useCallback, useState, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Stack,
-  FormControl,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-  InputLabel,
-  Typography,
-  FormHelperText,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import type { RowItem } from './types';
-import { listColumns } from './components/columns';
-import { CODE_TYPE_LABELS } from './components/columns';
-import EditableList from '@/components/common/list/EditableList';
-import DetailNavigationActions from '@/components/common/actions/DetailNavigationActions';
+import React, { useState, useEffect } from 'react';
+import { Grid, Paper, Stack, Typography, Box } from '@mui/material';
 import PageHeader from '@/components/common/PageHeader';
+import EditableList from '@/components/common/list/EditableList';
 import MediumButton from '@/components/common/button/MediumButton';
-import Section from '@/components/layout/Section';
-import CommonCodeTypeEditPage from './CommonCodeTypeEditPage';
-import { ROUTES } from '@/routes/menu';
-import { commonCodeMockDb, CodeType, CodeTypeOption } from '@/mocks/commonCodeDb';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { CodeTypeOption } from '@/mocks/commonCodeDb';
+import { majorColumns, minorColumns } from './components/columns';
+import MajorCodeForm from './components/MajorCodeForm';
+import MinorCodeForm from './components/MinorCodeForm';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
+import type { RowItem } from './types';
+import {
+  useCodeTypes,
+  useSaveCodeTypes,
+  useCommonCodes,
+  useCreateCommonCode,
+  useUpdateCommonCode,
+  useDeleteCommonCode,
+} from './hooks';
 
-const CommonCodePage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+export default function CommonCodePage() {
+  const { showAlert } = useAlertDialog();
 
-  // location.state에서 편집 페이지에서 돌아온 경우 codeType 가져오기
-  const returnedCodeType = (location.state as { codeType?: CodeType })?.codeType;
+  // React Query 훅 사용
+  const {
+    data: codeTypesData,
+    isLoading: isMajorLoading,
+    refetch: refetchCodeTypes,
+  } = useCodeTypes();
+  const saveCodeTypesMutation = useSaveCodeTypes();
+  const createCommonCodeMutation = useCreateCommonCode();
+  const updateCommonCodeMutation = useUpdateCommonCode();
+  const deleteCommonCodeMutation = useDeleteCommonCode();
 
-  const [selectedCodeType, setSelectedCodeType] = useState<CodeType | ''>(returnedCodeType || '');
-  const [showError, setShowError] = useState(false);
-  const [codeTypeOptions, setCodeTypeOptions] = useState<CodeTypeOption[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // State for Major Codes (Code Types)
+  const [selectedMajor, setSelectedMajor] = useState<CodeTypeOption | null>(null);
+  const [isMajorFormOpen, setIsMajorFormOpen] = useState(false);
+  const [isNewMajor, setIsNewMajor] = useState(false);
 
-  // 코드 타입 옵션 로드
-  React.useEffect(() => {
-    commonCodeMockDb.getCodeTypes().then((options) => {
-      setCodeTypeOptions(options);
-    });
-  }, []);
+  // State for Minor Codes (Common Code Items)
+  const {
+    data: minorCodesData,
+    isLoading: isMinorLoading,
+    refetch: refetchMinorCodes,
+  } = useCommonCodes(selectedMajor ? { codeType: selectedMajor.value } : undefined);
+  const [selectedMinor, setSelectedMinor] = useState<RowItem | null>(null);
+  const [isMinorFormOpen, setIsMinorFormOpen] = useState(false);
+  const [isNewMinor, setIsNewMinor] = useState(false);
 
-  const listApi = useMemo(
-    () => ({
-      list: async (): Promise<RowItem[]> => {
-        if (!selectedCodeType) {
-          return [];
+  // majorList와 minorList를 React Query 데이터에서 가져오기
+  const majorList = codeTypesData || [];
+  const minorList =
+    minorCodesData?.map((item, index) => ({
+      ...item,
+      no: index + 1,
+    })) || [];
+
+  // Handle Major Code Selection
+  const handleMajorRowClick = (params: any) => {
+    const item = params.row as CodeTypeOption;
+    setSelectedMajor(item);
+    setSelectedMinor(null); // Reset minor selection
+    setIsMajorFormOpen(true);
+    setIsNewMajor(false);
+    setIsMinorFormOpen(false); // Close minor form
+  };
+
+  // selectedMajor가 변경될 때 minorCodes 자동 refetch
+  useEffect(() => {
+    if (selectedMajor) {
+      refetchMinorCodes();
+    }
+  }, [selectedMajor, refetchMinorCodes]);
+
+  // Handle Minor Code Selection
+  const handleMinorRowClick = (params: any) => {
+    const item = params.row as RowItem;
+    setSelectedMinor(item);
+    setIsMinorFormOpen(true);
+    setIsNewMinor(false);
+  };
+
+  // Major Code Actions
+  const handleAddMajor = () => {
+    setSelectedMajor(null);
+    setIsNewMajor(true);
+    setIsMajorFormOpen(true);
+    setSelectedMinor(null);
+    setIsMinorFormOpen(false);
+  };
+
+  const handleSaveMajor = async (data: CodeTypeOption) => {
+    try {
+      let newMajorList;
+      if (isNewMajor) {
+        // Check for duplicate ID
+        if (majorList.some((item) => item.value === data.value)) {
+          showAlert({
+            title: '알림',
+            message: '이미 존재하는 코드 타입 ID입니다.',
+            severity: 'warning',
+          });
+          return;
         }
-        const allData = await commonCodeMockDb.listAll();
-        const filtered = allData.filter((item) => item.code_type === selectedCodeType);
-        // NO를 1번부터 재계산
-        return filtered.map((item, index) => ({
-          ...item,
-          display_no: index + 1,
-        }));
-      },
-    }),
-    [selectedCodeType],
-  );
+        newMajorList = [...majorList, data];
+      } else {
+        newMajorList = majorList.map((item) => (item.value === data.value ? data : item));
+      }
 
-  const handleGoEditPage = useCallback(() => {
-    if (!selectedCodeType) {
-      setShowError(true);
+      // API 호출
+      await saveCodeTypesMutation.mutateAsync(newMajorList);
+      setIsMajorFormOpen(false);
+      setIsNewMajor(false);
+
+      // If it was a new item, select it
+      if (isNewMajor) {
+        setSelectedMajor(data);
+      }
+
+      // Show success alert
+      showAlert({
+        title: '성공',
+        message: '대분류가 저장되었습니다.',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to save code type:', error);
+      showAlert({
+        title: '오류',
+        message: '대분류 저장 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleDeleteMajor = async (value: string) => {
+    try {
+      const newMajorList = majorList.filter((item) => item.value !== value);
+      await saveCodeTypesMutation.mutateAsync(newMajorList);
+      setSelectedMajor(null);
+      setIsMajorFormOpen(false);
+    } catch (error) {
+      console.error('Failed to delete code type:', error);
+      showAlert({
+        title: '오류',
+        message: '대분류 삭제 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
+    }
+  };
+
+  // Minor Code Actions
+  const handleAddMinor = () => {
+    if (!selectedMajor) {
+      showAlert({
+        title: '알림',
+        message: '먼저 대분류(코드 타입)를 선택해주세요.',
+        severity: 'warning',
+      });
       return;
     }
-    navigate(ROUTES.COMMON_CODE_EDIT, { state: { codeType: selectedCodeType } });
-  }, [navigate, selectedCodeType]);
+    setSelectedMinor(null);
+    setIsNewMinor(true);
+    setIsMinorFormOpen(true);
+  };
 
-  const handleCodeTypeChange = useCallback((event: SelectChangeEvent<CodeType | ''>) => {
-    setSelectedCodeType(event.target.value as CodeType | '');
-    setShowError(false);
-  }, []);
-
-  const handleAddCodeType = useCallback(() => {
-    setDialogOpen(true);
-  }, []);
-
-  const handleCloseDialog = useCallback(() => {
-    setDialogOpen(false);
-  }, []);
-
-  // 동적으로 컬럼 필터링: 질문 카테고리일 때만 서비스 그룹, 서비스 그룹 코드 컬럼 표시
-  const filteredColumns = useMemo<GridColDef<RowItem>[]>(() => {
-    if (selectedCodeType === 'QUESTION_CATEGORY') {
-      return listColumns; // 모든 컬럼 포함 (parent_service_cd, service_group_name 포함)
-    }
-    // QUESTION_CATEGORY가 아니면 parent_service_cd, service_group_name 컬럼 제외
-    return listColumns.filter(
-      (col) => col.field !== 'service_group_name' && col.field !== 'parent_service_cd',
-    );
-  }, [selectedCodeType]);
-
-  const handleSaveCodeTypes = useCallback(async (newCodeTypes: CodeTypeOption[]) => {
+  const handleSaveMinor = async (data: RowItem) => {
     try {
-      const savedCodeTypes = await commonCodeMockDb.saveCodeTypes(newCodeTypes);
-      setCodeTypeOptions(savedCodeTypes);
+      if (isNewMinor) {
+        // API 생성 호출
+        await createCommonCodeMutation.mutateAsync({
+          ...data,
+          code_type: selectedMajor!.value,
+        });
+      } else {
+        // API 수정 호출
+        await updateCommonCodeMutation.mutateAsync({
+          serviceCode: data.service_cd,
+          data,
+        });
+      }
+      setIsMinorFormOpen(false);
+      setIsNewMinor(false);
+
+      // Show success alert
+      showAlert({
+        title: '성공',
+        message: '소분류가 저장되었습니다.',
+        severity: 'success',
+      });
     } catch (error) {
-      console.error('Failed to save code types:', error);
+      console.error('Failed to save common code:', error);
+      showAlert({
+        title: '오류',
+        message: '소분류 저장 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
     }
-  }, []);
+  };
+
+  const handleDeleteMinor = async (service_cd: string) => {
+    try {
+      await deleteCommonCodeMutation.mutateAsync(service_cd);
+      setSelectedMinor(null);
+      setIsMinorFormOpen(false);
+
+      showAlert({
+        title: '성공',
+        message: '소분류가 삭제되었습니다.',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to delete common code:', error);
+      showAlert({
+        title: '오류',
+        message: '소분류 삭제 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
+    }
+  };
 
   return (
-    <Box>
-      <PageHeader title="공통 코드 관리" />
-      <Section>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <MediumButton variant="outlined" startIcon={<AddIcon />} onClick={handleAddCodeType}>
-              코드 타입 추가
-            </MediumButton>
-            <FormControl size="small" sx={{ minWidth: 200 }} error={showError}>
-              <InputLabel id="code-type-select-label">코드 타입</InputLabel>
-              <Select
-                labelId="code-type-select-label"
-                value={selectedCodeType}
-                onChange={handleCodeTypeChange}
-                label="코드 타입"
-              >
-                <MenuItem value="" disabled>
-                  선택하세요
-                </MenuItem>
-                {codeTypeOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {showError && (
-              <Typography variant="body2" color="error">
-                코드 타입을 선택해주세요
-              </Typography>
-            )}
-          </Stack>
-
-          <DetailNavigationActions onEdit={handleGoEditPage} />
-        </Stack>
-
-        {!selectedCodeType ? (
-          <Box
-            sx={{
-              height: 420,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography variant="body1" color="text.secondary">
-              코드 타입을 선택해주세요
-            </Typography>
-          </Box>
-        ) : (
-          <EditableList<RowItem>
-            key={selectedCodeType}
-            columns={filteredColumns}
-            fetcher={listApi.list}
-            rowIdGetter={(r: RowItem) => r.service_cd}
-            defaultPageSize={25}
-            pageSizeOptions={[10, 25, 50, 100]}
-            isEditMode={false}
-          />
-        )}
-      </Section>
-
-      <CommonCodeTypeEditPage
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        codeTypes={codeTypeOptions}
-        onSave={handleSaveCodeTypes}
+    <Stack spacing={2} sx={{ height: '100%' }}>
+      <PageHeader
+        title="공통코드 관리"
+        breadcrumbs={[{ label: '관리' }, { label: '공통코드 관리' }]}
       />
-    </Box>
-  );
-};
 
-export default CommonCodePage;
+      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+        {/* Left Panel: Major Codes (Code Types) */}
+        <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">대분류 (코드 타입)</Typography>
+              <MediumButton variant="contained" onClick={handleAddMajor}>
+                추가
+              </MediumButton>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, mb: 2 }}>
+              <EditableList
+                columns={majorColumns}
+                rows={majorList}
+                isLoading={isMajorLoading}
+                onRowClick={handleMajorRowClick}
+                rowIdGetter={(row) => row.value}
+                autoHeight={false}
+              />
+            </Box>
+          </Paper>
+
+          {isMajorFormOpen && (
+            <Box sx={{ mt: 2 }}>
+              <MajorCodeForm
+                selectedItem={isNewMajor ? null : selectedMajor}
+                isNew={isNewMajor}
+                onSave={handleSaveMajor}
+                onCancel={() => setIsMajorFormOpen(false)}
+                onDelete={handleDeleteMajor}
+              />
+            </Box>
+          )}
+        </Grid>
+
+        {/* Right Panel: Minor Codes (Items) */}
+        <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">
+                소분류 {selectedMajor ? `(${selectedMajor.label})` : ''}
+              </Typography>
+              <MediumButton variant="contained" onClick={handleAddMinor} disabled={!selectedMajor}>
+                추가
+              </MediumButton>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, mb: 2 }}>
+              {selectedMajor ? (
+                <EditableList
+                  columns={minorColumns}
+                  rows={minorList}
+                  isLoading={isMinorLoading}
+                  onRowClick={handleMinorRowClick}
+                  rowIdGetter={(row) => row.service_cd}
+                  autoHeight={false}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'text.secondary',
+                  }}
+                >
+                  대분류를 선택해주세요
+                </Box>
+              )}
+            </Box>
+          </Paper>
+
+          {isMinorFormOpen && selectedMajor && (
+            <Box sx={{ mt: 2 }}>
+              <MinorCodeForm
+                selectedItem={isNewMinor ? null : selectedMinor}
+                isNew={isNewMinor}
+                selectedCodeType={selectedMajor.value}
+                onSave={handleSaveMinor}
+                onCancel={() => setIsMinorFormOpen(false)}
+                onDelete={handleDeleteMinor}
+              />
+            </Box>
+          )}
+        </Grid>
+      </Grid>
+    </Stack>
+  );
+}

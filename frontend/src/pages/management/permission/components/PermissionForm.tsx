@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Stack, TextField, MenuItem, Paper, Typography } from '@mui/material';
 import MediumButton from '@/components/common/button/MediumButton';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import type { PermissionItem } from '../types';
 import { PermissionValidator } from '../validation/permissionValidation';
 
@@ -37,7 +38,9 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
   onDelete,
   disabled = false,
 }) => {
+  const { showConfirm } = useConfirmDialog();
   const [formData, setFormData] = useState<Partial<PermissionItem>>(INITIAL_FORM_DATA);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (permission) {
@@ -49,21 +52,38 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
     } else if (isNew) {
       setFormData(INITIAL_FORM_DATA);
     }
+    setFieldErrors({});
   }, [permission, isNew]);
 
   const handleChange = useCallback((field: keyof PermissionItem, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // 입력시 해당 필드 오류 제거
+    setFieldErrors((prev) => ({ ...prev, [field]: '' }));
   }, []);
 
-  const handleSave = useCallback(() => {
-    const validationResult = PermissionValidator.validateAll({
+  const validateAndShowErrors = useCallback((): boolean => {
+    const fieldValidationResults = PermissionValidator.validateByField({
       permission_id: formData.permission_id || '',
       permission_name: formData.permission_name || '',
       status: formData.status || '활성',
     });
 
-    if (!validationResult.isValid) {
-      alert(validationResult.errors.join('\n'));
+    const errors: Record<string, string> = {};
+    let hasErrors = false;
+
+    Object.entries(fieldValidationResults).forEach(([field, result]) => {
+      if (!result.isValid && result.message) {
+        errors[field] = result.message;
+        hasErrors = true;
+      }
+    });
+
+    setFieldErrors(errors);
+    return !hasErrors;
+  }, [formData]);
+
+  const handleSave = useCallback(() => {
+    if (!validateAndShowErrors()) {
       return;
     }
 
@@ -77,13 +97,19 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
     };
 
     onSave(savedData);
-  }, [formData, permission, onSave]);
+  }, [formData, permission, onSave, validateAndShowErrors]);
 
   const handleDelete = useCallback(() => {
-    if (permission && onDelete && window.confirm(MESSAGES.DELETE_CONFIRM)) {
-      onDelete(permission.id);
+    if (permission && onDelete) {
+      showConfirm({
+        title: '삭제 확인',
+        message: MESSAGES.DELETE_CONFIRM,
+        onConfirm: () => {
+          onDelete(permission.id);
+        },
+      });
     }
-  }, [permission, onDelete]);
+  }, [permission, onDelete, showConfirm]);
 
   if (!permission && !isNew) {
     return null;
@@ -107,6 +133,8 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
             onChange={(e) => handleChange('permission_id', e.target.value)}
             placeholder="권한 ID를 입력하세요"
             disabled={!isNew || disabled}
+            error={!!fieldErrors.permission_id}
+            helperText={fieldErrors.permission_id}
           />
         </Box>
 
@@ -121,6 +149,8 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
             onChange={(e) => handleChange('permission_name', e.target.value)}
             placeholder="권한명을 입력하세요"
             disabled={disabled}
+            error={!!fieldErrors.permission_name}
+            helperText={fieldErrors.permission_name}
           />
         </Box>
 
@@ -135,6 +165,8 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
             value={formData.status || '활성'}
             onChange={(e) => handleChange('status', e.target.value)}
             disabled={disabled}
+            error={!!fieldErrors.status}
+            helperText={fieldErrors.status}
           >
             {STATUS_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>

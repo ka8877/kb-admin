@@ -1,104 +1,78 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Box } from '@mui/material';
-import type { AppSchemeItem } from './types';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 import DataDetail from '@/components/common/detail/DataDetail';
 import PageHeader from '@/components/common/PageHeader';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { toast } from 'react-toastify';
-import { statusOptions, mockAppSchemeDetail } from './data';
-import { appSchemeColumns } from './components/columns/columns';
-import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
+import {
+  selectFieldsConfig,
+  dateFieldsConfig,
+  readOnlyFieldsConfig,
+} from '@/pages/data-reg/app-scheme/data';
+import {
+  useAppScheme,
+  useUpdateAppScheme,
+  useDeleteAppScheme,
+} from '@/pages/data-reg/app-scheme/hooks';
+import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
+import { createAppSchemeYupSchema } from '@/pages/data-reg/app-scheme/validation/appSchemeValidation';
+import { TOAST_MESSAGES } from '@/constants/message';
+import { ROUTES } from '@/routes/menu';
 import type { ValidationResult } from '@/types/types';
-
-// API 예시
-const detailApi = {
-  getById: async (id: string): Promise<AppSchemeItem> => {
-    // 실제로는 API 호출
-    return {
-      ...mockAppSchemeDetail,
-      id: id,
-    };
-  },
-
-  update: async (id: string, data: AppSchemeItem): Promise<AppSchemeItem> => {
-    // 실제로는 API 호출
-    console.log('Updating item:', id, data);
-    // 업데이트된 데이터 반환
-    return {
-      ...data,
-      updatedAt: new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14),
-    };
-  },
-};
 
 const AppSchemeDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { showConfirm } = useConfirmDialog();
+  const updateMutation = useUpdateAppScheme();
+  const deleteMutation = useDeleteAppScheme();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['appScheme', id],
-    queryFn: () => (id ? detailApi.getById(id) : Promise.reject('Invalid ID')),
-    enabled: !!id,
-  });
+  const { data, isLoading, refetch } = useAppScheme(id);
+
+  // 편집 가능 여부: 저장 후에는 편집 불가 (결재 요청이 들어갔으므로)
+  const [canEdit, setCanEdit] = React.useState(true);
 
   const handleBack = React.useCallback(() => {
-    navigate(-1);
+    navigate(ROUTES.APP_SCHEME);
   }, [navigate]);
 
-  const handleDelete = React.useCallback(() => {
-    showConfirm({
-      title: CONFIRM_TITLES.DELETE,
-      message: CONFIRM_MESSAGES.DELETE,
-      confirmText: '삭제',
-      cancelText: '취소',
-      severity: 'error',
-      onConfirm: () => {
-        console.log('Delete:', id);
-        toast.success(TOAST_MESSAGES.DELETE_APPROVAL_REQUESTED);
-        navigate(-1);
-      },
-    });
-  }, [showConfirm, id, navigate]);
+  const handleDelete = React.useCallback(async () => {
+    if (!id) return;
+
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+      navigate(-1);
+    } catch (error) {
+      toast.error(TOAST_MESSAGES.DELETE_FAILED);
+    }
+  }, [id, deleteMutation, navigate]);
 
   const handleSave = React.useCallback(
     async (updatedData: AppSchemeItem) => {
       if (!id) return;
 
       try {
-        await detailApi.update(id, updatedData);
-        console.log('데이터가 성공적으로 저장되었습니다.');
+        await updateMutation.mutateAsync({ id, data: updatedData });
+        // 저장 성공 후 refetch 및 편집 불가 처리
+        await refetch();
+        setCanEdit(false); // 저장 후 편집 불가
       } catch (error) {
-        console.error('저장 실패:', error);
+        console.error('수정 요청 실패:', error);
         throw error;
       }
     },
-    [id],
+    [id, updateMutation, refetch],
   );
 
-  const selectFieldsConfig = {
-    status: statusOptions,
-  };
-
-  const dateFieldsConfig = ['start_date', 'end_date', 'updatedAt', 'registeredAt'];
-
-  const readOnlyFieldsConfig = ['no', 'id', 'updatedAt', 'registeredAt'];
-
   // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
-  const getRequiredFields = React.useCallback((currentData: AppSchemeItem | undefined): string[] => {
-    // 앱스킴 필수 필드: yup 스키마의 required 필드들
-    return [
-      'product_menu_name',
-      'description',
-      'app_scheme_link',
-      'one_link',
-      'start_date',
-      'end_date',
-    ];
-  }, []);
+  const getRequiredFields = React.useCallback(
+    (currentData: AppSchemeItem | undefined): string[] => {
+      // 앱스킴 필수 필드: yup 스키마의 required 필드들
+      return ['productMenuName', 'description', 'appSchemeLink', 'oneLink', 'startDate', 'endDate'];
+    },
+    [],
+  );
 
   // Validation 함수
   const handleValidate = React.useCallback(
@@ -146,7 +120,7 @@ const AppSchemeDetailPage: React.FC = () => {
         data={data}
         columns={appSchemeColumns}
         isLoading={isLoading}
-        rowIdGetter="id"
+        rowIdGetter="appSchemeId"
         onBack={handleBack}
         onDelete={handleDelete}
         onSave={handleSave}
@@ -156,6 +130,7 @@ const AppSchemeDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
+        canEdit={canEdit}
       />
     </Box>
   );

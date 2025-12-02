@@ -12,25 +12,32 @@ export const API_ENDPOINTS = {
     DELETE: (id: string | number) => `/data-reg/qst/${id}.json`,
     APPROVAL: '/approval/recommended-questions.json',
     APPROVAL_LIST: '/approval/recommended-questions.json',
-    APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/recommended-questions/${id}/list.json`,
+    APPROVAL_DETAIL: (id: string | number) => `/approval/recommended-questions/${id}.json`,
+    APPROVAL_DETAIL_LIST: (id: string | number) =>
+      `/approval/recommended-questions/${id}/list.json`,
   },
 
   // 앱 스킴 관련
   APP_SCHEME: {
     BASE: '/data-reg/app-scheme',
-    LIST: '/data-reg/app-scheme',
-    DETAIL: (id: string | number) => `/data-reg/app-scheme/${id}`,
-    CREATE: '/data-reg/app-scheme',
-    UPDATE: (id: string | number) => `/data-reg/app-scheme/${id}`,
-    DELETE: (id: string | number) => `/data-reg/app-scheme/${id}`,
+    LIST: '/data-reg/app-scheme.json',
+    DETAIL: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
+    CREATE: '/data-reg/app-scheme.json',
+    UPDATE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
+    DELETE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
     APPROVAL_LIST: '/approval/app-scheme.json',
+    APPROVAL_DETAIL: (id: string | number) => `/approval/app-scheme/${id}.json`,
+    APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
   },
 
   // 공통코드 관련
   COMMON_CODE: {
     BASE: '/management/common-code',
-    LIST: '/management/common-code',
-    DETAIL: (id: string | number) => `/management/common-code/${id}`,
+    CODE_TYPES: '/management/common-code/code-types.json',
+    LIST: '/management/common-code.json',
+    DETAIL: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
+    CREATE: '/management/common-code.json',
+    UPDATE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
+    DELETE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
   },
 } as const;
-

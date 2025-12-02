@@ -1,12 +1,9 @@
-import React, { useCallback, useState } from 'react';
-import { Box, Grid, Paper } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import PageHeader from '@/components/common/PageHeader';
-import MediumButton from '@/components/common/button/MediumButton';
-import Section from '@/components/layout/Section';
+import React, { useCallback, useEffect, useState } from 'react';
 import EditableList from '@/components/common/list/EditableList';
+import ManagementListDetailLayout from '@/components/layout/list/ManagementListDetailLayout';
 import PermissionForm from './components/PermissionForm';
 import { permissionMockDb } from '@/mocks/permissionDb';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 import type { PermissionItem, RowItem } from './types';
 import { listColumns } from './components/columns';
 
@@ -22,13 +19,35 @@ const MESSAGES = {
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const PermissionPage: React.FC = () => {
+  const { showAlert } = useAlertDialog();
   const [selectedPermission, setSelectedPermission] = useState<PermissionItem | null>(null);
   const [isNewMode, setIsNewMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [allPermissions, setAllPermissions] = useState<RowItem[]>([]);
+
+  const loadAllPermissions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await permissionMockDb.listAll();
+      const permissionData = data.map((item, index) => ({
+        ...item,
+        no: index + 1,
+      }));
+      setAllPermissions(permissionData);
+    } catch (error) {
+      console.error('Failed to load permissions:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAllPermissions();
+  }, [loadAllPermissions, refreshKey]);
 
   const handleRowClick = useCallback((params: { id: string | number; row: RowItem }) => {
     setSelectedPermission(params.row);
@@ -44,13 +63,17 @@ const PermissionPage: React.FC = () => {
     async (permission: PermissionItem) => {
       setLoading(true);
       try {
-        const allPermissions = await permissionMockDb.listAll();
+        // 중복 체크 (state 사용)
         const isDuplicate = allPermissions.some(
           (p) => p.permission_id === permission.permission_id && p.id !== permission.id,
         );
 
         if (isDuplicate) {
-          alert(MESSAGES.DUPLICATE_ID);
+          showAlert({
+            title: '알림',
+            message: MESSAGES.DUPLICATE_ID,
+            severity: 'warning',
+          });
           return;
         }
 
@@ -60,13 +83,21 @@ const PermissionPage: React.FC = () => {
             permission_name: permission.permission_name,
             status: permission.status,
           });
-          alert(MESSAGES.CREATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.CREATE_SUCCESS,
+            severity: 'success',
+          });
         } else {
           await permissionMockDb.update(permission.id, {
             permission_name: permission.permission_name,
             status: permission.status,
           });
-          alert(MESSAGES.UPDATE_SUCCESS);
+          showAlert({
+            title: '완료',
+            message: MESSAGES.UPDATE_SUCCESS,
+            severity: 'success',
+          });
         }
 
         setSelectedPermission(null);
@@ -74,12 +105,16 @@ const PermissionPage: React.FC = () => {
         setRefreshKey((prev) => prev + 1);
       } catch (error) {
         console.error('Failed to save permission:', error);
-        alert(MESSAGES.SAVE_ERROR);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.SAVE_ERROR,
+          severity: 'error',
+        });
       } finally {
         setLoading(false);
       }
     },
-    [isNewMode],
+    [isNewMode, allPermissions, showAlert],
   );
 
   const handleCancel = useCallback(() => {
@@ -87,78 +122,63 @@ const PermissionPage: React.FC = () => {
     setIsNewMode(false);
   }, []);
 
-  const handleDelete = useCallback(async (id: string | number) => {
-    setLoading(true);
-    try {
-      await permissionMockDb.delete(id);
-      setSelectedPermission(null);
-      setIsNewMode(false);
-      alert(MESSAGES.DELETE_SUCCESS);
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error('Failed to delete permission:', error);
-      alert(MESSAGES.DELETE_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string | number) => {
+      setLoading(true);
+      try {
+        await permissionMockDb.delete(id);
+        setSelectedPermission(null);
+        setIsNewMode(false);
+        showAlert({
+          title: '완료',
+          message: MESSAGES.DELETE_SUCCESS,
+          severity: 'success',
+        });
+        setRefreshKey((prev) => prev + 1);
+      } catch (error) {
+        console.error('Failed to delete permission:', error);
+        showAlert({
+          title: '오류',
+          message: MESSAGES.DELETE_ERROR,
+          severity: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showAlert],
+  );
 
   return (
-    <Box>
-      <PageHeader title="권한 관리" />
-      <Section>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <MediumButton
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddNew}
-            disabled={loading}
-          >
-            추가
-          </MediumButton>
-        </Box>
-        <Grid container spacing={2}>
-          {/* 좌측: 리스트 */}
-          <Grid item xs={12} md={7}>
-            <EditableList
-              key={refreshKey}
-              columns={listColumns}
-              fetcher={async () => {
-                const data = await permissionMockDb.listAll();
-                return data.map((item, index) => ({
-                  ...item,
-                  no: index + 1,
-                }));
-              }}
-              rowIdGetter={(r: RowItem) => r.id}
-              defaultPageSize={DEFAULT_PAGE_SIZE}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
-              onRowClick={handleRowClick}
-              isEditMode={false}
-            />
-          </Grid>
-
-          {/* 우측: 상세 폼 */}
-          <Grid item xs={12} md={5}>
-            {(selectedPermission || isNewMode) && (
-              <PermissionForm
-                permission={selectedPermission}
-                isNew={isNewMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
-                onDelete={handleDelete}
-                disabled={loading}
-              />
-            )}
-            {!selectedPermission && !isNewMode && (
-              <Paper sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-                {MESSAGES.EMPTY_STATE}
-              </Paper>
-            )}
-          </Grid>
-        </Grid>
-      </Section>
-    </Box>
+    <ManagementListDetailLayout
+      title="권한 관리"
+      onAddNew={handleAddNew}
+      disabled={loading}
+      showDetail={!!(selectedPermission || isNewMode)}
+      emptyStateText={MESSAGES.EMPTY_STATE}
+      listNode={
+        <EditableList
+          rows={allPermissions}
+          columns={listColumns}
+          rowIdGetter={(r: RowItem) => r.id}
+          defaultPageSize={DEFAULT_PAGE_SIZE}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onRowClick={handleRowClick}
+          isEditMode={false}
+          isLoading={loading}
+        />
+      }
+      detailNode={
+        <PermissionForm
+          permission={selectedPermission}
+          isNew={isNewMode}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onDelete={handleDelete}
+          disabled={loading}
+        />
+      }
+    />
   );
 };
 

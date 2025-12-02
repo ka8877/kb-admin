@@ -5,16 +5,15 @@ import type {
   GridValidRowModel,
   GridRenderEditCellParams,
 } from '@mui/x-data-grid';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import DetailEditActions from '../actions/DetailEditActions';
+import ListSelect from '../select/ListSelect';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import ApprovalListActions from '../actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '../actions/ApprovalConfirmActions';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { useGridCellNavigation } from '@/hooks/useGridCellNavigation';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import type { SelectFieldOption } from '@/types/types';
 import type { ValidationResult } from '@/types/types';
@@ -41,9 +40,13 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   dateFormat?: string; // 날짜 저장 형식 (기본: YYYYMMDDHHmmss)
   validator?: (data: T) => Record<string, ValidationResult>; // validation 함수
   /**
-   * (선택) 행별로 qst_ctgr 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
+   * (선택) 행별로 특정 필드(예: qst_ctgr) 옵션을 동적으로 지정할 때 사용 (row: T) => 옵션 배열
    */
   getDynamicSelectOptions?: (row: T) => SelectFieldOption[];
+  /**
+   * (선택) 동적 옵션을 적용할 필드 목록 (기본: ['qst_ctgr'])
+   */
+  dynamicSelectFields?: string[];
   /**
    * (선택) 행 업데이트 직전에 newRow를 가공하거나 의존 필드를 초기화할 때 사용
    */
@@ -62,7 +65,9 @@ export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> =
   onApproveSelect?: (next: boolean) => void; // 결재 선택 모드 토글
   approveSelectionMode?: boolean; // 결재 선택 모드 상태
   onApproveConfirm?: (selectedIds: (string | number)[]) => void; // 결재 확인
+  onApproveCancel?: () => void; // 결재 취소 (기본: 선택 모드 해제)
   isLoading?: boolean; // 로딩 상태
+  autoHeight?: boolean; // DataGrid의 자동 높이 조정 여부 (기본: false)
 };
 
 const defaultGetRowId =
@@ -76,67 +81,6 @@ const defaultGetRowId =
     return row[getter as keyof T] as string | number;
   };
 
-type SelectEditCellProps = {
-  params: GridRenderEditCellParams;
-  options: SelectFieldOption[];
-};
-
-const SelectEditCell: React.FC<SelectEditCellProps> = ({ params, options }) => {
-  const [open, setOpen] = useState(true);
-  const committedRef = useRef(false);
-
-  const handleChange = useCallback(
-    async (event: SelectChangeEvent<string>) => {
-      setOpen(false);
-      committedRef.current = true;
-      await params.api.setEditCellValue({
-        id: params.id,
-        field: params.field,
-        value: event.target.value,
-      });
-      params.api.stopCellEditMode({
-        id: params.id,
-        field: params.field,
-      });
-    },
-    [params],
-  );
-
-  const handleClose = useCallback(() => {
-    setOpen(false);
-    params.api.stopCellEditMode({
-      id: params.id,
-      field: params.field,
-      ignoreModifications: !committedRef.current,
-    });
-    committedRef.current = false;
-  }, [params]);
-
-  return (
-    <Select
-      value={params.value ?? ''}
-      onChange={handleChange}
-      onClose={handleClose}
-      open={open}
-      fullWidth
-      autoFocus
-      size="small"
-      MenuProps={{
-        PaperProps: {
-          sx: {
-            maxHeight: 240,
-          },
-        },
-      }}
-    >
-      {options.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </Select>
-  );
-};
 
 const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
@@ -160,13 +104,16 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   dateFormat = 'YYYYMMDDHHmmss',
   validator,
   getDynamicSelectOptions,
+  dynamicSelectFields = ['qst_ctgr'],
   onProcessRowUpdate,
   externalRows,
   getRequiredFields,
   onApproveSelect,
   approveSelectionMode = false,
   onApproveConfirm,
+  onApproveCancel,
   isLoading = false,
+  autoHeight = false,
 }: EditableListProps<T>): JSX.Element => {
   const [data, setData] = useState<T[]>(rows ?? []);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -175,12 +122,13 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   });
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
   const { showAlert } = useAlertDialog();
+  const dataGridRef = useGridApiRef();
 
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
 
   const renderSelectEditCell = useCallback(
     (params: GridRenderEditCellParams, options: SelectFieldOption[]) => {
-      return <SelectEditCell params={params} options={options} />;
+      return <ListSelect params={params} options={options} />;
     },
     [],
   );
@@ -202,6 +150,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         dateFields,
         dateFormat,
         getDynamicSelectOptions,
+        dynamicSelectFields,
         data,
         getRowId,
         renderSelectEditCell,
@@ -216,6 +165,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       dateFields,
       dateFormat,
       getDynamicSelectOptions,
+      dynamicSelectFields,
       data,
       getRowId,
       renderSelectEditCell,
@@ -242,20 +192,10 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   useEffect(() => {
     if (Array.isArray(externalRows)) {
       setData(externalRows);
+      // externalRows가 변경되면 선택 초기화 (삭제 후 refetch 시 선택 초기화)
+      setSelectionModel([]);
     }
   }, [externalRows]);
-
-  useEffect(() => {
-    if (!isEditMode) {
-      if (Array.isArray(externalRows)) {
-        setData(externalRows);
-        return;
-      }
-      if (rows) {
-        setData(rows);
-      }
-    }
-  }, [isEditMode, externalRows, rows]);
 
   const handlePaginationChange = useCallback((model: GridPaginationModel) => {
     setPaginationModel(model);
@@ -269,9 +209,15 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         getRowId(row) === getRowId(processedRow) ? processedRow : row,
       );
       setData(updatedData);
+
+      // 부모 컴포넌트에 변경된 데이터 즉시 전달 (엑셀 업로드 모드 등에서 사용)
+      if (onSave) {
+        onSave(updatedData);
+      }
+
       return processedRow;
     },
-    [data, getRowId, onProcessRowUpdate],
+    [data, getRowId, onProcessRowUpdate, onSave],
   );
 
   // Validation을 포함한 저장 처리
@@ -334,6 +280,19 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
     }
   }, [onDeleteConfirm, selectionModel]);
 
+  // 셀 네비게이션 hook 사용
+  const { handleCellKeyDown, handleCellEditStop } = useGridCellNavigation<T>({
+    isEditMode,
+    data,
+    processedColumns,
+    readOnlyFields,
+    selectFields,
+    dateFields,
+    dynamicSelectFields,
+    getRowId,
+    dataGridRef,
+  });
+
   // selectedRowNumbers 계산 (useMemo로 최적화)
   const selectedRowNumbers = useMemo(
     () =>
@@ -354,15 +313,19 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
       {!isEditMode && !approveSelectionMode && (
         <DetailNavigationActions onBack={onBack} onEdit={onEdit} />
       )}
-      {/* 결재 선택 모드일 때 상단 버튼들 */}
-      {!isEditMode && approveSelectionMode && onApproveSelect && (
-        <ApprovalListActions
-          onBack={onBack}
-          onApproveSelect={() => onApproveSelect(false)}
-          approveSelectLabel="선택 취소"
-          approveSelectActive={approveSelectionMode}
-        />
-      )}
+      {/* 결재 선택 모드일 때 상단 버튼들 - onApproveSelect가 없으면 목록으로 버튼만 표시 */}
+      {!isEditMode &&
+        approveSelectionMode &&
+        (onApproveSelect ? (
+          <ApprovalListActions
+            onBack={onBack}
+            onApproveSelect={() => onApproveSelect(false)}
+            approveSelectLabel="선택 취소"
+            approveSelectActive={approveSelectionMode}
+          />
+        ) : (
+          <DetailNavigationActions onBack={onBack} />
+        ))}
       {/* 결재 선택 모드가 아닐 때 결재 선택 버튼 표시 */}
       {!isEditMode && !approveSelectionMode && onApproveSelect && (
         <ApprovalListActions
@@ -374,7 +337,12 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
         />
       )}
 
-      <Box sx={EDITABLE_LIST_GRID_WRAPPER_SX}>
+      <Box
+        sx={{
+          ...EDITABLE_LIST_GRID_WRAPPER_SX,
+          height: autoHeight ? 'auto' : 545,
+        }}
+      >
         <DataGrid
           key={JSON.stringify(data)}
           rows={data}
@@ -382,7 +350,9 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={getRowId}
           checkboxSelection={isEditMode || approveSelectionMode}
           rowSelectionModel={isEditMode || approveSelectionMode ? selectionModel : []}
-          onRowSelectionModelChange={isEditMode || approveSelectionMode ? setSelectionModel : undefined}
+          onRowSelectionModelChange={
+            isEditMode || approveSelectionMode ? setSelectionModel : undefined
+          }
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationChange}
           pageSizeOptions={pageSizeOptions}
@@ -391,9 +361,13 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           density="standard"
           rowHeight={46}
           columnHeaderHeight={46}
-          autoHeight={false}
+          autoHeight={autoHeight}
           processRowUpdate={handleProcessRowUpdate}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          onCellKeyDown={isEditMode ? handleCellKeyDown : undefined}
+          onCellEditStop={isEditMode ? handleCellEditStop : undefined}
+          apiRef={dataGridRef}
+          loading={isLoading}
           sx={EDITABLE_LIST_GRID_SX}
         />
       </Box>
@@ -419,10 +393,13 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           open={approveSelectionMode}
           selectedIds={selectionModel}
           onConfirm={onApproveConfirm}
-          onCancel={() => {
-            setSelectionModel([]);
-            if (onApproveSelect) onApproveSelect(false);
-          }}
+          onCancel={
+            onApproveCancel ||
+            (() => {
+              setSelectionModel([]);
+              if (onApproveSelect) onApproveSelect(false);
+            })
+          }
           size={size}
         />
       )}

@@ -10,19 +10,17 @@ import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
 // 공통 validation 규칙 인터페이스
 export interface RecommendedQuestionData {
-  service_nm?: string | null;
-  qst_ctgr?: string | null;
-  display_ctnt?: string | null;
-  prompt_ctnt?: string | null;
-  qst_style?: string | null;
-  parentId?: string | null; // 폼에서 사용
-  parent_id?: string | null; // 엑셀에서 사용
-  parentIdName?: string | null; // 폼에서 사용
-  parent_nm?: string | null; // 엑셀에서 사용
-  age_grp?: string | null;
-  under_17_yn?: string | null;
-  imp_start_date?: string | Date | null; // string | Date
-  imp_end_date?: string | Date | null; // string | Date
+  serviceNm?: string | null;
+  qstCtgr?: string | null;
+  displayCtnt?: string | null;
+  promptCtnt?: string | null;
+  qstStyle?: string | null;
+  parentId?: string | null;
+  parentNm?: string | null;
+  ageGrp?: string | null;
+  showU17?: string | null;
+  impStartDate?: string | Date | null;
+  impEndDate?: string | Date | null;
   status?: string | null;
 }
 
@@ -109,7 +107,7 @@ export class RecommendedQuestionValidator {
     value: string | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
-    const qstCtgr = data?.qst_ctgr;
+    const qstCtgr = data?.qstCtgr;
     const isRequired = qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story';
 
     if (isRequired && (!value || value.trim() === '')) {
@@ -128,7 +126,7 @@ export class RecommendedQuestionValidator {
     value: string | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
-    const qstCtgr = data?.qst_ctgr;
+    const qstCtgr = data?.qstCtgr;
     const isRequired = qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story';
 
     if (isRequired && (!value || value.trim() === '')) {
@@ -147,7 +145,7 @@ export class RecommendedQuestionValidator {
     value: string | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
-    const serviceNm = data?.service_nm;
+    const serviceNm = data?.serviceNm;
     const isRequired = serviceNm === 'ai_calc';
 
     if (isRequired && (!value || value.trim() === '')) {
@@ -165,7 +163,7 @@ export class RecommendedQuestionValidator {
   }
 
   // 17세 미만 노출 여부 validation
-  static validateUnder17Yn(value: string | null | undefined): ValidationResult {
+  static validateShowU17(value: string | null | undefined): ValidationResult {
     if (!value || value.trim() === '') {
       return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
     }
@@ -257,8 +255,8 @@ export class RecommendedQuestionValidator {
     }
 
     // 노출 시작일시 < 노출 종료일시 체크
-    if (data?.imp_start_date) {
-      const startDate = toISOString(data.imp_start_date as string | Date | null);
+    if (data?.impStartDate) {
+      const startDate = toISOString(data.impStartDate as string | Date | null);
       const endDate = toISOString(value as string | Date | null);
 
       if (startDate && endDate) {
@@ -293,22 +291,22 @@ export class RecommendedQuestionValidator {
   static validateAll(data: RecommendedQuestionData): Record<string, ValidationResult> {
     const results: Record<string, ValidationResult> = {};
 
-    results.service_nm = this.validateServiceName(data.service_nm);
-    results.qst_ctgr = this.validateQuestionCategory(data.qst_ctgr);
-    results.display_ctnt = this.validateQuestionContent(data.display_ctnt);
-    results.prompt_ctnt = this.validatePromptContent(data.prompt_ctnt);
-    results.qst_style = this.validateQuestionStyle(data.qst_style);
+    results.serviceNm = this.validateServiceName(data.serviceNm);
+    results.qstCtgr = this.validateQuestionCategory(data.qstCtgr);
+    results.displayCtnt = this.validateQuestionContent(data.displayCtnt);
+    results.promptCtnt = this.validatePromptContent(data.promptCtnt);
+    results.qstStyle = this.validateQuestionStyle(data.qstStyle);
 
     // 부모 ID (폼과 엑셀 필드명 통합)
-    const parentId = data.parentId || data.parent_id;
-    const parentIdName = data.parentIdName || data.parent_nm;
-    results.parent_id = this.validateParentId(parentId, data);
-    results.parent_nm = this.validateParentIdName(parentIdName, data);
+    const parentId = data.parentId;
+    const parentNm = data.parentNm;
+    results.parentId = this.validateParentId(parentId, data);
+    results.parentNm = this.validateParentIdName(parentNm, data);
 
-    results.age_grp = this.validateAgeGroup(data.age_grp, data);
-    results.under_17_yn = this.validateUnder17Yn(data.under_17_yn);
-    results.imp_start_date = this.validateImpStartDate(data.imp_start_date, data);
-    results.imp_end_date = this.validateImpEndDate(data.imp_end_date, data);
+    results.ageGrp = this.validateAgeGroup(data.ageGrp, data);
+    results.showU17 = this.validateShowU17(data.showU17);
+    results.impStartDate = this.validateImpStartDate(data.impStartDate, data);
+    results.impEndDate = this.validateImpEndDate(data.impEndDate, data);
     results.status = this.validateStatus(data.status);
 
     return results;
