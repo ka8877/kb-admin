@@ -174,6 +174,7 @@ const HierarchyFormDialog: React.FC<HierarchyFormDialogProps> = ({
       setLoading(false);
     }
   }, [formData, onSave, onClose, validateAndShowErrors]);
+  return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{editData ? '계층 구조 수정' : '계층 구조 등록'}</DialogTitle>
       <DialogContent>
