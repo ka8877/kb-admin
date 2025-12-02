@@ -3,6 +3,16 @@
 
 import { useLoadingStore } from '@/store/loading';
 import { env } from '@/config';
+import {
+  DATA_REGISTRATION,
+  DATA_MODIFICATION,
+  DATA_DELETION,
+  CREATE_REQUESTED,
+  UPDATE_REQUESTED,
+  DELETE_REQUESTED,
+} from '@/constants/options';
+import { ApprovalFormType, ApprovalRequestType, ApprovalRequestData } from '@/types/types';
+import { formatDateForStorage } from '@/utils/dateUtils';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -298,3 +308,63 @@ export async function deleteItems(
     useLoadingStore.getState().stop();
   }
 }
+
+export type ApprovalRequestItem = {
+  targetType: string; // 대상 타입
+  targetId: string; // 대상 식별자
+  updatedBy: string | null; // 최근 처리자
+  isRetracted: number; // 회수 여부
+};
+
+/**
+ * 승인 요청 API 호출
+ */
+export const sendApprovalRequest = async <T>(
+  endpoint: string,
+  approvalForm: ApprovalFormType,
+  items: T[],
+  label: string,
+  targetType: string,
+  targetId: string,
+): Promise<void> => {
+  const titleMap: Record<ApprovalFormType, string> = {
+    [DATA_REGISTRATION]: '데이터 등록',
+    [DATA_MODIFICATION]: '데이터 수정',
+    [DATA_DELETION]: '데이터 삭제',
+  };
+
+  const contentMap: Record<ApprovalFormType, string> = {
+    [DATA_REGISTRATION]: `${label} 등록 요청드립니다`,
+    [DATA_MODIFICATION]: `${label} 수정 요청드립니다`,
+    [DATA_DELETION]: `${label} 삭제 요청드립니다`,
+  };
+
+  // approval_form에 따라 적절한 status 설정
+  const statusMap: Record<ApprovalFormType, ApprovalRequestType> = {
+    [DATA_REGISTRATION]: CREATE_REQUESTED,
+    [DATA_MODIFICATION]: UPDATE_REQUESTED,
+    [DATA_DELETION]: DELETE_REQUESTED,
+  };
+
+  const approvalData: ApprovalRequestData<T> = {
+    requestKind: approvalForm,
+    title: titleMap[approvalForm],
+    content: contentMap[approvalForm],
+    createdAt: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
+    approvalStatus: statusMap[approvalForm],
+    targetType,
+    targetId,
+    isRetracted: 0,
+    list: items,
+  };
+
+  try {
+    await postApi(endpoint, approvalData, {
+      errorMessage: '승인 요청 전송에 실패했습니다.',
+    });
+    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
+  } catch (error) {
+    console.error('승인 요청 전송 오류:', error);
+    // 승인 요청 실패는 CUD 작업 성공에 영향을 주지 않도록 에러를 던지지 않음
+  }
+};

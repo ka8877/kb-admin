@@ -1,7 +1,13 @@
 // 추천질문 관련 API 함수
 // 순수 함수로 비즈니스 로직만 담당 (React Query와 독립적)
 
-import { getApi, postApi, putApi, patchApi } from '@/utils/apiUtils';
+import {
+  getApi,
+  postApi,
+  putApi,
+  patchApi,
+  sendApprovalRequest as sendApprovalRequestCommon,
+} from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
@@ -18,8 +24,9 @@ import {
   DATA_REGISTRATION,
   DATA_MODIFICATION,
   DATA_DELETION,
+  TARGET_TYPE_RECOMMEND,
 } from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestType } from '@/types/types';
+import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
 
 /**
  * Firebase 응답 데이터를 RecommendedQuestionItem으로 변환하는 헬퍼 함수
@@ -80,20 +87,6 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
   return [];
 };
 
-interface ApprovalRequestData {
-  approval_form: ApprovalFormType;
-  title: string;
-  content: string;
-  request_date: string;
-  status:
-    | typeof CREATE_REQUESTED
-    | typeof UPDATE_REQUESTED
-    | typeof DELETE_REQUESTED
-    | typeof IN_REVIEW
-    | typeof DONE_REVIEW;
-  list: RecommendedQuestionItem[];
-}
-
 /**
  * 승인 요청 API 호출
  */
@@ -101,43 +94,17 @@ const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: RecommendedQuestionItem[],
 ): Promise<void> => {
-  const titleMap: Record<ApprovalFormType, string> = {
-    [DATA_REGISTRATION]: '데이터 등록',
-    [DATA_MODIFICATION]: '데이터 수정',
-    [DATA_DELETION]: '데이터 삭제',
-  };
+  // targetId는 단건일 경우 qstId, 다건일 경우 콤마로 구분
+  const targetId = items.map((item) => item.qstId).join(',');
 
-  const contentMap: Record<ApprovalFormType, string> = {
-    [DATA_REGISTRATION]: '추천질문 등록 요청드립니다',
-    [DATA_MODIFICATION]: '추천질문 수정 요청드립니다',
-    [DATA_DELETION]: '추천질문 삭제 요청드립니다',
-  };
-
-  // approval_form에 따라 적절한 status 설정
-  const statusMap: Record<ApprovalFormType, ApprovalRequestType> = {
-    [DATA_REGISTRATION]: CREATE_REQUESTED,
-    [DATA_MODIFICATION]: UPDATE_REQUESTED,
-    [DATA_DELETION]: DELETE_REQUESTED,
-  };
-
-  const approvalData: ApprovalRequestData = {
-    approval_form: approvalForm,
-    title: titleMap[approvalForm],
-    content: contentMap[approvalForm],
-    request_date: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
-    status: statusMap[approvalForm],
-    list: items,
-  };
-
-  try {
-    await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL, approvalData, {
-      errorMessage: '승인 요청 전송에 실패했습니다.',
-    });
-    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
-  } catch (error) {
-    console.error('승인 요청 전송 오류:', error);
-    // 승인 요청 실패는 CUD 작업 성공에 영향을 주지 않도록 에러를 던지지 않음
-  }
+  await sendApprovalRequestCommon(
+    API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
+    approvalForm,
+    items,
+    '추천질문',
+    TARGET_TYPE_RECOMMEND,
+    targetId,
+  );
 };
 
 /**
@@ -329,13 +296,30 @@ export const fetchRecommendedQuestion = async (
  */
 export const fetchApprovalRequest = async (
   approvalId: string | number,
-): Promise<Partial<ApprovalRequestData> & Record<string, any>> => {
+): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
-  const response = await getApi<Partial<ApprovalRequestData> & Record<string, any>>(endpoint, {
+  const response = await getApi<any>(endpoint, {
     errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
   });
 
-  return response.data;
+  const v = response.data;
+  return {
+    no: v.no ?? 0,
+    approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
+    targetType: v.targetType ?? '',
+    targetId: v.targetId ?? '',
+    itsvcNo: v.itsvcNo ?? null,
+    requestKind: v.requestKind ?? v.approval_form ?? '',
+    approvalStatus: v.approvalStatus ?? v.status ?? 'request',
+    title: v.title ?? null,
+    content: v.content ?? null,
+    createdBy: v.createdBy ?? v.requester ?? '',
+    department: v.department ?? '',
+    updatedBy: v.updatedBy ?? null,
+    createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
+    updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
+    isRetracted: v.isRetracted ?? 0,
+  };
 };
 
 /**
@@ -426,9 +410,9 @@ export const updateApprovalRequestStatus = async (
 ): Promise<void> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
 
-  const updateData: { status: string; process_date?: string } = { status };
+  const updateData: { approvalStatus: string; updatedAt?: string } = { approvalStatus: status };
   if (processDate) {
-    updateData.process_date = processDate;
+    updateData.updatedAt = processDate;
   }
 
   console.log('🔍 updateApprovalRequestStatus API 호출:', {

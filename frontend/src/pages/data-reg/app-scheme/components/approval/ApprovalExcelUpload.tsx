@@ -11,6 +11,8 @@ import {
   processedFields,
   excelDateFieldsConfig,
 } from '@/pages/data-reg/app-scheme/data';
+import { createAppSchemesBatch, transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
+import { toast } from 'react-toastify';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -23,39 +25,48 @@ const ApprovalExcelUpload: React.FC = () => {
     [],
   );
 
-  const handleSave = useCallback(async (data: any[]) => {
-    try {
-      console.log('ExcelListPreview에서 전달받은 데이터:', data);
-      console.log(`총 ${data.length}개 행`);
+  const handleSave = useCallback(
+    async (data: any[]) => {
+      try {
+        console.log('ExcelListPreview에서 전달받은 데이터:', data);
+        console.log(`총 ${data.length}개 행`);
 
-      // 데이터 전처리
-      const processedData = data.map((rowData) => {
-        // 문자열 필드: trim 처리
-        processedFields.forEach((field) => {
-          if (rowData[field] !== null && rowData[field] !== undefined) {
-            rowData[field] = String(rowData[field]).trim();
-          }
+        // 데이터 전처리
+        const processedData = data.map((rowData) => {
+          // 문자열 필드: trim 처리
+          processedFields.forEach((field) => {
+            if (rowData[field] !== null && rowData[field] !== undefined) {
+              rowData[field] = String(rowData[field]).trim();
+            }
+          });
+
+          // 빈 문자열을 null로 변환 (선택 필드)
+          ['goodsNameList', 'parentId', 'parentTitle'].forEach((field) => {
+            if (rowData[field] === '') {
+              rowData[field] = null;
+            }
+          });
+
+          return rowData;
         });
 
-        // 빈 문자열을 null로 변환 (선택 필드)
-        ['goodsNameList', 'parentId', 'parentTitle'].forEach((field) => {
-          if (rowData[field] === '') {
-            rowData[field] = null;
-          }
-        });
+        console.log('전처리된 데이터:', processedData);
 
-        return rowData;
-      });
+        // API 포맷으로 변환
+        const apiData = processedData.map((item) => transformToApiFormat(item));
 
-      console.log('전처리된 데이터:', processedData);
+        // 백엔드 API 호출
+        await createAppSchemesBatch(apiData);
 
-      // TODO: 백엔드 API 호출
-      // await api.saveAppSchemes(processedData);
-    } catch (error) {
-      console.error('데이터 처리 오류:', error);
-      throw error;
-    }
-  }, []);
+        toast.success('일괄 등록 요청이 완료되었습니다.');
+        navigate(-1);
+      } catch (error) {
+        console.error('데이터 처리 오류:', error);
+        throw error;
+      }
+    },
+    [navigate],
+  );
 
   const handleCancel = useCallback(() => {
     navigate(-1);

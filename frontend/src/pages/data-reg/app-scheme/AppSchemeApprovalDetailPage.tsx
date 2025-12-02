@@ -64,7 +64,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
   // status가 in_review 또는 done_review인 경우 최종 결재 버튼 숨김
   const canShowFinalApprovalButton = useMemo(() => {
     if (!approvalRequest) return true; // 데이터 로딩 전에는 표시
-    const status = approvalRequest.status;
+    const status = approvalRequest.approvalStatus;
     return status !== IN_REVIEW && status !== DONE_REVIEW;
   }, [approvalRequest]);
 

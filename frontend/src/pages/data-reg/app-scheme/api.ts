@@ -1,7 +1,14 @@
 // 앱스킴 관련 API 함수
 // 순수 함수로 비즈니스 로직만 담당 (React Query와 독립적)
 
-import { getApi, postApi, putApi, patchApi, deleteItems } from '@/utils/apiUtils';
+import {
+  getApi,
+  postApi,
+  putApi,
+  patchApi,
+  deleteItems,
+  sendApprovalRequest as sendApprovalRequestCommon,
+} from '@/utils/apiUtils';
 import { useLoadingStore } from '@/store/loading';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
@@ -18,8 +25,9 @@ import {
   DATA_REGISTRATION,
   DATA_MODIFICATION,
   DATA_DELETION,
+  TARGET_TYPE_APP,
 } from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestType } from '@/types/types';
+import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
 
 const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
 /**
@@ -141,20 +149,6 @@ export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem
   return transformItem(response.data, { index: 0, fallbackId: id });
 };
 
-interface ApprovalRequestData {
-  approval_form: ApprovalFormType;
-  title: string;
-  content: string;
-  request_date: string;
-  status:
-    | typeof CREATE_REQUESTED
-    | typeof UPDATE_REQUESTED
-    | typeof DELETE_REQUESTED
-    | typeof IN_REVIEW
-    | typeof DONE_REVIEW;
-  list: AppSchemeItem[];
-}
-
 /**
  * 승인 요청 API 호출
  */
@@ -162,43 +156,17 @@ const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: AppSchemeItem[],
 ): Promise<void> => {
-  const titleMap: Record<ApprovalFormType, string> = {
-    [DATA_REGISTRATION]: '데이터 등록',
-    [DATA_MODIFICATION]: '데이터 수정',
-    [DATA_DELETION]: '데이터 삭제',
-  };
+  // targetId는 단건일 경우 appSchemeId, 다건일 경우 콤마로 구분
+  const targetId = items.map((item) => item.appSchemeId).join(',');
 
-  const contentMap: Record<ApprovalFormType, string> = {
-    [DATA_REGISTRATION]: '앱스킴 등록 요청드립니다',
-    [DATA_MODIFICATION]: '앱스킴 수정 요청드립니다',
-    [DATA_DELETION]: '앱스킴 삭제 요청드립니다',
-  };
-
-  // approval_form에 따라 적절한 status 설정
-  const statusMap: Record<ApprovalFormType, ApprovalRequestType> = {
-    [DATA_REGISTRATION]: CREATE_REQUESTED,
-    [DATA_MODIFICATION]: UPDATE_REQUESTED,
-    [DATA_DELETION]: DELETE_REQUESTED,
-  };
-
-  const approvalData: ApprovalRequestData = {
-    approval_form: approvalForm,
-    title: titleMap[approvalForm],
-    content: contentMap[approvalForm],
-    request_date: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
-    status: statusMap[approvalForm],
-    list: items,
-  };
-
-  try {
-    await postApi(API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST, approvalData, {
-      errorMessage: '승인 요청 전송에 실패했습니다.',
-    });
-    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
-  } catch (error) {
-    console.error('승인 요청 전송 오류:', error);
-    // 승인 요청 실패는 CUD 작업 성공에 영향을 주지 않도록 에러를 던지지 않음
-  }
+  await sendApprovalRequestCommon(
+    API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST,
+    approvalForm,
+    items,
+    '앱스킴',
+    TARGET_TYPE_APP,
+    targetId,
+  );
 };
 
 /**
@@ -335,17 +303,55 @@ export const createAppScheme = async (data: Partial<AppSchemeItem>): Promise<App
 };
 
 /**
+ * 앱스킴 일괄 생성 (승인 요청 전송 후 실제 데이터 생성)
+ * @param items - 생성할 앱스킴 아이템 배열
+ */
+export const createAppSchemesBatch = async (items: Partial<AppSchemeItem>[]): Promise<void> => {
+  // 각 아이템에 대해 임시 ID 생성 및 변환
+  const transformedItems = items.map((data, index) => {
+    const tempId = `temp_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+    return transformItem({ ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, any>, {
+      index,
+      fallbackId: tempId,
+    });
+  });
+
+  // 승인 요청 전송 (일괄)
+  await sendApprovalRequest(DATA_REGISTRATION, transformedItems);
+
+  // 결재 요청 성공 후 실제 데이터 생성 (같은 id로)
+  await createApprovedAppSchemes(transformedItems);
+};
+
+/**
  * 승인 요청 정보 조회
  */
 export const fetchApprovalRequest = async (
   approvalId: string | number,
-): Promise<Partial<ApprovalRequestData> & Record<string, any>> => {
+): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
-  const response = await getApi<Partial<ApprovalRequestData> & Record<string, any>>(endpoint, {
+  const response = await getApi<any>(endpoint, {
     errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
   });
 
-  return response.data;
+  const v = response.data;
+  return {
+    no: v.no ?? 0,
+    approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
+    targetType: v.targetType ?? '',
+    targetId: v.targetId ?? '',
+    itsvcNo: v.itsvcNo ?? null,
+    requestKind: v.requestKind ?? v.approval_form ?? '',
+    approvalStatus: v.approvalStatus ?? v.status ?? 'request',
+    title: v.title ?? null,
+    content: v.content ?? null,
+    createdBy: v.createdBy ?? v.requester ?? '',
+    department: v.department ?? '',
+    updatedBy: v.updatedBy ?? null,
+    createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
+    updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
+    isRetracted: v.isRetracted ?? 0,
+  };
 };
 
 /**
@@ -382,9 +388,9 @@ export const updateApprovalRequestStatus = async (
 ): Promise<void> => {
   const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
 
-  const updateData: { status: string; process_date?: string } = { status };
+  const updateData: { approvalStatus: string; updatedAt?: string } = { approvalStatus: status };
   if (processDate) {
-    updateData.process_date = processDate;
+    updateData.updatedAt = processDate;
   }
 
   console.log('🔍 updateApprovalRequestStatus API 호출:', {

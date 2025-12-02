@@ -47,15 +47,20 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
         const v = item as Partial<ApprovalRequestItem> & Record<string, any>;
         return {
           no: v.no ?? index + 1,
-          id: String(v.id ?? index + 1),
-          approval_form: v.approval_form ?? '',
-          title: v.title ?? '',
-          content: v.content ?? '',
-          requester: v.requester ?? null,
+          approvalRequestId: String(v.approvalRequestId ?? v.id ?? index + 1),
+          targetType: v.targetType ?? '',
+          targetId: v.targetId ?? '',
+          itsvcNo: v.itsvcNo ?? null,
+          requestKind: v.requestKind ?? v.approval_form ?? '',
+          approvalStatus: v.approvalStatus ?? v.status ?? 'request',
+          title: v.title ?? null,
+          content: v.content ?? null,
+          createdBy: v.createdBy ?? v.requester ?? '',
           department: v.department ?? '',
-          request_date: v.request_date ? String(v.request_date) : '',
-          status: v.status ?? 'request',
-          process_date: v.process_date ? String(v.process_date) : '',
+          updatedBy: v.updatedBy ?? null,
+          createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
+          updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
+          isRetracted: v.isRetracted ?? 0,
         };
       })
       .filter((item): item is ApprovalRequestItem => item !== null);
@@ -69,15 +74,20 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
       const v = value as Partial<ApprovalRequestItem> & Record<string, any>;
       return {
         no: v.no ?? index + 1,
-        id: String(v.id ?? key),
-        approval_form: v.approval_form ?? '',
-        title: v.title ?? '',
-        content: v.content ?? '',
-        requester: v.requester ?? null,
+        approvalRequestId: String(v.approvalRequestId ?? v.id ?? key),
+        targetType: v.targetType ?? '',
+        targetId: v.targetId ?? '',
+        itsvcNo: v.itsvcNo ?? null,
+        requestKind: v.requestKind ?? v.approval_form ?? '',
+        approvalStatus: v.approvalStatus ?? v.status ?? 'request',
+        title: v.title ?? null,
+        content: v.content ?? null,
+        createdBy: v.createdBy ?? v.requester ?? '',
         department: v.department ?? '',
-        request_date: v.request_date ? String(v.request_date) : '',
-        status: v.status ?? 'request',
-        process_date: v.process_date ? String(v.process_date) : '',
+        updatedBy: v.updatedBy ?? null,
+        createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
+        updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
+        isRetracted: v.isRetracted ?? 0,
       };
     });
   }
@@ -135,22 +145,22 @@ const DataRegApprovalPage: React.FC = () => {
   const selectFieldsConfig = useMemo(() => {
     const approvalFormField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'approval_form',
+        field.type === 'select' && field.field === 'requestKind',
     );
     const statusField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'status',
+        field.type === 'select' && field.field === 'approvalStatus',
     );
 
     const approvalFormOptions = approvalFormField?.options || [];
     const statusOptions = statusField?.options || [];
 
     return {
-      approval_form: approvalFormOptions.map((opt: { label: string; value: string | number }) => ({
+      requestKind: approvalFormOptions.map((opt: { label: string; value: string | number }) => ({
         label: opt.label,
         value: String(opt.value),
       })),
-      status: statusOptions.map((opt: { label: string; value: string | number }) => ({
+      approvalStatus: statusOptions.map((opt: { label: string; value: string | number }) => ({
         label: opt.label,
         value: String(opt.value),
       })),
@@ -237,12 +247,12 @@ const DataRegApprovalPage: React.FC = () => {
 
       // 선택된 승인 요청들 필터링
       const selectedRequests = approvalRequests.filter((request) =>
-        selectedIds.includes(request.id),
+        selectedIds.includes(request.approvalRequestId),
       );
 
       // done_review 상태인 건은 선택 불가
       const doneReviewRequests = selectedRequests.filter(
-        (request) => request.status === DONE_REVIEW,
+        (request) => request.approvalStatus === DONE_REVIEW,
       );
       if (doneReviewRequests.length > 0) {
         showAlert({
@@ -268,7 +278,7 @@ const DataRegApprovalPage: React.FC = () => {
         const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
         // 모든 선택된 요청의 status를 in_review로 변경
         for (const request of selectedRequests) {
-          await updateApprovalRequestStatus(request.id, IN_REVIEW, processDate);
+          await updateApprovalRequestStatus(request.approvalRequestId, IN_REVIEW, processDate);
         }
         toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         setApproveSelectionMode(false);
@@ -292,9 +302,10 @@ const DataRegApprovalPage: React.FC = () => {
         fetcher={listApi.list}
         isLoading={isDataLoading}
         selectFields={selectFieldsConfig}
-        dateFields={['request_date', 'process_date']}
+        dateFields={['createdAt', 'updatedAt']}
         dateFormat="YYYYMMDDHHmmss"
         dateDisplayFormat="dots"
+        rowIdGetter="approvalRequestId"
         actionsNode={({ toggleSelectionMode }) => (
           <ApprovalListActions
             onBack={handleBack}
@@ -322,7 +333,9 @@ const DataRegApprovalPage: React.FC = () => {
         onApproveSelect={handleApproveSelect}
         isRowSelectable={(params) => {
           // done_review 상태인 행만 선택 불가
-          return params.row.status !== DONE_REVIEW && params.row.status !== IN_REVIEW;
+          return (
+            params.row.approvalStatus !== DONE_REVIEW && params.row.approvalStatus !== IN_REVIEW
+          );
         }}
       />
     </Box>

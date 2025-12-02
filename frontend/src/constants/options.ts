@@ -13,6 +13,12 @@ export const DATA_MODIFICATION = 'data_modification' as const;
 export const DATA_DELETION = 'data_deletion' as const;
 
 /**
+ * 결재 대상 타입 상수
+ */
+export const TARGET_TYPE_RECOMMEND = 'RECOMMEND' as const;
+export const TARGET_TYPE_APP = 'APP' as const;
+
+/**
  * 결재양식 옵션
  */
 export const APPROVAL_FORM_OPTIONS = [
@@ -51,28 +57,28 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
     ],
   },
   {
-    field: 'approval_form',
+    field: 'requestKind',
     label: '결재양식',
     type: 'select',
     options: [...APPROVAL_FORM_OPTIONS],
   },
   {
-    field: 'status',
+    field: 'approvalStatus',
     label: '결재상태',
     type: 'select',
     options: [...APPROVAL_STATUS_OPTIONS],
   },
 
   {
-    field: 'request_date_start',
-    dataField: 'request_date',
+    field: 'createdAt_start',
+    dataField: 'createdAt',
     label: '요청일시 시작',
     type: 'dateRange',
     position: 'start',
   },
   {
-    field: 'request_date_end',
-    dataField: 'request_date',
+    field: 'createdAt_end',
+    dataField: 'createdAt',
     label: '요청일시 종료',
     type: 'dateRange',
     position: 'end',
