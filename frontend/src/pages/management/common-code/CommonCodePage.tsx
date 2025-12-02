@@ -1,69 +1,59 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Grid, Paper, Stack, Typography, Box } from '@mui/material';
 import PageHeader from '@/components/common/PageHeader';
 import EditableList from '@/components/common/list/EditableList';
 import MediumButton from '@/components/common/button/MediumButton';
-import { commonCodeMockDb, type CodeTypeOption } from '@/mocks/commonCodeDb';
+import type { CodeTypeOption } from '@/mocks/commonCodeDb';
 import { majorColumns, minorColumns } from './components/columns';
 import MajorCodeForm from './components/MajorCodeForm';
 import MinorCodeForm from './components/MinorCodeForm';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import type { RowItem } from './types';
+import {
+  useCodeTypes,
+  useSaveCodeTypes,
+  useCommonCodes,
+  useCreateCommonCode,
+  useUpdateCommonCode,
+  useDeleteCommonCode,
+} from './hooks';
 
 export default function CommonCodePage() {
   const { showAlert } = useAlertDialog();
+
+  // React Query 훅 사용
+  const {
+    data: codeTypesData,
+    isLoading: isMajorLoading,
+    refetch: refetchCodeTypes,
+  } = useCodeTypes();
+  const saveCodeTypesMutation = useSaveCodeTypes();
+  const createCommonCodeMutation = useCreateCommonCode();
+  const updateCommonCodeMutation = useUpdateCommonCode();
+  const deleteCommonCodeMutation = useDeleteCommonCode();
+
   // State for Major Codes (Code Types)
-  const [majorList, setMajorList] = useState<CodeTypeOption[]>([]);
   const [selectedMajor, setSelectedMajor] = useState<CodeTypeOption | null>(null);
-  const [isMajorLoading, setIsMajorLoading] = useState(false);
   const [isMajorFormOpen, setIsMajorFormOpen] = useState(false);
   const [isNewMajor, setIsNewMajor] = useState(false);
 
   // State for Minor Codes (Common Code Items)
-  const [minorList, setMinorList] = useState<RowItem[]>([]);
+  const {
+    data: minorCodesData,
+    isLoading: isMinorLoading,
+    refetch: refetchMinorCodes,
+  } = useCommonCodes(selectedMajor ? { codeType: selectedMajor.value } : undefined);
   const [selectedMinor, setSelectedMinor] = useState<RowItem | null>(null);
-  const [isMinorLoading, setIsMinorLoading] = useState(false);
   const [isMinorFormOpen, setIsMinorFormOpen] = useState(false);
   const [isNewMinor, setIsNewMinor] = useState(false);
 
-  // Load Major Codes (Code Types)
-  const loadMajorCodes = useCallback(async () => {
-    setIsMajorLoading(true);
-    try {
-      const data = await commonCodeMockDb.getCodeTypes();
-      setMajorList(data);
-    } catch (error) {
-      console.error('Failed to load code types:', error);
-    } finally {
-      setIsMajorLoading(false);
-    }
-  }, []);
-
-  // Load Minor Codes (Items for selected Code Type)
-  const loadMinorCodes = useCallback(async (codeType: string) => {
-    setIsMinorLoading(true);
-    try {
-      const allItems = await commonCodeMockDb.listAll();
-      const filteredItems = allItems.filter((item) => item.code_type === codeType);
-
-      // Renumber 'no' to start from 1 for each category
-      const renumberedItems = filteredItems.map((item, index) => ({
-        ...item,
-        no: index + 1,
-      }));
-
-      setMinorList(renumberedItems as RowItem[]);
-    } catch (error) {
-      console.error('Failed to load common codes:', error);
-    } finally {
-      setIsMinorLoading(false);
-    }
-  }, []);
-
-  // Initial load
-  useEffect(() => {
-    loadMajorCodes();
-  }, [loadMajorCodes]);
+  // majorList와 minorList를 React Query 데이터에서 가져오기
+  const majorList = codeTypesData || [];
+  const minorList =
+    minorCodesData?.map((item, index) => ({
+      ...item,
+      no: index + 1,
+    })) || [];
 
   // Handle Major Code Selection
   const handleMajorRowClick = (params: any) => {
@@ -73,8 +63,14 @@ export default function CommonCodePage() {
     setIsMajorFormOpen(true);
     setIsNewMajor(false);
     setIsMinorFormOpen(false); // Close minor form
-    loadMinorCodes(item.value);
   };
+
+  // selectedMajor가 변경될 때 minorCodes 자동 refetch
+  useEffect(() => {
+    if (selectedMajor) {
+      refetchMinorCodes();
+    }
+  }, [selectedMajor, refetchMinorCodes]);
 
   // Handle Minor Code Selection
   const handleMinorRowClick = (params: any) => {
@@ -110,15 +106,15 @@ export default function CommonCodePage() {
       } else {
         newMajorList = majorList.map((item) => (item.value === data.value ? data : item));
       }
-      await commonCodeMockDb.saveCodeTypes(newMajorList);
-      await loadMajorCodes();
+
+      // API 호출
+      await saveCodeTypesMutation.mutateAsync(newMajorList);
       setIsMajorFormOpen(false);
       setIsNewMajor(false);
 
       // If it was a new item, select it
       if (isNewMajor) {
         setSelectedMajor(data);
-        loadMinorCodes(data.value);
       }
 
       // Show success alert
@@ -140,13 +136,16 @@ export default function CommonCodePage() {
   const handleDeleteMajor = async (value: string) => {
     try {
       const newMajorList = majorList.filter((item) => item.value !== value);
-      await commonCodeMockDb.saveCodeTypes(newMajorList);
-      await loadMajorCodes();
+      await saveCodeTypesMutation.mutateAsync(newMajorList);
       setSelectedMajor(null);
-      setMinorList([]);
       setIsMajorFormOpen(false);
     } catch (error) {
       console.error('Failed to delete code type:', error);
+      showAlert({
+        title: '오류',
+        message: '대분류 삭제 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
     }
   };
 
@@ -168,14 +167,18 @@ export default function CommonCodePage() {
   const handleSaveMinor = async (data: RowItem) => {
     try {
       if (isNewMinor) {
-        await commonCodeMockDb.create({
+        // API 생성 호출
+        await createCommonCodeMutation.mutateAsync({
           ...data,
           code_type: selectedMajor!.value,
         });
       } else {
-        await commonCodeMockDb.update(data.service_cd, data);
+        // API 수정 호출
+        await updateCommonCodeMutation.mutateAsync({
+          serviceCode: data.service_cd,
+          data,
+        });
       }
-      await loadMinorCodes(selectedMajor!.value);
       setIsMinorFormOpen(false);
       setIsNewMinor(false);
 
@@ -197,20 +200,31 @@ export default function CommonCodePage() {
 
   const handleDeleteMinor = async (service_cd: string) => {
     try {
-      await commonCodeMockDb.delete(service_cd);
-      if (selectedMajor) {
-        await loadMinorCodes(selectedMajor.value);
-      }
+      await deleteCommonCodeMutation.mutateAsync(service_cd);
       setSelectedMinor(null);
       setIsMinorFormOpen(false);
+
+      showAlert({
+        title: '성공',
+        message: '소분류가 삭제되었습니다.',
+        severity: 'success',
+      });
     } catch (error) {
       console.error('Failed to delete common code:', error);
+      showAlert({
+        title: '오류',
+        message: '소분류 삭제 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
     }
   };
 
   return (
     <Stack spacing={2} sx={{ height: '100%' }}>
-      <PageHeader title="공통코드 관리" locations={['관리', '공통코드 관리']} />
+      <PageHeader
+        title="공통코드 관리"
+        breadcrumbs={[{ label: '관리' }, { label: '공통코드 관리' }]}
+      />
 
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* Left Panel: Major Codes (Code Types) */}
@@ -227,10 +241,9 @@ export default function CommonCodePage() {
               <EditableList
                 columns={majorColumns}
                 rows={majorList}
-                loading={isMajorLoading}
+                isLoading={isMajorLoading}
                 onRowClick={handleMajorRowClick}
                 rowIdGetter={(row) => row.value}
-                hideFooter
                 autoHeight={false}
               />
             </Box>
@@ -266,10 +279,9 @@ export default function CommonCodePage() {
                 <EditableList
                   columns={minorColumns}
                   rows={minorList}
-                  loading={isMinorLoading}
+                  isLoading={isMinorLoading}
                   onRowClick={handleMinorRowClick}
                   rowIdGetter={(row) => row.service_cd}
-                  hideFooter
                   autoHeight={false}
                 />
               ) : (
