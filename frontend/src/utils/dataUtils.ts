@@ -6,13 +6,13 @@
  * 두 객체를 비교하여 변경사항이 있는지 확인
  * @param originalData - 원본 데이터
  * @param editedData - 편집된 데이터
- * @param excludeFields - 비교에서 제외할 필드 목록 (예: updatedAt, registeredAt 등)
+ * @param excludeFields - 비교에서 제외할 필드 목록 (예: updatedAt, createdAt 등)
  * @returns 변경사항이 있으면 true, 없으면 false
  */
 export function hasDataChanges<T extends Record<string, any>>(
   originalData: T | undefined,
   editedData: T | undefined,
-  excludeFields: string[] = ['updatedAt', 'registeredAt', 'no'],
+  excludeFields: string[] = ['updatedAt', 'createdAt', 'no'],
 ): boolean {
   // 둘 다 undefined이면 변경사항 없음
   if (!originalData && !editedData) {
@@ -54,4 +54,3 @@ export function hasDataChanges<T extends Record<string, any>>(
 
   return false;
 }
-

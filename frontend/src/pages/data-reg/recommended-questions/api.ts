@@ -1,14 +1,32 @@
 // 추천질문 관련 API 함수
 // 순수 함수로 비즈니스 로직만 담당 (React Query와 독립적)
 
-import { getApi, postApi, putApi, patchApi, deleteApi, deleteItems } from '@/utils/apiUtils';
+import {
+  getApi,
+  postApi,
+  putApi,
+  patchApi,
+  sendApprovalRequest as sendApprovalRequestCommon,
+} from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
-import type { RecommendedQuestionItem } from './types';
+import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
 import { useLoadingStore } from '@/store/loading';
-import { APPROVAL_STATUS_OPTIONS } from '@/constants/options';
+import {
+  APPROVAL_STATUS_OPTIONS,
+  CREATE_REQUESTED,
+  UPDATE_REQUESTED,
+  DELETE_REQUESTED,
+  IN_REVIEW,
+  DONE_REVIEW,
+  DATA_REGISTRATION,
+  DATA_MODIFICATION,
+  DATA_DELETION,
+  TARGET_TYPE_RECOMMEND,
+} from '@/constants/options';
+import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
 
 /**
  * Firebase 응답 데이터를 RecommendedQuestionItem으로 변환하는 헬퍼 함수
@@ -21,20 +39,20 @@ const transformItem = (
 
   return {
     no: v.no ?? index + 1,
-    qst_id: String(v.qst_id ?? fallbackId ?? index + 1),
-    service_nm: v.service_nm ?? '',
-    display_ctnt: v.display_ctnt ?? '',
-    prompt_ctnt: v.prompt_ctnt ?? null,
-    qst_ctgr: v.qst_ctgr ?? '',
-    qst_style: v.qst_style ?? null,
-    parent_id: v.parent_id ?? null,
-    parent_nm: v.parent_nm ?? null,
-    age_grp: v.age_grp ?? null,
-    under_17_yn: v.under_17_yn ?? 'N',
-    imp_start_date: v.imp_start_date ? String(v.imp_start_date) : '',
-    imp_end_date: v.imp_end_date ? String(v.imp_end_date) : '',
+    qstId: String(v.qstId ?? v.qst_id ?? fallbackId ?? index + 1),
+    serviceNm: v.serviceNm ?? v.service_nm ?? '',
+    displayCtnt: v.displayCtnt ?? v.display_ctnt ?? '',
+    promptCtnt: v.promptCtnt ?? v.prompt_ctnt ?? null,
+    qstCtgr: v.qstCtgr ?? v.qst_ctgr ?? '',
+    qstStyle: v.qstStyle ?? v.qst_style ?? null,
+    parentId: v.parentId ?? v.parent_id ?? null,
+    parentNm: v.parentNm ?? v.parent_nm ?? null,
+    ageGrp: v.ageGrp ?? v.age_grp ?? null,
+    showU17: v.showU17 ?? v.under_17_yn ?? 'N',
+    impStartDate: v.impStartDate ?? (v.imp_start_date ? String(v.imp_start_date) : ''),
+    impEndDate: v.impEndDate ?? (v.imp_end_date ? String(v.imp_end_date) : ''),
     updatedAt: v.updatedAt ? String(v.updatedAt) : '',
-    registeredAt: v.registeredAt ? String(v.registeredAt) : '',
+    createdAt: v.createdAt ?? (v.createdAt ? String(v.createdAt) : ''),
     status: (v.status as RecommendedQuestionItem['status']) ?? 'in_service',
   };
 };
@@ -70,149 +88,136 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
 };
 
 /**
- * 승인 요청 데이터 타입
- */
-type ApprovalFormType = 'data_registration' | 'data_modification' | 'data_deletion';
-
-interface ApprovalRequestData {
-  approval_form: ApprovalFormType;
-  title: string;
-  content: string;
-  request_date: string;
-  status: 'create_requested' | 'update_requested' | 'delete_requested' | 'in_review' | 'done_review';
-  list: RecommendedQuestionItem[];
-}
-
-/**
  * 승인 요청 API 호출
  */
 const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: RecommendedQuestionItem[],
 ): Promise<void> => {
-  const titleMap: Record<ApprovalFormType, string> = {
-    data_registration: '데이터 등록',
-    data_modification: '데이터 수정',
-    data_deletion: '데이터 삭제',
-  };
+  // targetId는 단건일 경우 qstId, 다건일 경우 콤마로 구분
+  const targetId = items.map((item) => item.qstId).join(',');
 
-  const contentMap: Record<ApprovalFormType, string> = {
-    data_registration: '추천질문 등록 요청드립니다',
-    data_modification: '추천질문 수정 요청드립니다',
-    data_deletion: '추천질문 삭제 요청드립니다',
-  };
-
-  // approval_form에 따라 적절한 status 설정 (상수에서 value 추출)
-  const statusMap: Record<ApprovalFormType, 'create_requested' | 'update_requested' | 'delete_requested'> = {
-    data_registration: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'create_requested')?.value as 'create_requested',
-    data_modification: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'update_requested')?.value as 'update_requested',
-    data_deletion: APPROVAL_STATUS_OPTIONS.find((opt) => opt.value === 'delete_requested')?.value as 'delete_requested',
-  };
-
-  const approvalData: ApprovalRequestData = {
-    approval_form: approvalForm,
-    title: titleMap[approvalForm],
-    content: contentMap[approvalForm],
-    request_date: formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '',
-    status: statusMap[approvalForm],
-    list: items,
-  };
-
-  try {
-    await postApi(
-      API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
-      approvalData,
-      {
-        baseURL: env.testURL,
-        errorMessage: '승인 요청 전송에 실패했습니다.',
-      },
-    );
-    console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
-  } catch (error) {
-    console.error('승인 요청 전송 오류:', error);
-    // 승인 요청 실패는 CUD 작업 성공에 영향을 주지 않도록 에러를 던지지 않음
-  }
+  await sendApprovalRequestCommon(
+    API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
+    approvalForm,
+    items,
+    '추천질문',
+    TARGET_TYPE_RECOMMEND,
+    targetId,
+  );
 };
 
 /**
  * 입력 데이터를 API 전송 형식으로 변환하는 공통 함수
  * 폼 데이터와 엑셀 데이터 모두를 변환할 수 있도록 지원
- * 
+ *
  * @param inputData - 폼 또는 엑셀에서 입력된 데이터
  * @returns API 전송 형식의 데이터
  */
-export const transformToApiFormat = (
-  inputData: {
-    // 엑셀에서 올 수 있는 필드 (service_cd, parent_id, parent_nm)
-    service_cd?: string | null;
-    service_nm?: string | null;
-    // 폼에서 올 수 있는 필드 (parentId, parentIdName)
-    parentId?: string | null;
-    parentIdName?: string | null;
-    // 공통 필드
-    display_ctnt?: string | null;
-    prompt_ctnt?: string | null;
-    qst_ctgr?: string | null;
-    qst_style?: string | null;
-    parent_id?: string | null;
-    parent_nm?: string | null;
-    age_grp?: string | number | null;
-    under_17_yn?: string | null;
-    imp_start_date?: string | Date | Dayjs | null;
-    imp_end_date?: string | Date | Dayjs | null;
-    status?: string | null;
-  },
-): Partial<RecommendedQuestionItem> => {
-  // service_nm 결정: service_nm이 있으면 사용, 없으면 service_cd 사용
-  const service_nm = inputData.service_nm || inputData.service_cd || '';
+export const transformToApiFormat = (inputData: {
+  // 엑셀에서 올 수 있는 필드 (serviceCd, parent_id, parent_nm)
+  serviceCd?: string | null;
+  service_cd?: string | null; // Legacy support
+  serviceNm?: string | null;
+  service_nm?: string | null; // Legacy support
+  // 폼에서 올 수 있는 필드 (parentId, parentIdName)
+  parentId?: string | null;
+  parentIdName?: string | null;
+  // 공통 필드
+  displayCtnt?: string | null;
+  display_ctnt?: string | null; // Legacy support
+  promptCtnt?: string | null;
+  prompt_ctnt?: string | null; // Legacy support
+  qstCtgr?: string | null;
+  qst_ctgr?: string | null; // Legacy support
+  qstStyle?: string | null;
+  qst_style?: string | null; // Legacy support
+  parent_id?: string | null;
+  parent_nm?: string | null;
+  ageGrp?: string | number | null;
+  age_grp?: string | number | null; // Legacy support
+  showU17?: string | null;
+  under17Yn?: string | null; // Legacy support
+  under_17_yn?: string | null; // Legacy support
+  impStartDate?: string | Date | Dayjs | null;
+  imp_start_date?: string | Date | Dayjs | null; // Legacy support
+  impEndDate?: string | Date | Dayjs | null;
+  imp_end_date?: string | Date | Dayjs | null; // Legacy support
+  status?: string | null;
+}): Partial<RecommendedQuestionItem> => {
+  // serviceNm 결정: serviceNm이 있으면 사용, 없으면 service_nm, 없으면 serviceCd, 없으면 service_cd 사용
+  const serviceNm =
+    inputData.serviceNm ||
+    inputData.service_nm ||
+    inputData.serviceCd ||
+    inputData.service_cd ||
+    '';
 
-  // parent_id 결정: parent_id가 있으면 사용, 없으면 parentId 사용
-  const parent_id = inputData.parent_id || inputData.parentId || null;
+  // parentId 결정: parentId가 있으면 사용, 없으면 parent_id 사용
+  const parentId = inputData.parentId || inputData.parent_id || null;
 
-  // parent_nm 결정: parent_nm이 있으면 사용, 없으면 parentIdName 사용
-  const parent_nm = inputData.parent_nm || inputData.parentIdName || null;
+  // parentNm 결정: parentIdName이 있으면 사용, 없으면 parent_nm 사용
+  const parentNm = inputData.parentIdName || inputData.parent_nm || null;
 
   // 날짜 변환
-  let imp_start_date = '';
-  if (inputData.imp_start_date) {
-    if (typeof inputData.imp_start_date === 'object' && 'toDate' in inputData.imp_start_date) {
+  let impStartDate = '';
+  const inputImpStartDate = inputData.impStartDate || inputData.imp_start_date;
+  if (inputImpStartDate) {
+    if (typeof inputImpStartDate === 'object' && 'toDate' in inputImpStartDate) {
       // Dayjs 객체인 경우
-      imp_start_date = toCompactFormat((inputData.imp_start_date as Dayjs).toDate()) || '';
+      impStartDate = toCompactFormat((inputImpStartDate as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      imp_start_date = toCompactFormat(inputData.imp_start_date) || '';
+      impStartDate = toCompactFormat(inputImpStartDate) || '';
     }
   }
 
-  let imp_end_date = '';
-  if (inputData.imp_end_date) {
-    if (typeof inputData.imp_end_date === 'object' && 'toDate' in inputData.imp_end_date) {
+  let impEndDate = '';
+  const inputImpEndDate = inputData.impEndDate || inputData.imp_end_date;
+  if (inputImpEndDate) {
+    if (typeof inputImpEndDate === 'object' && 'toDate' in inputImpEndDate) {
       // Dayjs 객체인 경우
-      imp_end_date = toCompactFormat((inputData.imp_end_date as Dayjs).toDate()) || '';
+      impEndDate = toCompactFormat((inputImpEndDate as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      imp_end_date = toCompactFormat(inputData.imp_end_date) || '';
+      impEndDate = toCompactFormat(inputImpEndDate) || '';
     }
   }
 
-  // age_grp를 문자열로 변환
-  let age_grp: string | null = null;
-  if (inputData.age_grp !== null && inputData.age_grp !== undefined && String(inputData.age_grp).trim() !== '') {
-    age_grp = String(Number(inputData.age_grp));
+  // ageGrp를 문자열로 변환
+  let ageGrp: string | null = null;
+  const inputAgeGrp = inputData.ageGrp ?? inputData.age_grp;
+  if (inputAgeGrp !== null && inputAgeGrp !== undefined && String(inputAgeGrp).trim() !== '') {
+    ageGrp = String(Number(inputAgeGrp));
   }
 
   return {
-    service_nm,
-    display_ctnt: inputData.display_ctnt ? String(inputData.display_ctnt) : '',
-    prompt_ctnt: inputData.prompt_ctnt ? String(inputData.prompt_ctnt) : null,
-    qst_ctgr: inputData.qst_ctgr ? String(inputData.qst_ctgr) : '',
-    qst_style: inputData.qst_style ? String(inputData.qst_style) : null,
-    parent_id,
-    parent_nm,
-    age_grp,
-    under_17_yn: inputData.under_17_yn ? String(inputData.under_17_yn).toUpperCase() : 'N',
-    imp_start_date,
-    imp_end_date,
+    serviceNm: serviceNm,
+    displayCtnt:
+      inputData.displayCtnt || inputData.display_ctnt
+        ? String(inputData.displayCtnt || inputData.display_ctnt)
+        : '',
+    promptCtnt:
+      inputData.promptCtnt || inputData.prompt_ctnt
+        ? String(inputData.promptCtnt || inputData.prompt_ctnt)
+        : null,
+    qstCtgr:
+      inputData.qstCtgr || inputData.qst_ctgr
+        ? String(inputData.qstCtgr || inputData.qst_ctgr)
+        : '',
+    qstStyle:
+      inputData.qstStyle || inputData.qst_style
+        ? String(inputData.qstStyle || inputData.qst_style)
+        : null,
+    parentId: parentId,
+    parentNm: parentNm,
+    ageGrp: ageGrp,
+    showU17:
+      inputData.showU17 || inputData.under17Yn || inputData.under_17_yn
+        ? String(inputData.showU17 || inputData.under17Yn || inputData.under_17_yn).toUpperCase()
+        : 'N',
+    impStartDate: impStartDate,
+    impEndDate: impEndDate,
     status: (inputData.status as RecommendedQuestionItem['status']) || 'in_service',
   };
 };
@@ -245,23 +250,22 @@ export const fetchRecommendedQuestions = async (
   });
 
   // TODO: 실제 REST API로 전환 시 아래 주석을 해제하고 사용
-   const queryParams = new URLSearchParams();
+  const queryParams = new URLSearchParams();
   // queryParams.append('page', String(page));
   // queryParams.append('pageSize', String(pageSize));
   //
   // // 검색 조건을 쿼리 파라미터로 추가
- //  Object.entries(searchParams).forEach(([key, value]) => {
+  //  Object.entries(searchParams).forEach(([key, value]) => {
   //   if (value !== undefined && value !== null && value !== '') {
   //     queryParams.append(key, String(value));
   //   }
   // });
-  
+
   //const endpoint = `${API_ENDPOINTS.RECOMMENDED_QUESTIONS.LIST}?${queryParams.toString()}`;
 
   const response = await getApi<RecommendedQuestionItem[]>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.LIST,
     {
-      baseURL: env.testURL,
       transform: transformRecommendedQuestions,
       errorMessage: '추천질문 데이터를 불러오지 못했습니다.',
     },
@@ -279,7 +283,6 @@ export const fetchRecommendedQuestion = async (
   const response = await getApi<Partial<RecommendedQuestionItem> & Record<string, any>>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.DETAIL(id),
     {
-      baseURL: env.testURL,
       errorMessage: '추천질문 상세 데이터를 불러오지 못했습니다.',
     },
   );
@@ -293,17 +296,30 @@ export const fetchRecommendedQuestion = async (
  */
 export const fetchApprovalRequest = async (
   approvalId: string | number,
-): Promise<Partial<ApprovalRequestData> & Record<string, any>> => {
-  const endpoint = `/approval/recommended-questions/${approvalId}.json`;
-  const response = await getApi<Partial<ApprovalRequestData> & Record<string, any>>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
-    },
-  );
+): Promise<ApprovalRequestItem> => {
+  const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
+  const response = await getApi<any>(endpoint, {
+    errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
+  });
 
-  return response.data;
+  const v = response.data;
+  return {
+    no: v.no ?? 0,
+    approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
+    targetType: v.targetType ?? '',
+    targetId: v.targetId ?? '',
+    itsvcNo: v.itsvcNo ?? null,
+    requestKind: v.requestKind ?? v.approval_form ?? '',
+    approvalStatus: v.approvalStatus ?? v.status ?? 'request',
+    title: v.title ?? null,
+    content: v.content ?? null,
+    createdBy: v.createdBy ?? v.requester ?? '',
+    department: v.department ?? '',
+    updatedBy: v.updatedBy ?? null,
+    createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
+    updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
+    isRetracted: v.isRetracted ?? 0,
+  };
 };
 
 /**
@@ -315,18 +331,13 @@ export const fetchApprovalDetailQuestions = async (
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL_LIST(approvalId);
   console.log('🔍 fetchApprovalDetailQuestions API 호출:', {
     endpoint,
-    baseURL: env.testURL,
     fullUrl: `${env.testURL}${endpoint}`,
   });
-  
-  const response = await getApi<RecommendedQuestionItem[]>(
-    endpoint,
-    {
-      baseURL: env.testURL,
-      transform: transformRecommendedQuestions,
-      errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
-    },
-  );
+
+  const response = await getApi<RecommendedQuestionItem[]>(endpoint, {
+    transform: transformRecommendedQuestions,
+    errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
+  });
 
   console.log('🔍 fetchApprovalDetailQuestions API 완료, data:', response.data);
   return response.data;
@@ -340,17 +351,17 @@ export const createRecommendedQuestion = async (
 ): Promise<RecommendedQuestionItem> => {
   // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
   const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // RecommendedQuestionItem 형식으로 변환
   const item = transformItem(
-    { ...data, qst_id: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
+    { ...data, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
     { index: 0, fallbackId: tempId },
   );
 
   // 승인 요청 전송
-  await sendApprovalRequest('data_registration', [item]);
+  await sendApprovalRequest(DATA_REGISTRATION, [item]);
 
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 qst_id로)
+  // 결재 요청 성공 후 실제 데이터 생성 (같은 qstId로)
   await createApprovedQuestions([item]);
 
   return item;
@@ -369,139 +380,21 @@ export const createRecommendedQuestionsBatch = async (
 
   // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
   const baseTime = Date.now();
-  
+
   // RecommendedQuestionItem 형식으로 변환
   const createdItems: RecommendedQuestionItem[] = items.map((item, index) => {
     const tempId = `temp_${baseTime}_${index}_${Math.random().toString(36).substr(2, 9)}`;
     return transformItem(
-      { ...item, qst_id: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
+      { ...item, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
       { index, fallbackId: tempId },
     );
   });
 
   // 승인 요청 전송
-  await sendApprovalRequest('data_registration', createdItems);
+  await sendApprovalRequest(DATA_REGISTRATION, createdItems);
 
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 qst_id로)
+  // 결재 요청 성공 후 실제 데이터 생성 (같은 qstId로)
   await createApprovedQuestions(createdItems);
-};
-
-/**
- * 승인 요청 상세 목록 수정 (변경된 항목만 업데이트)
- * @param approvalId - 승인 요청 ID
- * @param changedItems - 변경된 추천질문 아이템 배열
- */
-export const updateApprovalDetailList = async (
-  approvalId: string | number,
-  changedItems: RecommendedQuestionItem[],
-): Promise<void> => {
-  if (changedItems.length === 0) {
-    return;
-  }
-
-  // 현재 승인 요청의 list 조회 (인덱스 찾기 위해)
-  const currentList = await fetchApprovalDetailQuestions(approvalId);
-
-  // Firebase Multi-Path Update를 위한 updates 객체 생성
-  const updates: { [key: string]: RecommendedQuestionItem } = {};
-  
-  changedItems.forEach((changedItem) => {
-    // 현재 list에서 해당 항목의 인덱스 찾기
-    const index = currentList.findIndex((item) => item.qst_id === changedItem.qst_id);
-    if (index !== -1) {
-      // Firebase 경로: approval/recommended-questions/{id}/list/{index}
-      const path = `approval/recommended-questions/${approvalId}/list/${index}`;
-      updates[path] = changedItem;
-    }
-  });
-
-  if (Object.keys(updates).length === 0) {
-    return;
-  }
-
-  // Firebase REST API를 통해 Multi-Path Update 실행
-  const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
-
-  // 로딩 시작
-  useLoadingStore.getState().start();
-
-  try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-
-    if (!response.ok) {
-      throw new Error(`승인 요청 상세 목록 수정에 실패했습니다. (${response.status})`);
-    }
-
-    console.log(`승인 요청 상세 목록 ${changedItems.length}개 항목이 수정되었습니다.`);
-  } finally {
-    useLoadingStore.getState().stop();
-  }
-};
-
-/**
- * 승인 요청 상세 목록에서 선택된 항목 삭제
- * @param approvalId - 승인 요청 ID
- * @param itemIdsToDelete - 삭제할 아이템 ID 배열 (qst_id)
- */
-export const deleteApprovalDetailListItems = async (
-  approvalId: string | number,
-  itemIdsToDelete: (string | number)[],
-): Promise<void> => {
-  if (itemIdsToDelete.length === 0) {
-    return;
-  }
-
-  // 현재 승인 요청의 list 조회 (인덱스 찾기 위해)
-  const currentList = await fetchApprovalDetailQuestions(approvalId);
-
-  // Firebase Multi-Path Update를 위한 updates 객체 생성 (null로 설정하여 삭제)
-  const updates: { [key: string]: null } = {};
-  
-  itemIdsToDelete.forEach((itemId) => {
-    // 현재 list에서 해당 항목의 인덱스 찾기
-    const index = currentList.findIndex((item) => item.qst_id === String(itemId));
-    if (index !== -1) {
-      // Firebase 경로: approval/recommended-questions/{id}/list/{index}
-      const path = `approval/recommended-questions/${approvalId}/list/${index}`;
-      updates[path] = null; // null로 설정하여 삭제
-    }
-  });
-
-  if (Object.keys(updates).length === 0) {
-    return;
-  }
-
-  // Firebase REST API를 통해 Multi-Path Update 실행
-  const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
-
-  // 로딩 시작
-  useLoadingStore.getState().start();
-
-  try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-
-    if (!response.ok) {
-      throw new Error(`승인 요청 상세 목록 삭제에 실패했습니다. (${response.status})`);
-    }
-
-    console.log(`승인 요청 상세 목록 ${itemIdsToDelete.length}개 항목이 삭제되었습니다.`);
-  } finally {
-    useLoadingStore.getState().stop();
-  }
 };
 
 /**
@@ -515,29 +408,23 @@ export const updateApprovalRequestStatus = async (
   status: string,
   processDate?: string,
 ): Promise<void> => {
-  const endpoint = `/approval/recommended-questions/${approvalId}.json`;
-  
-  const updateData: { status: string; process_date?: string } = { status };
+  const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
+
+  const updateData: { approvalStatus: string; updatedAt?: string } = { approvalStatus: status };
   if (processDate) {
-    updateData.process_date = processDate;
+    updateData.updatedAt = processDate;
   }
-  
+
   console.log('🔍 updateApprovalRequestStatus API 호출:', {
     endpoint,
     updateData,
-    baseURL: env.testURL,
     fullUrl: `${env.testURL}${endpoint}`,
   });
-  
-  await patchApi(
-    endpoint,
-    updateData,
-    {
-      baseURL: env.testURL,
-      errorMessage: '승인 요청 상태 수정에 실패했습니다.',
-    },
-  );
-  
+
+  await patchApi(endpoint, updateData, {
+    errorMessage: '승인 요청 상태 수정에 실패했습니다.',
+  });
+
   console.log('🔍 updateApprovalRequestStatus API 완료');
 };
 
@@ -545,9 +432,7 @@ export const updateApprovalRequestStatus = async (
  * 승인된 항목들을 실제 데이터로 등록 (data_registration인 경우)
  * @param items - 등록할 추천질문 아이템 배열 (qst_id 포함)
  */
-export const createApprovedQuestions = async (
-  items: RecommendedQuestionItem[],
-): Promise<void> => {
+const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 createApprovedQuestions: items가 비어있음');
     return;
@@ -555,11 +440,14 @@ export const createApprovedQuestions = async (
 
   // Firebase Multi-Path Update를 사용하여 각 항목을 지정된 qst_id로 등록
   const updates: { [key: string]: Partial<RecommendedQuestionItem> } = {};
-  const createPath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE.replace(/^\//, '').replace('.json', '');
-  
+  const createPath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE.replace(/^\//, '').replace(
+    '.json',
+    '',
+  );
+
   items.forEach((item) => {
-    // list에 있는 qst_id를 그대로 사용하여 등록
-    const qstId = item.qst_id;
+    // list에 있는 qstId를 그대로 사용하여 등록
+    const qstId = item.qstId;
     updates[`${createPath}/${qstId}`] = item;
   });
 
@@ -605,9 +493,7 @@ export const createApprovedQuestions = async (
  * 승인된 항목들을 실제 데이터로 수정 (data_modification인 경우)
  * @param items - 수정할 추천질문 아이템 배열 (qst_id 포함)
  */
-export const updateApprovedQuestions = async (
-  items: RecommendedQuestionItem[],
-): Promise<void> => {
+const updateApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 updateApprovedQuestions: items가 비어있음');
     return;
@@ -615,7 +501,7 @@ export const updateApprovedQuestions = async (
 
   console.log('🔍 updateApprovedQuestions API 호출:', {
     itemsCount: items.length,
-    items: items.map((item) => ({ qst_id: item.qst_id })),
+    items: items.map((item) => ({ qstId: item.qstId })),
   });
 
   // 로딩 시작 (putApi가 이미 로딩을 관리하지만, 여러 항목을 수정하는 경우를 위해)
@@ -624,23 +510,18 @@ export const updateApprovedQuestions = async (
   try {
     // 각 항목을 개별적으로 UPDATE 엔드포인트로 수정
     for (const item of items) {
-      const qstId = item.qst_id;
+      const qstId = item.qstId;
       if (!qstId) {
-        console.warn('🔍 qst_id가 없는 항목 건너뜀:', item);
+        console.warn('🔍 qstId가 없는 항목 건너뜀:', item);
         continue;
       }
 
       const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.UPDATE(qstId);
       console.log('🔍 개별 항목 수정:', { qst_id: qstId, endpoint });
 
-      await putApi<RecommendedQuestionItem>(
-        endpoint,
-        item,
-        {
-          baseURL: env.testURL,
-          errorMessage: `추천질문 수정에 실패했습니다. (qst_id: ${qstId})`,
-        },
-      );
+      await putApi<RecommendedQuestionItem>(endpoint, item, {
+        errorMessage: `추천질문 수정에 실패했습니다. (qstId: ${qstId})`,
+      });
     }
 
     console.log(`🔍 승인된 항목 ${items.length}개가 수정되었습니다.`);
@@ -653,9 +534,7 @@ export const updateApprovedQuestions = async (
  * 승인된 항목들을 실제 데이터로 삭제 (data_deletion인 경우)
  * @param items - 삭제할 추천질문 아이템 배열 (qst_id 포함)
  */
-export const deleteApprovedQuestions = async (
-  items: RecommendedQuestionItem[],
-): Promise<void> => {
+const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 deleteApprovedQuestions: items가 비어있음');
     return;
@@ -663,11 +542,11 @@ export const deleteApprovedQuestions = async (
 
   console.log('🔍 deleteApprovedQuestions 입력 items:', items);
 
-  // 각 항목의 qst_id 추출 (null, undefined, 빈 문자열 제외)
+  // 각 항목의 qstId 추출 (null, undefined, 빈 문자열 제외)
   const qstIdsToDelete = items
     .map((item) => {
-      const qstId = item.qst_id;
-      console.log('🔍 deleteApprovedQuestions - item.qst_id:', qstId, 'item:', item);
+      const qstId = item.qstId;
+      console.log('🔍 deleteApprovedQuestions - item.qstId:', qstId, 'item:', item);
       return qstId;
     })
     .filter((qstId) => {
@@ -679,7 +558,7 @@ export const deleteApprovedQuestions = async (
   console.log('🔍 deleteApprovedQuestions - 추출된 qstIdsToDelete:', qstIdsToDelete);
 
   if (qstIdsToDelete.length === 0) {
-    console.warn('🔍 deleteApprovedQuestions: 유효한 qst_id가 없음');
+    console.warn('🔍 deleteApprovedQuestions: 유효한 qstId가 없음');
     console.warn('🔍 deleteApprovedQuestions: 입력 items:', items);
     return;
   }
@@ -693,8 +572,8 @@ export const deleteApprovedQuestions = async (
   // Firebase Multi-Path Update를 사용하여 일괄 삭제
   const updates: { [key: string]: null } = {};
   // DELETE 엔드포인트에서 경로 추출: '/data-reg/qst/${id}.json' -> 'data-reg/qst'
-  const basePath = 'data-reg/qst';
-  
+  const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE.replace(/^\//, '');
+
   qstIdsToDelete.forEach((qstId) => {
     // Firebase 경로는 앞의 슬래시를 제거하고 .json도 제거해야 함
     // 예: data-reg/qst/temp_1764052479281_1_l8gsmmdv1
@@ -756,13 +635,13 @@ export const updateRecommendedQuestion = async (
   data: Partial<RecommendedQuestionItem>,
 ): Promise<RecommendedQuestionItem> => {
   const updatedItem = transformItem(
-    { ...data, qst_id: String(id) } as Partial<RecommendedQuestionItem> & Record<string, any>,
+    { ...data, qstId: String(id) } as Partial<RecommendedQuestionItem> & Record<string, any>,
     { index: 0, fallbackId: id },
   );
-  
+
   // 승인 요청 전송
-  await sendApprovalRequest('data_modification', [updatedItem]);
-  
+  await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
+
   // 결재 요청 성공 후 실제 데이터 수정
   await updateApprovedQuestions([updatedItem]);
 
@@ -772,9 +651,7 @@ export const updateRecommendedQuestion = async (
 /**
  * 추천질문 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  */
-export const deleteRecommendedQuestion = async (
-  id: string | number,
-): Promise<void> => {
+export const deleteRecommendedQuestion = async (id: string | number): Promise<void> => {
   // 삭제 전에 데이터 조회 (승인 요청에 사용)
   let deletedItem: RecommendedQuestionItem | null = null;
   try {
@@ -786,8 +663,8 @@ export const deleteRecommendedQuestion = async (
 
   // 승인 요청 전송
   if (deletedItem) {
-    await sendApprovalRequest('data_deletion', [deletedItem]);
-    
+    await sendApprovalRequest(DATA_DELETION, [deletedItem]);
+
     // 결재 요청 성공 후 실제 데이터 삭제
     await deleteApprovedQuestions([deletedItem]);
   } else {
@@ -819,12 +696,11 @@ export const deleteRecommendedQuestions = async (
 
   // 승인 요청 전송
   if (deletedItems.length > 0) {
-    await sendApprovalRequest('data_deletion', deletedItems);
-    
+    await sendApprovalRequest(DATA_DELETION, deletedItems);
+
     // 결재 요청 성공 후 실제 데이터 삭제
     await deleteApprovedQuestions(deletedItems);
   } else {
     throw new Error('삭제할 데이터를 찾을 수 없습니다.');
   }
 };
-

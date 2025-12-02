@@ -9,30 +9,38 @@ import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
 import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
-import { loadServiceOptions, loadAgeGroupOptions, under17Options } from '../../data';
+import {
+  loadServiceOptions,
+  loadAgeGroupOptions,
+  under17Options,
+} from '@/pages/data-reg/recommended-questions/data';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
-import { createRecommendedQuestionYupSchema } from '../../validation';
-import { useFilteredQuestionCategories, useCreateRecommendedQuestion } from '../../hooks';
-import { transformToApiFormat } from '../../api';
+import { createRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
+import {
+  useFilteredQuestionCategories,
+  useCreateRecommendedQuestion,
+} from '@/pages/data-reg/recommended-questions/hooks';
+import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
 import { toast } from 'react-toastify';
 import { ROUTES } from '@/routes/menu';
+import { APPROVAL_RETURN_URL } from '@/constants/options';
 
 // 공통 validation을 사용한 폼 검증 스키마
 const schema = createRecommendedQuestionYupSchema();
 
 type FormData = {
-  service_nm: string;
-  qst_ctgr: string;
-  display_ctnt: string;
-  prompt_ctnt?: string;
-  qst_style?: string;
+  serviceNm: string;
+  qstCtgr: string;
+  displayCtnt: string;
+  promptCtnt?: string;
+  qstStyle?: string;
   parentId?: string;
   parentIdName?: string;
-  age_grp?: string;
-  under_17_yn: string;
-  imp_start_date: Dayjs | null;
-  imp_end_date: Dayjs | null;
+  ageGrp?: string;
+  showU17: string;
+  impStartDate: Dayjs | null;
+  impEndDate: Dayjs | null;
 };
 
 const ApprovalManualForm: React.FC = () => {
@@ -70,30 +78,30 @@ const ApprovalManualForm: React.FC = () => {
     resolver: yupResolver(schema) as Resolver<FormData>,
     mode: 'onChange', // 항상 실시간 validation 활성화
     defaultValues: {
-      service_nm: '',
-      qst_ctgr: '',
-      display_ctnt: '',
-      prompt_ctnt: '',
-      qst_style: '',
+      serviceNm: '',
+      qstCtgr: '',
+      displayCtnt: '',
+      promptCtnt: '',
+      qstStyle: '',
       parentId: '',
       parentIdName: '',
-      age_grp: '',
-      under_17_yn: '',
-      imp_start_date: dayjs().add(30, 'minute'), // 현재 일시 + 30분
-      imp_end_date: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
+      ageGrp: '',
+      showU17: '',
+      impStartDate: dayjs().add(30, 'minute'), // 현재 일시 + 30분
+      impEndDate: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
   });
 
-  // qst_ctgr 값을 감시하여 부모 ID 필수 여부 결정
+  // qstCtgr 값을 감시하여 부모 ID 필수 여부 결정
   const watchedQstCtgr = useWatch({
     control,
-    name: 'qst_ctgr',
+    name: 'qstCtgr',
   });
 
-  // service_nm 값을 감시하여 연령대 필수 여부 결정
+  // serviceNm 값을 감시하여 연령대 필수 여부 결정
   const watchedServiceNm = useWatch({
     control,
-    name: 'service_nm',
+    name: 'serviceNm',
   });
 
   // 선택된 서비스에 따라 필터링된 질문 카테고리 옵션 생성 (커스텀 훅 사용)
@@ -109,22 +117,22 @@ const ApprovalManualForm: React.FC = () => {
   // 이전 서비스명을 추적
   const prevServiceNmRef = React.useRef<string>('');
 
-  // service_nm 변경 시 qst_ctgr 초기화 및 validation 재실행
+  // serviceNm 변경 시 qstCtgr 초기화 및 validation 재실행
   React.useEffect(() => {
     // 실제로 서비스명이 변경된 경우에만 질문 카테고리 초기화
     if (prevServiceNmRef.current && prevServiceNmRef.current !== watchedServiceNm) {
-      setValue('qst_ctgr', '');
+      setValue('qstCtgr', '');
     }
 
     // 이전 값 업데이트
     prevServiceNmRef.current = watchedServiceNm || '';
 
     if (hasTriedSubmit) {
-      trigger(['age_grp', 'qst_ctgr']);
+      trigger(['ageGrp', 'qstCtgr']);
     }
   }, [watchedServiceNm, hasTriedSubmit, trigger, setValue]);
 
-  // qst_ctgr 변경 시 부모 ID 관련 필드 validation 재실행
+  // qstCtgr 변경 시 부모 ID 관련 필드 validation 재실행
   React.useEffect(() => {
     if (hasTriedSubmit) {
       trigger(['parentId', 'parentIdName']);
@@ -136,27 +144,27 @@ const ApprovalManualForm: React.FC = () => {
       try {
         // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
         const apiData = transformToApiFormat({
-          service_nm: data.service_nm,
-          display_ctnt: data.display_ctnt,
-          prompt_ctnt: data.prompt_ctnt,
-          qst_ctgr: data.qst_ctgr,
-          qst_style: data.qst_style,
+          serviceNm: data.serviceNm,
+          displayCtnt: data.displayCtnt,
+          promptCtnt: data.promptCtnt,
+          qstCtgr: data.qstCtgr,
+          qstStyle: data.qstStyle,
           parentId: data.parentId,
           parentIdName: data.parentIdName,
-          age_grp: data.age_grp,
-          under_17_yn: data.under_17_yn,
-          imp_start_date: data.imp_start_date,
-          imp_end_date: data.imp_end_date,
+          ageGrp: data.ageGrp,
+          showU17: data.showU17,
+          impStartDate: data.impStartDate,
+          impEndDate: data.impEndDate,
         });
 
         await createMutation.mutateAsync(apiData);
         toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
-        const returnUrl = sessionStorage.getItem('approval_return_url');
+        const returnUrl = sessionStorage.getItem(APPROVAL_RETURN_URL);
         if (returnUrl) {
           navigate(returnUrl);
-          sessionStorage.removeItem('approval_return_url');
+          sessionStorage.removeItem(APPROVAL_RETURN_URL);
         } else {
           navigate(ROUTES.RECOMMENDED_QUESTIONS);
         }
@@ -198,7 +206,7 @@ const ApprovalManualForm: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3}>
             <Controller
-              name="service_nm"
+              name="serviceNm"
               control={control}
               render={({ field }) => (
                 <SelectInput
@@ -207,15 +215,15 @@ const ApprovalManualForm: React.FC = () => {
                   options={serviceOptions}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.service_nm}
-                  helperText={hasTriedSubmit ? errors.service_nm?.message : undefined}
+                  error={hasTriedSubmit && !!errors.serviceNm}
+                  helperText={hasTriedSubmit ? errors.serviceNm?.message : undefined}
                   placeholder="선택"
                 />
               )}
             />
 
             <Controller
-              name="display_ctnt"
+              name="displayCtnt"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -226,14 +234,14 @@ const ApprovalManualForm: React.FC = () => {
                   rows={4}
                   fullWidth
                   required
-                  error={hasTriedSubmit && !!errors.display_ctnt}
-                  helperText={hasTriedSubmit ? errors.display_ctnt?.message : undefined}
+                  error={hasTriedSubmit && !!errors.displayCtnt}
+                  helperText={hasTriedSubmit ? errors.displayCtnt?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="prompt_ctnt"
+              name="promptCtnt"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -241,14 +249,14 @@ const ApprovalManualForm: React.FC = () => {
                   label="AI input 쿼리"
                   placeholder="AI input 쿼리를 입력하세요"
                   fullWidth
-                  error={hasTriedSubmit && !!errors.prompt_ctnt}
-                  helperText={hasTriedSubmit ? errors.prompt_ctnt?.message : undefined}
+                  error={hasTriedSubmit && !!errors.promptCtnt}
+                  helperText={hasTriedSubmit ? errors.promptCtnt?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="qst_ctgr"
+              name="qstCtgr"
               control={control}
               render={({ field }) => (
                 <GroupedSelectInput
@@ -258,10 +266,10 @@ const ApprovalManualForm: React.FC = () => {
                   onChange={field.onChange}
                   required
                   disabled={!watchedServiceNm}
-                  error={hasTriedSubmit && !!errors.qst_ctgr}
+                  error={hasTriedSubmit && !!errors.qstCtgr}
                   helperText={
                     hasTriedSubmit
-                      ? errors.qst_ctgr?.message
+                      ? errors.qstCtgr?.message
                       : !watchedServiceNm
                         ? '서비스명을 먼저 선택해주세요'
                         : undefined
@@ -272,7 +280,7 @@ const ApprovalManualForm: React.FC = () => {
             />
 
             <Controller
-              name="qst_style"
+              name="qstStyle"
               control={control}
               render={({ field }) => (
                 <TextField
@@ -280,8 +288,8 @@ const ApprovalManualForm: React.FC = () => {
                   label="질문 태그"
                   placeholder="질문 태그를 입력하세요"
                   fullWidth
-                  error={hasTriedSubmit && !!errors.qst_style}
-                  helperText={hasTriedSubmit ? errors.qst_style?.message : undefined}
+                  error={hasTriedSubmit && !!errors.qstStyle}
+                  helperText={hasTriedSubmit ? errors.qstStyle?.message : undefined}
                 />
               )}
             />
@@ -319,7 +327,7 @@ const ApprovalManualForm: React.FC = () => {
             />
 
             <Controller
-              name="age_grp"
+              name="ageGrp"
               control={control}
               render={({ field }) => (
                 <SelectInput
@@ -328,15 +336,15 @@ const ApprovalManualForm: React.FC = () => {
                   options={ageGroupOptions}
                   onChange={field.onChange}
                   required={isAgeGroupRequired}
-                  error={hasTriedSubmit && !!errors.age_grp}
-                  helperText={hasTriedSubmit ? errors.age_grp?.message : undefined}
+                  error={hasTriedSubmit && !!errors.ageGrp}
+                  helperText={hasTriedSubmit ? errors.ageGrp?.message : undefined}
                   placeholder="선택"
                 />
               )}
             />
 
             <Controller
-              name="imp_start_date"
+              name="impStartDate"
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -344,15 +352,15 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.imp_start_date}
-                  helperText={hasTriedSubmit ? errors.imp_start_date?.message : undefined}
+                  error={hasTriedSubmit && !!errors.impStartDate}
+                  helperText={hasTriedSubmit ? errors.impStartDate?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
             />
 
             <Controller
-              name="imp_end_date"
+              name="impEndDate"
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -360,15 +368,15 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.imp_end_date}
-                  helperText={hasTriedSubmit ? errors.imp_end_date?.message : undefined}
+                  error={hasTriedSubmit && !!errors.impEndDate}
+                  helperText={hasTriedSubmit ? errors.impEndDate?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
             />
 
             <Controller
-              name="under_17_yn"
+              name="showU17"
               control={control}
               render={({ field }) => (
                 <RadioInput
@@ -378,8 +386,8 @@ const ApprovalManualForm: React.FC = () => {
                   onChange={field.onChange}
                   required
                   row
-                  error={hasTriedSubmit && !!errors.under_17_yn}
-                  helperText={hasTriedSubmit ? errors.under_17_yn?.message : undefined}
+                  error={hasTriedSubmit && !!errors.showU17}
+                  helperText={hasTriedSubmit ? errors.showU17?.message : undefined}
                 />
               )}
             />

@@ -1,8 +1,7 @@
-import type { RecommendedQuestionItem } from './types';
-import type { ApprovalRequestItem, SearchField } from '@/types/types';
+import type { SearchField } from '@/types/types';
 import { categoryMockDb } from '@/mocks/commonCodeDb';
-import { APPROVAL_FORM_OPTIONS, APPROVAL_STATUS_OPTIONS } from '@/constants/options';
 
+// **************공통 코드 옵션 데이터 **************
 // 서비스 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
 export const loadServiceOptions = async () => {
   const services = await categoryMockDb.getServiceNames();
@@ -124,13 +123,14 @@ export const questionCategoryOptions = questionCategoryGroupedOptions.flatMap(
   (group) => group.options,
 );
 
-// 셀렉트 필드 설정 (정적 옵션 사용)
+// **************상세 페이지**************
+// 공통 코드 셀렉트 필드 설정
 export const selectFieldsConfig = {
-  service_nm: serviceOptions,
-  age_grp: ageGroupOptions,
-  under_17_yn: under17Options,
+  serviceNm: serviceOptions,
+  ageGrp: ageGroupOptions,
+  showU17: under17Options,
   status: statusOptions,
-  qst_ctgr: questionCategoryOptions,
+  qstCtgr: questionCategoryOptions,
 };
 
 // 동적으로 로드된 옵션으로 셀렉트 필드 설정 생성
@@ -138,30 +138,33 @@ export const createSelectFieldsConfig = (options: {
   serviceOptions: Array<{ label: string; value: string }>;
   ageGroupOptions: Array<{ label: string; value: string }>;
 }) => ({
-  service_nm: options.serviceOptions,
-  age_grp: options.ageGroupOptions,
-  under_17_yn: under17Options,
+  serviceNm: options.serviceOptions,
+  ageGrp: options.ageGroupOptions,
+  showU17: under17Options,
   status: statusOptions,
-  qst_ctgr: questionCategoryOptions,
+  qstCtgr: questionCategoryOptions,
 });
 
 // 날짜 필드 설정
-export const dateFieldsConfig = ['imp_start_date', 'imp_end_date', 'updatedAt', 'registeredAt'];
+export const dateFieldsConfig = ['impStartDate', 'impEndDate', 'updatedAt', 'createdAt'];
 
 // 읽기 전용 필드 설정
-export const readOnlyFieldsConfig = ['no', 'qst_id', 'updatedAt', 'registeredAt'];
+export const readOnlyFieldsConfig = ['no', 'qstId', 'updatedAt', 'createdAt'];
 
 // 변경 체크에서 제외할 필드 설정
-export const excludeFieldsFromChangeCheckConfig = ['updatedAt', 'registeredAt', 'no', 'qst_id'];
+export const excludeFieldsFromChangeCheckConfig = ['updatedAt', 'createdAt', 'no', 'qstId'];
+
+// 데이터등록반영상태 제외 필드 설정
+export const excludeFields = ['no', 'qstId', 'updatedAt', 'createdAt', 'status'];
 
 // 기본 필수 필드 설정
 export const baseRequiredFieldsConfig = [
-  'service_nm',
-  'qst_ctgr',
-  'display_ctnt',
-  'under_17_yn',
-  'imp_start_date',
-  'imp_end_date',
+  'serviceNm',
+  'qstCtgr',
+  'displayCtnt',
+  'showU17',
+  'impStartDate',
+  'impEndDate',
 ];
 
 // 조건적 필수 필드 관련 상수
@@ -172,241 +175,94 @@ export const CONDITIONAL_REQUIRED_FIELDS = {
   // 서비스명 값
   SERVICE_AI_CALC: 'ai_calc',
   // 필드명
-  PARENT_ID: 'parent_id',
-  PARENT_NM: 'parent_nm',
-  AGE_GRP: 'age_grp',
+  PARENT_ID: 'parentId',
+  PARENT_NM: 'parentNm',
+  AGE_GRP: 'ageGrp',
 } as const;
 
 // 조건부 필수 필드 설정
-// qst_ctgr가 'ai_search_mid' 또는 'ai_search_story'일 때 필수인 필드
+// qstCtgr가 'ai_search_mid' 또는 'ai_search_story'일 때 필수인 필드
 export const conditionalRequiredFieldsForQuestionCategory = [
   CONDITIONAL_REQUIRED_FIELDS.PARENT_ID,
   CONDITIONAL_REQUIRED_FIELDS.PARENT_NM,
 ];
 
-// service_nm이 'ai_calc'일 때 필수인 필드
+// serviceNm이 'ai_calc'일 때 필수인 필드
 export const conditionalRequiredFieldsForService = [CONDITIONAL_REQUIRED_FIELDS.AGE_GRP];
 
-export const mockRecommendedQuestions: RecommendedQuestionItem[] = [
-  {
-    no: 560,
-    qst_id: '1',
-    service_nm: 'ai_search',
-    display_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-    prompt_ctnt: '적금 상품의 금리 정보를 알려주세요',
-    qst_ctgr: 'ai_search_mid',
-    qst_style: '적금, 금리',
-    parent_id: 'M020011',
-    parent_nm: '26주 적금',
-    age_grp: '30',
-    under_17_yn: 'N',
-    imp_start_date: '20250401235959',
-    imp_end_date: '99991231235959',
-    updatedAt: '20250601235959',
-    registeredAt: '20250601235959',
-    status: 'in_service',
-  },
-  {
-    no: 561,
-    qst_id: '2',
-    service_nm: 'ai_calc',
-    display_ctnt: '지금 가입하면 혜택이 있나요?',
-    prompt_ctnt: '대출 가입 시 제공되는 혜택을 알려주세요',
-    qst_ctgr: 'ai_calc_loan',
-    qst_style: '대출, 혜택',
-    parent_id: null,
-    parent_nm: null,
-    age_grp: '40',
-    under_17_yn: 'N',
-    imp_start_date: '20250401235959',
-    imp_end_date: '20251231235959',
-    updatedAt: '20250601235959',
-    registeredAt: '20250601235959',
-    status: 'out_of_service',
-  },
-  {
-    no: 562,
-    qst_id: '3',
-    service_nm: 'ai_search',
-    display_ctnt: '모바일에서도 동일한 혜택을 받을 수 있나요?',
-    prompt_ctnt: null,
-    qst_ctgr: 'ai_search_story',
-    qst_style: '모바일, 혜택',
-    parent_id: 'M020012',
-    parent_nm: '12개월 적금',
-    age_grp: '20',
-    under_17_yn: 'Y',
-    imp_start_date: '20250401235959',
-    imp_end_date: '20250630235959',
-    updatedAt: '20250415235959',
-    registeredAt: '20250415235959',
-    status: 'in_service',
-  },
-];
-
-// 결재 요청 샘플 데이터
-export const mockApprovalRequests: ApprovalRequestItem[] = [
-  {
-    no: 1,
-    id: 'req_001',
-    approval_form: '데이터 등록',
-    title: '추천질문 등록 요청합니다',
-    content: '추천질문 AI_검색 관련하여 등록합니다..',
-    requester: 'jasmin.t',
-    department: '대화형 AI 서비스',
-    request_date: '2025.06.17. 00:00:00',
-    status: '요청',
-    process_date: '2025.06.17. 00:00:00',
-  },
-  {
-    no: 2,
-    id: 'req_002',
-    approval_form: '데이터 수정',
-    title: '추천질문 수정 요청드립니다',
-    content: 'AI 계산기 서비스 관련 질문 내용을 수정하고자 합니다.',
-    requester: 'john.kim',
-    department: '데이터 관리팀',
-    request_date: '2025.06.16. 14:30:00',
-    status: '검토중',
-    process_date: '2025.06.16. 15:00:00',
-  },
-  {
-    no: 3,
-    id: 'req_003',
-    approval_form: '데이터 삭제',
-    title: '불필요한 추천질문 삭제 요청',
-    content: '서비스 종료로 인한 관련 질문들을 일괄 삭제 요청합니다.',
-    requester: 'sarah.lee',
-    department: '서비스 기획팀',
-    request_date: '2025.06.15. 09:15:00',
-    status: '승인완료',
-    process_date: '2025.06.15. 16:45:00',
-  },
-];
-
-// 결재 요청 상세 - 추천 질문 샘플 데이터
-export const mockApprovalDetailQuestions: RecommendedQuestionItem[] = [
-  {
-    no: 1,
-    qst_id: 'Q001',
-    service_nm: 'ai_transfer',
-    display_ctnt: 'AI 이체 보안 인증은 어떻게 진행돼?',
-    prompt_ctnt: 'AI 이체 서비스의 보안 인증 절차를 설명해주세요',
-    qst_ctgr: 'ai_transfer_sec_auth',
-    qst_style: '이체, 보안',
-    parent_id: 'TRN_001',
-    parent_nm: 'AI 이체 안내',
-    age_grp: '30',
-    under_17_yn: 'N',
-    imp_start_date: '2025.06.17. 00:00:00',
-    imp_end_date: '2025.12.31. 23:59:59',
-    updatedAt: '2025.06.17. 14:30:00',
-    registeredAt: '2025.06.17. 14:30:00',
-    status: 'in_service',
-  },
-  {
-    no: 2,
-    qst_id: 'Q002',
-    service_nm: 'ai_calc',
-    display_ctnt: '투자 상품 추천해줘',
-    prompt_ctnt: '고객 맞춤 투자 상품을 추천해주세요',
-    qst_ctgr: 'ai_calc_save',
-    qst_style: '투자, 저축',
-    parent_id: null,
-    parent_nm: null,
-    age_grp: '20',
-    under_17_yn: 'N',
-    imp_start_date: '2025.06.17. 00:00:00',
-    imp_end_date: '2025.12.31. 23:59:59',
-    updatedAt: '2025.06.17. 15:00:00',
-    registeredAt: '2025.06.17. 15:00:00',
-    status: 'in_service',
-  },
-];
-
-// 상세 페이지 샘플 데이터
-export const mockRecommendedQuestionDetail: RecommendedQuestionItem = {
-  no: 560,
-  qst_id: '1',
-  service_nm: 'ai_search',
-  display_ctnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-  prompt_ctnt: '적금 상품의 금리 정보를 알려주세요',
-  qst_ctgr: 'ai_search_mid',
-  qst_style: '적금, 금리',
-  parent_id: 'M020011',
-  parent_nm: '26주 적금',
-  age_grp: '30',
-  under_17_yn: 'N',
-  imp_start_date: '20250501235959',
-  imp_end_date: '20251231235959',
-  updatedAt: '20250617150000',
-  registeredAt: '20250617150000',
-  status: 'in_service',
-};
-
+// **************검색 페이지**************
 export const searchFields: SearchField[] = [
   {
     type: 'textGroup',
     fields: [
-      { field: 'display_ctnt', label: '질문내용' },
-      { field: 'qst_style', label: '질문스타일' },
+      { field: 'displayCtnt', label: '질문내용' },
+      { field: 'qstStyle', label: '질문스타일' },
     ],
   },
-  { field: 'service_nm', label: '서비스명', type: 'select', options: serviceOptions },
+  { field: 'serviceNm', label: '서비스명', type: 'select', options: serviceOptions },
 
-  { field: 'qst_ctgr', label: '질문카테고리', type: 'select', options: questionCategoryOptions },
+  { field: 'qstCtgr', label: '질문카테고리', type: 'select', options: questionCategoryOptions },
   { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
-  { field: 'age_grp', label: '연령대', type: 'select', options: ageGroupOptions },
-  { field: 'under_17_yn', label: '17세 미만 여부', type: 'radio', options: under17Options },
+  { field: 'ageGrp', label: '연령대', type: 'select', options: ageGroupOptions },
+  { field: 'showU17', label: '17세 미만 여부', type: 'radio', options: under17Options },
   {
     field: 'imp_start',
-    dataField: 'imp_start_date',
+    dataField: 'impStartDate',
     label: '노출시작일시',
     type: 'dateRange',
     position: 'start',
   },
   {
     field: 'imp_end',
-    dataField: 'imp_end_date',
+    dataField: 'impEndDate',
     label: '노출종료일시',
     type: 'dateRange',
     position: 'end',
   },
 ];
 
-export const approvalSearchFields: SearchField[] = [
-  {
-    type: 'textGroup',
-    fields: [
-      { field: 'title', label: '제목' },
-      { field: 'content', label: '내용' },
-    ],
-  },
-  {
-    field: 'approval_form',
-    label: '결재양식',
-    type: 'select',
-    options: [...APPROVAL_FORM_OPTIONS],
-  },
-  {
-    field: 'status',
-    label: '결재상태',
-    type: 'select',
-    options: [...APPROVAL_STATUS_OPTIONS],
-  },
+// **************엑셀 업로드/다운로드 페이지**************/
+// 필드별 가이드 메시지 (필요한 필드만)
+export const fieldGuides: Record<string, string> = {
+  serviceCd: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
+  displayCtnt: '필수 | 5-500자',
+  promptCtnt: '선택 | 1000자 이하',
+  qstCtgr: '필수 | 참조 데이터 확인',
+  qstStyle: '선택 | 질문 관련 태그나 스타일',
+  parentId: '조건부 필수 | AI검색 mid/story인 경우 필수 (예: M020011)',
+  parentNm: '조건부 필수 | AI검색 mid/story인 경우 필수',
+  ageGrp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
+  showU17: '필수 | Y 또는 N',
+  impStartDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
+  impEndDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
+};
 
+// 예시 데이터 (자동 생성 필드 제외)
+export const exampleData = [
   {
-    field: 'request_date_start',
-    dataField: 'request_date',
-    label: '요청일시 시작',
-    type: 'dateRange',
-    position: 'start',
-  },
-  {
-    field: 'request_date_end',
-    dataField: 'request_date',
-    label: '요청일시 종료',
-    type: 'dateRange',
-    position: 'end',
+    serviceCd: 'ai_search',
+    displayCtnt: '하루만 맡겨도 연 2% 받을 수 있어?',
+    promptCtnt: '적금 상품의 금리 정보를 알려주세요',
+    qstCtgr: 'ai_search_mid',
+    qstStyle: '적금, 금리',
+    parentId: 'M020011',
+    parentNm: '26주 적금',
+    ageGrp: 10,
+    showU17: 'N',
+    impStartDate: '20251125000000',
+    impEndDate: '99991231000000',
   },
 ];
+
+// 날짜 필드 설정
+export const excelDateFieldsConfig = ['impStartDate', 'impEndDate'];
+
+export const excelExcludeFields = ['qstId', 'updatedAt', 'createdAt', 'status'];
+
+// 엑셀 참조 데이터
+export const excelReferenceData = {
+  서비스코드: serviceOptions,
+  연령대: ageGroupOptions,
+  '17세미만노출여부': under17Options,
+  질문카테고리: questionCategoryOptions,
+};

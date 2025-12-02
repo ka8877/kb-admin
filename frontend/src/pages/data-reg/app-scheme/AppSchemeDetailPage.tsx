@@ -1,27 +1,29 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { AppSchemeItem } from './types';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 import DataDetail from '@/components/common/detail/DataDetail';
 import PageHeader from '@/components/common/PageHeader';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { toast } from 'react-toastify';
-import { selectFieldsConfig, dateFieldsConfig, readOnlyFieldsConfig } from './data';
+import {
+  selectFieldsConfig,
+  dateFieldsConfig,
+  readOnlyFieldsConfig,
+} from '@/pages/data-reg/app-scheme/data';
 import {
   useAppScheme,
   useUpdateAppScheme,
   useDeleteAppScheme,
-} from './hooks';
-import { appSchemeColumns } from './components/columns/columns';
-import { createAppSchemeYupSchema } from './validation/appSchemeValidation';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES, TOAST_MESSAGES } from '@/constants/message';
+} from '@/pages/data-reg/app-scheme/hooks';
+import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
+import { createAppSchemeYupSchema } from '@/pages/data-reg/app-scheme/validation/appSchemeValidation';
+import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import type { ValidationResult } from '@/types/types';
 
 const AppSchemeDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { showConfirm } = useConfirmDialog();
   const updateMutation = useUpdateAppScheme();
   const deleteMutation = useDeleteAppScheme();
 
@@ -34,26 +36,17 @@ const AppSchemeDetailPage: React.FC = () => {
     navigate(ROUTES.APP_SCHEME);
   }, [navigate]);
 
-  const handleDelete = React.useCallback(() => {
+  const handleDelete = React.useCallback(async () => {
     if (!id) return;
 
-    showConfirm({
-      title: CONFIRM_TITLES.DELETE,
-      message: CONFIRM_MESSAGES.DELETE,
-      confirmText: '삭제',
-      cancelText: '취소',
-      severity: 'error',
-      onConfirm: async () => {
-        try {
-          await deleteMutation.mutateAsync(id);
-          toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-          navigate(-1);
-        } catch (error) {
-          toast.error(TOAST_MESSAGES.DELETE_FAILED);
-        }
-      },
-    });
-  }, [showConfirm, id, deleteMutation, navigate]);
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+      navigate(-1);
+    } catch (error) {
+      toast.error(TOAST_MESSAGES.DELETE_FAILED);
+    }
+  }, [id, deleteMutation, navigate]);
 
   const handleSave = React.useCallback(
     async (updatedData: AppSchemeItem) => {
@@ -73,17 +66,13 @@ const AppSchemeDetailPage: React.FC = () => {
   );
 
   // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
-  const getRequiredFields = React.useCallback((currentData: AppSchemeItem | undefined): string[] => {
-    // 앱스킴 필수 필드: yup 스키마의 required 필드들
-    return [
-      'product_menu_name',
-      'description',
-      'app_scheme_link',
-      'one_link',
-      'start_date',
-      'end_date',
-    ];
-  }, []);
+  const getRequiredFields = React.useCallback(
+    (currentData: AppSchemeItem | undefined): string[] => {
+      // 앱스킴 필수 필드: yup 스키마의 required 필드들
+      return ['productMenuName', 'description', 'appSchemeLink', 'oneLink', 'startDate', 'endDate'];
+    },
+    [],
+  );
 
   // Validation 함수
   const handleValidate = React.useCallback(
@@ -131,7 +120,7 @@ const AppSchemeDetailPage: React.FC = () => {
         data={data}
         columns={appSchemeColumns}
         isLoading={isLoading}
-        rowIdGetter="id"
+        rowIdGetter="appSchemeId"
         onBack={handleBack}
         onDelete={handleDelete}
         onSave={handleSave}

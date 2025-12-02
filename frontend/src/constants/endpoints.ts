@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string | number) => `/data-reg/qst/${id}.json`,
     APPROVAL: '/approval/recommended-questions.json',
     APPROVAL_LIST: '/approval/recommended-questions.json',
+    APPROVAL_DETAIL: (id: string | number) => `/approval/recommended-questions/${id}.json`,
     APPROVAL_DETAIL_LIST: (id: string | number) =>
       `/approval/recommended-questions/${id}/list.json`,
   },
@@ -25,6 +26,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
     DELETE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
     APPROVAL_LIST: '/approval/app-scheme.json',
+    APPROVAL_DETAIL: (id: string | number) => `/approval/app-scheme/${id}.json`,
     APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
   },
 

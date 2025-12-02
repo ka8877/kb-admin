@@ -21,7 +21,11 @@ import { parseSearchParams } from '@/utils/apiUtils';
 export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
   /** 데이터를 가져오는 함수 (페이지/검색 조건 변경 시 자동 호출) */
-  fetcher?: (params: { page: number; pageSize: number; searchParams?: Record<string, string | number> }) => Promise<T[]>;
+  fetcher?: (params: {
+    page: number;
+    pageSize: number;
+    searchParams?: Record<string, string | number>;
+  }) => Promise<T[]>;
   rows?: T[];
   rowIdGetter?: keyof T | ((row: T) => string | number);
   defaultPageSize?: number;
@@ -53,6 +57,114 @@ const defaultGetRowId =
     return row[getter as keyof T] as string | number;
   };
 
+/**
+ * 선택 모드 및 삭제 관련 로직을 관리하는 Hook
+ */
+const useGridSelection = (onDeleteConfirm?: (ids: (string | number)[]) => void) => {
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
+
+  const handleToggleSelectionMode = useCallback((next: boolean) => {
+    setSelectionMode(next);
+    if (!next) setSelectionModel([]);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    (ids: (string | number)[]) => {
+      if (onDeleteConfirm) onDeleteConfirm(ids);
+      setSelectionModel([]);
+      setSelectionMode(false);
+    },
+    [onDeleteConfirm],
+  );
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectionModel([]);
+  }, []);
+
+  const resetSelection = useCallback(() => {
+    if (selectionMode) {
+      setSelectionMode(false);
+      setSelectionModel([]);
+    }
+  }, [selectionMode]);
+
+  return {
+    selectionMode,
+    selectionModel,
+    setSelectionModel,
+    handleToggleSelectionMode,
+    handleDeleteConfirm,
+    handleCancelSelection,
+    resetSelection,
+  };
+};
+
+/**
+ * 데이터 페칭 및 필터링 로직을 관리하는 Hook
+ */
+const useGridData = <T extends GridValidRowModel>({
+  rows,
+  fetcher,
+  enableClientSearch,
+  paginationModel,
+  searchParams,
+}: {
+  rows?: T[];
+  fetcher?: ManagementListProps<T>['fetcher'];
+  enableClientSearch: boolean;
+  paginationModel: GridPaginationModel;
+  searchParams?: Record<string, string | number>;
+}) => {
+  const [data, setData] = useState<T[]>(rows ?? []);
+
+  // 데이터 페칭 Effect
+  useEffect(() => {
+    if (rows) {
+      setData(rows);
+      return;
+    }
+
+    if (fetcher) {
+      let mounted = true;
+      fetcher({
+        page: paginationModel.page,
+        pageSize: paginationModel.pageSize,
+        searchParams,
+      })
+        .then((d) => mounted && setData(d))
+        .catch(() => {});
+
+      return () => {
+        mounted = false;
+      };
+    }
+  }, [fetcher, rows, paginationModel.page, paginationModel.pageSize, searchParams]);
+
+  // 클라이언트 사이드 필터링
+  const filteredRows = useMemo(() => {
+    if (!enableClientSearch) return data;
+    if (!searchParams || Object.keys(searchParams).length === 0) return data;
+
+    return data.filter((row) => {
+      const rowObj = row as Record<string, unknown>;
+      return Object.entries(searchParams).every(([field, value]) => {
+        if (value === undefined || value === null || value === '') return true;
+        const rowValue = rowObj[field];
+        if (rowValue === undefined || rowValue === null) return false;
+
+        if (typeof value === 'string' && typeof rowValue === 'string') {
+          return rowValue.toLowerCase().includes(value.toLowerCase());
+        }
+        return String(rowValue) === String(value);
+      });
+    });
+  }, [data, enableClientSearch, searchParams]);
+
+  return { data, filteredRows };
+};
+
 const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
   fetcher,
@@ -75,202 +187,78 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   searchFields,
   isLoading = false,
 }: ManagementListProps<T>): JSX.Element => {
+  // 1. 상태 관리 (URL vs Local)
   const { listState, updateListState } = useListState(defaultPageSize);
-  const [data, setData] = useState<T[]>(rows ?? []);
-
-  // URL 상태를 사용하거나 로컬 상태 사용
   const [localPaginationModel, setLocalPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: defaultPageSize,
   });
-  const [localSearchField, setLocalSearchField] = useState<string | undefined>(undefined);
-  const [localSearchQuery, setLocalSearchQuery] = useState<string>('');
+  const [localSearchParams, setLocalSearchParams] = useState<
+    Record<string, string | number> | undefined
+  >(undefined);
 
-  const paginationModel = enableStatePreservation
-    ? { page: listState.page, pageSize: listState.pageSize }
-    : localPaginationModel;
-  const searchField = enableStatePreservation ? listState.searchField : localSearchField;
-  const searchQuery = enableStatePreservation ? listState.searchQuery || '' : localSearchQuery;
-
-  const [selectionMode, setSelectionMode] = useState<boolean>(false);
-  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
-
-  const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
-
-  // 검색 조건을 객체로 변환
-  const searchParams = useMemo(() => {
-    if (!enableStatePreservation || !listState.searchFieldsState) return undefined;
-    const parsed = parseSearchParams(listState.searchFieldsState);
-    return Object.keys(parsed).length > 0 ? parsed : undefined;
-  }, [enableStatePreservation, listState.searchFieldsState]);
-
-  // rows prop이 있으면 우선 사용, 없으면 fetcher 호출
-  useEffect(() => {
-    if (rows) {
-      setData(rows);
-      return;
-    }
-    if (fetcher) {
-      let mounted = true;
-      const currentPage = enableStatePreservation ? listState.page : localPaginationModel.page;
-      const currentPageSize = enableStatePreservation ? listState.pageSize : localPaginationModel.pageSize;
-      
-      fetcher({
-        page: currentPage,
-        pageSize: currentPageSize,
-        searchParams: searchParams,
-      })
-        .then((d) => mounted && setData(d))
-        .catch(() => {});
-      return () => {
-        mounted = false;
-      };
-    }
-  }, [
-    fetcher,
-    rows,
-    enableStatePreservation,
-    listState.page,
-    listState.pageSize,
-    localPaginationModel.page,
-    localPaginationModel.pageSize,
-    searchParams,
-  ]);
-
-  const filteredRows = useMemo(() => {
-    if (!enableClientSearch) return data;
-
-    // 다중 조건 검색: searchFieldsState가 있으면 각 필드별로 필터링
-    if (enableStatePreservation && listState.searchFieldsState) {
-      let searchFields: Record<string, string | number> = {};
-      try {
-        searchFields = JSON.parse(listState.searchFieldsState);
-      } catch {}
-      if (Object.keys(searchFields).length === 0) return data;
-      return data.filter((row) => {
-        const rowObj = row as Record<string, unknown>;
-        return Object.entries(searchFields).every(([field, value]) => {
-          // 빈 문자열이면 필터링 조건에서 제외 (즉, 무시)
-          if (value === undefined || value === null || value === '') return true;
-          const rowValue = rowObj[field];
-          if (rowValue === undefined || rowValue === null) return false;
-          // 문자열: 포함 여부, 그 외: 완전일치
-          if (typeof value === 'string' && typeof rowValue === 'string') {
-            return rowValue.toLowerCase().includes(value.toLowerCase());
-          }
-          return String(rowValue) === String(value);
-        });
-      });
-    }
-
-    // 기존 단일 조건 검색 (로컬 상태)
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return data;
-    return data.filter((row) => {
-      if (!searchField) {
-        return Object.values(row).some((v) =>
-          v == null ? false : String(v).toLowerCase().includes(q),
-        );
-      }
-      const rowObj = row as Record<string, unknown>;
-      const value = rowObj[searchField];
-      return value == null ? false : String(value).toLowerCase().includes(q);
-    });
-  }, [
-    data,
-    searchField,
-    searchQuery,
-    enableClientSearch,
-    enableStatePreservation,
-    listState.searchFieldsState,
-  ]);
-
-  const handleExportAll = useCallback(async () => {
-    if (onExportAll) return onExportAll(filteredRows);
-    await exportGridToExcel({
-      rows: filteredRows,
-      columns: createProcessedColumns<T>({
-        columns,
-        selectFields,
-        dateFields,
-        dateFormat,
-      }),
-      exportFileName,
-    });
-  }, [onExportAll, filteredRows, columns, selectFields, dateFields, dateFormat, exportFileName]);
-
-  const handleDeleteConfirm = useCallback(
-    (ids: (string | number)[]) => {
-      if (onDeleteConfirm) onDeleteConfirm(ids);
-      setSelectionModel([]);
-      setSelectionMode(false);
-    },
-    [onDeleteConfirm],
+  // 통합된 상태 도출
+  const paginationModel = useMemo(
+    () =>
+      enableStatePreservation
+        ? { page: listState.page, pageSize: listState.pageSize }
+        : localPaginationModel,
+    [enableStatePreservation, listState.page, listState.pageSize, localPaginationModel],
   );
 
+  const searchParams = useMemo(() => {
+    if (enableStatePreservation) {
+      return listState.searchFieldsState
+        ? parseSearchParams(listState.searchFieldsState)
+        : undefined;
+    }
+    return localSearchParams;
+  }, [enableStatePreservation, listState.searchFieldsState, localSearchParams]);
+
+  // 2. 선택 모드 관리 Hook
+  const {
+    selectionMode,
+    selectionModel,
+    setSelectionModel,
+    handleToggleSelectionMode,
+    handleDeleteConfirm,
+    handleCancelSelection,
+    resetSelection,
+  } = useGridSelection(onDeleteConfirm);
+
+  // 3. 데이터 관리 Hook
+  const { filteredRows } = useGridData({
+    rows,
+    fetcher,
+    enableClientSearch,
+    paginationModel,
+    searchParams,
+  });
+
+  // 4. 이벤트 핸들러
   const handleSearch = useCallback(
     (payload: Record<string, string | number>) => {
-      // 검색 시 삭제 모드 해제
-      if (selectionMode) {
-        setSelectionMode(false);
-        setSelectionModel([]);
-      }
+      resetSelection();
 
-      const fields = Object.keys(payload);
-      if (fields.length === 0) {
-        // 검색 조건 초기화
-        if (enableStatePreservation) {
-          updateListState({
-            searchField: undefined,
-            searchQuery: '',
-            searchFieldsState: undefined,
-            page: 0,
-          });
-        } else {
-          setLocalSearchField(undefined);
-          setLocalSearchQuery('');
-          setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
-        }
-        // 검색 조건이 초기화되면 fetcher가 자동으로 호출됨 (useEffect의 searchParams 의존성으로 인해)
-        return;
-      }
+      const isEmpty = Object.keys(payload).length === 0;
 
-      // 다중 검색조건 전체를 JSON으로 저장
-      // enableStatePreservation이 true면 URL 상태에 저장되고, useEffect의 searchParams 의존성이 변경되어 fetcher가 자동 호출됨
-      // enableStatePreservation이 false면 로컬 상태만 업데이트하고, fetcher가 있으면 수동으로 호출해야 함
       if (enableStatePreservation) {
         updateListState({
-          searchFieldsState: JSON.stringify(payload),
-          page: 0, // 검색 시 첫 페이지로 이동
+          searchFieldsState: isEmpty ? undefined : JSON.stringify(payload),
+          page: 0,
         });
       } else {
-        // 로컬 상태만 쓸 경우(비 URL)
-        setLocalSearchField(fields[0]);
-        setLocalSearchQuery(String(payload[fields[0]]));
+        setLocalSearchParams(isEmpty ? undefined : payload);
         setLocalPaginationModel((prev) => ({ ...prev, page: 0 }));
-        
-        // enableClientSearch가 false이고 fetcher가 있으면 즉시 API 호출
-        if (!enableClientSearch && fetcher) {
-          fetcher({
-            page: 0,
-            pageSize: localPaginationModel.pageSize,
-            searchParams: payload,
-          })
-            .then((d) => setData(d))
-            .catch(() => {});
-        }
       }
     },
-    [selectionMode, enableStatePreservation, updateListState, enableClientSearch, fetcher, localPaginationModel.pageSize],
+    [enableStatePreservation, updateListState, resetSelection],
   );
 
   const handlePaginationChange = useCallback(
     (model: GridPaginationModel) => {
       if (enableStatePreservation) {
-        updateListState({
-          page: model.page,
-          pageSize: model.pageSize,
-        });
+        updateListState({ page: model.page, pageSize: model.pageSize });
       } else {
         setLocalPaginationModel(model);
       }
@@ -278,44 +266,40 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     [enableStatePreservation, updateListState],
   );
 
-  const handleToggleSelectionMode = useCallback((next: boolean) => {
-    setSelectionMode(next);
-    if (!next) setSelectionModel([]);
-  }, []);
+  const handleExportAll = useCallback(async () => {
+    if (onExportAll) return onExportAll(filteredRows);
+    await exportGridToExcel({
+      rows: filteredRows,
+      columns: createProcessedColumns<T>({ columns, selectFields, dateFields, dateFormat }),
+      exportFileName,
+    });
+  }, [onExportAll, filteredRows, columns, selectFields, dateFields, dateFormat, exportFileName]);
 
   const handleRowClick = useCallback(
     (params: { id: GridRowId; row: T }) => {
-      if (onRowClick) {
-        onRowClick({ id: params.id, row: params.row });
-      }
+      if (onRowClick) onRowClick({ id: params.id, row: params.row });
     },
     [onRowClick],
   );
 
-  const handleCancelSelection = useCallback(() => {
-    setSelectionMode(false);
-    setSelectionModel([]);
-  }, []);
+  // 5. 렌더링 준비
+  const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
 
-  // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
   const processedColumns = useMemo(
-    () =>
-      createProcessedColumns<T>({
-        columns,
-        selectFields,
-        dateFields,
-        dateFormat,
-      }),
+    () => createProcessedColumns<T>({ columns, selectFields, dateFields, dateFormat }),
     [columns, selectFields, dateFields, dateFormat],
   );
 
-  // searchFieldsState에서 초기값 파싱
-  let initialValues: Record<string, string | number> = {};
-  if (enableStatePreservation && listState.searchFieldsState) {
-    try {
-      initialValues = JSON.parse(listState.searchFieldsState);
-    } catch {}
-  }
+  const initialSearchValues = useMemo(() => {
+    if (enableStatePreservation && listState.searchFieldsState) {
+      try {
+        return JSON.parse(listState.searchFieldsState);
+      } catch {
+        return {};
+      }
+    }
+    return localSearchParams || {};
+  }, [enableStatePreservation, listState.searchFieldsState, localSearchParams]);
 
   return (
     <Section>
@@ -325,7 +309,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         onSearch={handleSearch}
         placeholder={searchPlaceholder}
         size={size}
-        initialValues={initialValues}
+        initialValues={initialSearchValues}
       />
 
       <ListActions

@@ -12,7 +12,8 @@ import { useDataDetailColumns } from './hooks/useDataDetailColumns';
 import { useDataDetailKeyboard } from './hooks/useDataDetailKeyboard';
 import { useDataDetailValidation } from './hooks/useDataDetailValidation';
 import { dataGridStyles } from './utils/dataGridStyles';
-
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   data?: T;
@@ -20,7 +21,7 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   isLoading?: boolean;
   rowIdGetter?: keyof T | ((row: T) => string | number);
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDelete?: () => Promise<void> | void;
   onBack?: () => void;
   onSave?: (updatedData: T) => Promise<void> | void;
   size?: 'small' | 'medium';
@@ -67,11 +68,12 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   dynamicSelectFieldDependencies,
   getRequiredFields,
   checkChangesBeforeSave = false,
-  excludeFieldsFromChangeCheck = ['updatedAt', 'registeredAt', 'no'],
+  excludeFieldsFromChangeCheck = ['updatedAt', 'createdAt', 'no'],
   canEdit = true,
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
   const dataGridRef = useGridApiRef();
+  const { showConfirm } = useConfirmDialog();
 
   // 상태 관리
   const {
@@ -174,6 +176,21 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     console.error('Row update error:', error);
   }, []);
 
+  const handleDeleteClick = useCallback(() => {
+    if (!onDelete) return;
+
+    showConfirm({
+      title: CONFIRM_TITLES.DELETE,
+      message: CONFIRM_MESSAGES.DELETE,
+      confirmText: '삭제',
+      cancelText: '취소',
+      severity: 'error',
+      onConfirm: async () => {
+        await onDelete();
+      },
+    });
+  }, [onDelete, showConfirm]);
+
   return (
     <Box>
       {/* 일반 모드 액션 버튼들 */}
@@ -181,13 +198,13 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
         <DataDetailActions
           onBack={onBack}
           onEdit={canEdit && onSave ? handleEditClick : undefined}
-          onDelete={onDelete}
+          onDelete={onDelete ? handleDeleteClick : undefined}
           showEdit={canEdit && !!onSave}
           showDelete={!!onDelete}
         />
       )}
 
-      <Box sx={{ width: '100%',}}>
+      <Box sx={{ width: '100%' }}>
         <DataGrid
           apiRef={dataGridRef}
           rows={rows}

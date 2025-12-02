@@ -18,8 +18,8 @@ export type ValidationFunction = (
  */
 export const createExcelValidationRules = (): Record<string, ValidationFunction> => {
   return {
-    // service_cd: 필수, 20자 이하
-    service_cd: (value, row) => {
+    // serviceCd: 필수, 20자 이하
+    serviceCd: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '서비스코드는 필수입니다' };
       }
@@ -29,8 +29,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // display_ctnt: 공통과 같음
-    display_ctnt: (value, row) => {
+    // displayCtnt: 공통과 같음
+    displayCtnt: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validateQuestionContent(stringValue);
       return {
@@ -39,8 +39,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
-    // prompt_ctnt: 공통과 같음 (필수 아님, 글자 수 제한만)
-    prompt_ctnt: (value, row) => {
+    // promptCtnt: 공통과 같음 (필수 아님, 글자 수 제한만)
+    promptCtnt: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validatePromptContent(stringValue);
       return {
@@ -49,8 +49,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
-    // qst_ctgr: 필수, 20자 이하
-    qst_ctgr: (value, row) => {
+    // qstCtgr: 필수, 20자 이하
+    qstCtgr: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '질문 카테고리는 필수입니다' };
       }
@@ -60,8 +60,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // qst_style: 공통과 같음
-    qst_style: (value, row) => {
+    // qstStyle: 공통과 같음
+    qstStyle: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validateQuestionStyle(stringValue);
       return {
@@ -70,8 +70,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
-    // parent_id: 공통과 같음
-    parent_id: (value, row) => {
+    // parentId: 공통과 같음
+    parentId: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validateParentId(stringValue, row);
       return {
@@ -80,8 +80,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
-    // parent_nm: 공통과 같음
-    parent_nm: (value, row) => {
+    // parentNm: 공통과 같음
+    parentNm: (value, row) => {
       const stringValue = value != null ? String(value) : null;
       const result = RecommendedQuestionValidator.validateParentIdName(stringValue, row);
       return {
@@ -90,11 +90,11 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       };
     },
 
-    // age_grp: 조건부 필수, 숫자형태
-    age_grp: (value, row) => {
-      // service_cd가 ai_calc인 경우 필수
+    // ageGrp: 조건부 필수, 숫자형태
+    ageGrp: (value, row) => {
+      // serviceCd가 ai_calc인 경우 필수
       const rowData = row as Record<string, unknown>;
-      const serviceCode = rowData?.service_cd;
+      const serviceCode = rowData?.serviceCd;
       const isRequired = serviceCode === 'ai_calc';
 
       if (isRequired) {
@@ -117,8 +117,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // under_17_yn: 필수, Y 또는 N
-    under_17_yn: (value, row) => {
+    // showU17: 필수, Y 또는 N
+    showU17: (value, row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
       }
@@ -132,19 +132,20 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // imp_start_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    imp_start_date: (value, row) => {
+    // impStartDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
+    impStartDate: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 시작 일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
-      
+
       // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
       if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+          message:
+            '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
         };
       }
 
@@ -170,19 +171,20 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    // imp_end_date: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    imp_end_date: (value, row) => {
+    // impEndDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
+    impEndDate: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 종료 일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
-      
+
       // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
       if (!/^\d{14}$/.test(strValue)) {
         return {
           isValid: false,
-          message: '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
+          message:
+            '날짜 형식이 아닙니다. 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해주세요. 예: 20251125000000',
         };
       }
 
@@ -196,8 +198,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
       // 시작일과 비교
       const rowData = row as Record<string, unknown>;
-      if (rowData?.imp_start_date) {
-        const startDate = toISOString(rowData.imp_start_date as string | Date | null);
+      if (rowData?.impStartDate) {
+        const startDate = toISOString(rowData.impStartDate as string | Date | null);
         const endDate = toISOString(value as string | Date | null);
 
         if (startDate && endDate && endDate <= startDate) {

@@ -1,7 +1,7 @@
 // frontend/src/pages/data-reg/recommended-questions/hooks.ts
 // frontend/src/pages/data-reg/recommended-questions/hooks.ts
 import { useEffect, useState, useMemo } from 'react';
-import { loadQuestionCategoryGroupedOptions } from './data';
+import { loadQuestionCategoryGroupedOptions } from '@/pages/data-reg/recommended-questions/data';
 
 type QuestionCategoryGroup = {
   groupLabel: string;
@@ -9,8 +9,7 @@ type QuestionCategoryGroup = {
   options: { label: string; value: string }[];
 };
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { recommendedQuestionsKeys, approvalRequestKeys } from '@/constants/queryKey';
-import { questionCategoryGroupedOptions } from './data';
+import { approvalRequestKeys, recommendedQuestionsKeys } from '@/constants/queryKey';
 import {
   fetchRecommendedQuestions,
   fetchRecommendedQuestion,
@@ -20,8 +19,8 @@ import {
   updateRecommendedQuestion,
   deleteRecommendedQuestion,
   deleteRecommendedQuestions,
-} from './api';
-import type { RecommendedQuestionItem } from './types';
+} from '@/pages/data-reg/recommended-questions/api';
+import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 /**
  * 질문 카테고리 그룹 옵션을 로드하는 공통 훅
  * 내부적으로 사용되며, 다른 훅들이 이 데이터를 재사용할 수 있도록 함
@@ -134,7 +133,7 @@ export interface UseRecommendedQuestionsParams {
  */
 export const useRecommendedQuestions = (params?: UseRecommendedQuestionsParams) => {
   return useQuery({
-    queryKey: ['recommended-questions', params?.page, params?.pageSize, params?.searchParams],
+    queryKey: recommendedQuestionsKeys.list(params),
     queryFn: () => fetchRecommendedQuestions(params),
   });
 };
@@ -144,7 +143,7 @@ export const useRecommendedQuestions = (params?: UseRecommendedQuestionsParams) 
  */
 export const useRecommendedQuestion = (id: string | number | undefined) => {
   return useQuery({
-    queryKey: ['recommended-questions', id],
+    queryKey: recommendedQuestionsKeys.detail(id!),
     queryFn: () => fetchRecommendedQuestion(id!),
     enabled: !!id,
   });
@@ -171,7 +170,7 @@ export const useCreateRecommendedQuestion = () => {
     mutationFn: createRecommendedQuestion,
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
     },
   });
 };
@@ -186,7 +185,7 @@ export const useCreateRecommendedQuestionsBatch = () => {
     mutationFn: createRecommendedQuestionsBatch,
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
     },
   });
 };
@@ -202,8 +201,8 @@ export const useUpdateRecommendedQuestion = () => {
       updateRecommendedQuestion(id, data),
     onSuccess: (_, variables) => {
       // 목록 및 상세 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions', variables.id] });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.detail(variables.id) });
     },
   });
 };
@@ -218,7 +217,7 @@ export const useDeleteRecommendedQuestion = () => {
     mutationFn: deleteRecommendedQuestion,
     onSuccess: () => {
       // 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
     },
   });
 };
@@ -233,7 +232,7 @@ export const useDeleteRecommendedQuestions = () => {
     mutationFn: deleteRecommendedQuestions,
     onSuccess: () => {
       // 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['recommended-questions'] });
+      queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
     },
   });
 };

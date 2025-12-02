@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Box } from '@mui/material';
 import type { GridValidRowModel, GridColDef } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import DetailNavigationActions from '../actions/DetailNavigationActions';
 import MediumButton from '../button/MediumButton';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
 
 export type ApprovalDetailListProps<T extends GridValidRowModel = GridValidRowModel> = {
   /** 그리드에 표시할 데이터 */
@@ -15,7 +17,7 @@ export type ApprovalDetailListProps<T extends GridValidRowModel = GridValidRowMo
   /** 목록으로 돌아가기 핸들러 */
   onBack?: () => void;
   /** 최종 결재 요청 핸들러 */
-  onFinalApproval?: () => void;
+  onFinalApproval?: () => Promise<void> | void;
   /** 최종 결재 버튼 표시 여부 */
   showFinalApprovalButton?: boolean;
   /** 최종 결재 버튼 라벨 */
@@ -41,6 +43,20 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
   isLoading = false,
   gridHeight = 600,
 }: ApprovalDetailListProps<T>) => {
+  const { showConfirm } = useConfirmDialog();
+
+  const handleFinalApprovalClick = useCallback(() => {
+    if (!onFinalApproval) return;
+
+    showConfirm({
+      title: CONFIRM_TITLES.APPROVAL_REQUEST,
+      message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
+      onConfirm: async () => {
+        await onFinalApproval();
+      },
+    });
+  }, [onFinalApproval, showConfirm]);
+
   return (
     <>
       {/* 목록으로 버튼 */}
@@ -70,7 +86,7 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
       {/* 최종 결재 버튼 (그리드 오른쪽 하단) */}
       {showFinalApprovalButton && onFinalApproval && (
         <Box display="flex" justifyContent="flex-end">
-          <MediumButton variant="contained" onClick={onFinalApproval} size="medium">
+          <MediumButton variant="contained" onClick={handleFinalApprovalClick} size="medium">
             {finalApprovalButtonLabel}
           </MediumButton>
         </Box>
@@ -80,4 +96,3 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
 };
 
 export default ApprovalDetailList;
-

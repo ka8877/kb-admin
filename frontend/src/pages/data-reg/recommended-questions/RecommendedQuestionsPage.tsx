@@ -1,17 +1,25 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { RecommendedQuestionItem } from './types';
-import { recommendedQuestionColumns } from './components/columns/columns';
+import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
+import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questions/components/columns/columns';
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { searchFields, selectFieldsConfig, dateFieldsConfig } from './data';
+import {
+  searchFields,
+  selectFieldsConfig,
+  dateFieldsConfig,
+} from '@/pages/data-reg/recommended-questions/data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
-import { useRecommendedQuestions, useDeleteRecommendedQuestions } from './hooks';
+import {
+  useRecommendedQuestions,
+  useDeleteRecommendedQuestions,
+} from '@/pages/data-reg/recommended-questions/hooks';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
+import { APPROVAL_RETURN_URL } from '@/constants/options';
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +58,7 @@ const RecommendedQuestionsPage: React.FC = () => {
 
   const handleRequestApproval = useCallback(() => {
     const currentUrl = location.pathname + location.search;
-    sessionStorage.setItem('approval_return_url', currentUrl);
+    sessionStorage.setItem(APPROVAL_RETURN_URL, currentUrl);
     navigate(ROUTES.RECOMMENDED_QUESTIONS_APPROVAL);
   }, [location.pathname, location.search, navigate]);
 
@@ -83,7 +91,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         onRowClick={handleRowClick}
         columns={recommendedQuestionColumns}
         rows={rows}
-        rowIdGetter={'qst_id'}
+        rowIdGetter={'qstId'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}

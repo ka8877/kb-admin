@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import type { AppSchemeItem } from './types';
-import { appSchemeColumns } from './components/columns/columns';
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
+import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { searchFields } from './data';
+import { searchFields } from '@/pages/data-reg/app-scheme/data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
-import { useDeleteAppSchemes, useAppSchemes } from './hooks';
-import { selectFieldsConfig, dateFieldsConfig } from './data';
+import { useDeleteAppSchemes, useAppSchemes } from '@/pages/data-reg/app-scheme/hooks';
+import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
 
@@ -36,8 +36,6 @@ const AppSchemePage: React.FC = () => {
     pageSize: listState.pageSize,
     searchParams,
   });
-
-  // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
   const isDataLoading = isLoading || isFetching;
 
   // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
@@ -77,8 +75,6 @@ const AppSchemePage: React.FC = () => {
     [navigate],
   );
 
-
-
   return (
     <Box>
       <PageHeader title="앱스킴 관리" />
@@ -86,7 +82,7 @@ const AppSchemePage: React.FC = () => {
         onRowClick={handleRowClick}
         columns={appSchemeColumns}
         rows={rows}
-        rowIdGetter={'id'}
+        rowIdGetter={'appSchemeId'}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}
