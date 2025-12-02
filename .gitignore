@@ -22,8 +22,6 @@ frontend/dist/
 backend/.gradle/
 backend/build/
 
-# Others
-.env
 
 # Junie
 .junie/
