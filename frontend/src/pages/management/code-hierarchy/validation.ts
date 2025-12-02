@@ -1,8 +1,4 @@
-// frontend/src/pages/management/code-hierarchy/validation.ts
-
-/**
- * 계층 구조 코드 관리 Validation 규칙
- */
+export { CommonCodeValidator } from '../common-code/validation';
 
 export type ValidationResult = {
   isValid: boolean;
