@@ -11,11 +11,14 @@ import {
   processedFields,
   excelDateFieldsConfig,
 } from '@/pages/data-reg/app-scheme/data';
-import { createAppSchemesBatch, transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
+import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
+import { useCreateAppSchemesBatch } from '@/pages/data-reg/app-scheme/hooks';
 import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
+  const createBatchMutation = useCreateAppSchemesBatch();
 
   // 템플릿에서 제외할 자동 생성 필드들
 
@@ -56,16 +59,16 @@ const ApprovalExcelUpload: React.FC = () => {
         const apiData = processedData.map((item) => transformToApiFormat(item));
 
         // 백엔드 API 호출
-        await createAppSchemesBatch(apiData);
+        await createBatchMutation.mutateAsync(apiData);
 
-        toast.success('일괄 등록 요청이 완료되었습니다.');
+        toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiData.length}개 항목)`);
         navigate(-1);
       } catch (error) {
         console.error('데이터 처리 오류:', error);
         throw error;
       }
     },
-    [navigate],
+    [navigate, createBatchMutation],
   );
 
   const handleCancel = useCallback(() => {

@@ -90,6 +90,7 @@ export async function fetchApi<T = unknown>(
   } = options;
 
   const url = `${baseURL}${endpoint}`;
+  //const url = '';
   const requestHeaders: HeadersInit = {
     'Content-Type': 'application/json',
     ...getCommonHeaders(),

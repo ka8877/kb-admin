@@ -18,7 +18,8 @@ import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import { updateApprovalRequestStatus } from '@/pages/data-reg/recommended-questions/api';
+import { updateApprovalRequestStatus as updateRecommendedQuestionStatus } from '@/pages/data-reg/recommended-questions/api';
+import { updateApprovalRequestStatus as updateAppSchemeStatus } from '@/pages/data-reg/app-scheme/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 
@@ -107,7 +108,6 @@ const fetchApprovalRequests = async (
       : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
 
   const response = await getApi<ApprovalRequestItem[]>(endpoint, {
-    baseURL: env.testURL,
     transform: transformApprovalRequests,
     errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
   });
@@ -172,7 +172,6 @@ const DataRegApprovalPage: React.FC = () => {
     data: approvalRequests = [],
     isLoading,
     isFetching,
-    refetch,
   } = useQuery({
     queryKey: approvalRequestKeys.list(pageType),
     queryFn: () => fetchApprovalRequests(pageType),
@@ -180,11 +179,6 @@ const DataRegApprovalPage: React.FC = () => {
 
   // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
   const isDataLoading = isLoading || isFetching;
-
-  // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
-  useEffect(() => {
-    refetch();
-  }, [location.pathname, refetch]);
 
   const listApi = {
     list: async (): Promise<ApprovalRequestItem[]> => {
@@ -238,13 +232,6 @@ const DataRegApprovalPage: React.FC = () => {
         return;
       }
 
-      // 추천질문 승인 요청인 경우에만 처리
-      if (pageType !== 'recommended-questions') {
-        toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
-        handleApproveSelect(false);
-        return;
-      }
-
       // 선택된 승인 요청들 필터링
       const selectedRequests = approvalRequests.filter((request) =>
         selectedIds.includes(request.approvalRequestId),
@@ -278,7 +265,15 @@ const DataRegApprovalPage: React.FC = () => {
         const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
         // 모든 선택된 요청의 status를 in_review로 변경
         for (const request of selectedRequests) {
-          await updateApprovalRequestStatus(request.approvalRequestId, IN_REVIEW, processDate);
+          if (pageType === 'app-scheme') {
+            await updateAppSchemeStatus(request.approvalRequestId, IN_REVIEW, processDate);
+          } else {
+            await updateRecommendedQuestionStatus(
+              request.approvalRequestId,
+              IN_REVIEW,
+              processDate,
+            );
+          }
         }
         toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         setApproveSelectionMode(false);

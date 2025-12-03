@@ -35,9 +35,6 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
   const { data, isLoading, refetch } = useRecommendedQuestion(id);
 
-  // 편집 가능 여부: 저장 후에는 편집 불가 (결재 요청이 들어갔으므로)
-  const [canEdit, setCanEdit] = React.useState(true);
-
   const handleBack = React.useCallback(() => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS);
   }, [navigate]);
@@ -60,9 +57,8 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
       try {
         await updateMutation.mutateAsync({ id, data: updatedData });
-        // 저장 성공 후 refetch 및 편집 불가 처리
+        // 저장 성공 후 refetch
         await refetch();
-        setCanEdit(false); // 저장 후 편집 불가
       } catch (error) {
         console.error('수정 요청 실패:', error);
         throw error;
@@ -163,7 +159,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         getRequiredFields={getRequiredFields}
         checkChangesBeforeSave={true}
         excludeFieldsFromChangeCheck={excludeFieldsFromChangeCheckConfig}
-        canEdit={canEdit}
+        canEdit={true}
       />
     </Box>
   );

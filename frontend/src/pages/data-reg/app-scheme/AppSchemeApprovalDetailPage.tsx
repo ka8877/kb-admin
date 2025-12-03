@@ -24,7 +24,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   // React Query로 데이터 fetching
-  const { data = [], isLoading } = useApprovalDetailAppSchemes(id);
+  const { data = [], isLoading, isError } = useApprovalDetailAppSchemes(id);
 
   // 승인 요청 정보 조회
   const { data: approvalRequest } = useQuery({
@@ -106,6 +106,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
         onFinalApproval={handleFinalApproval}
         showFinalApprovalButton={canShowFinalApprovalButton}
         isLoading={isLoading}
+        isError={isError}
       />
     </Box>
   );

@@ -82,20 +82,23 @@ export const useDataDetailValidation = <T extends GridValidRowModel>({
     showConfirm({
       title: CONFIRM_TITLES.SAVE,
       message: CONFIRM_MESSAGES.SAVE_CHANGES,
-      onConfirm: async () => {
-        if (editedData && onSave) {
-          try {
-            await onSave(editedData);
-            toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
-            setIsEditMode(false);
-            setHasInitialFocus(false);
-            tabKeyPressedRef.current = null;
-            shouldMoveToNextCellRef.current = false;
-          } catch (error) {
-            toast.error(TOAST_MESSAGES.UPDATE_FAILED);
-            console.error('저장 실패:', error);
+      onConfirm: () => {
+        const executeSave = async () => {
+          if (editedData && onSave) {
+            try {
+              await onSave(editedData);
+              toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+              setIsEditMode(false);
+              setHasInitialFocus(false);
+              tabKeyPressedRef.current = null;
+              shouldMoveToNextCellRef.current = false;
+            } catch (error) {
+              toast.error(TOAST_MESSAGES.UPDATE_FAILED);
+              console.error('저장 실패:', error);
+            }
           }
-        }
+        };
+        executeSave();
       },
     });
   }, [
@@ -116,4 +119,3 @@ export const useDataDetailValidation = <T extends GridValidRowModel>({
 
   return { handleSaveClick };
 };
-

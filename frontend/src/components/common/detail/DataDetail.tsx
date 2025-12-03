@@ -185,8 +185,11 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
       confirmText: '삭제',
       cancelText: '취소',
       severity: 'error',
-      onConfirm: async () => {
-        await onDelete();
+      onConfirm: () => {
+        const executeDelete = async () => {
+          await onDelete();
+        };
+        executeDelete();
       },
     });
   }, [onDelete, showConfirm]);

@@ -8,6 +8,8 @@ import {
   patchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
 } from '@/utils/apiUtils';
+import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
@@ -329,10 +331,6 @@ export const fetchApprovalDetailQuestions = async (
   approvalId: string | number,
 ): Promise<RecommendedQuestionItem[]> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL_LIST(approvalId);
-  console.log('🔍 fetchApprovalDetailQuestions API 호출:', {
-    endpoint,
-    fullUrl: `${env.testURL}${endpoint}`,
-  });
 
   const response = await getApi<RecommendedQuestionItem[]>(endpoint, {
     transform: transformRecommendedQuestions,
@@ -414,12 +412,6 @@ export const updateApprovalRequestStatus = async (
   if (processDate) {
     updateData.updatedAt = processDate;
   }
-
-  console.log('🔍 updateApprovalRequestStatus API 호출:', {
-    endpoint,
-    updateData,
-    fullUrl: `${env.testURL}${endpoint}`,
-  });
 
   await patchApi(endpoint, updateData, {
     errorMessage: '승인 요청 상태 수정에 실패했습니다.',
@@ -620,6 +612,9 @@ const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
     }
 
     console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
+  } catch (error) {
+    toast.error(TOAST_MESSAGES.DELETE_FAILED);
+    throw error;
   } finally {
     useLoadingStore.getState().stop();
   }
@@ -652,23 +647,28 @@ export const updateRecommendedQuestion = async (
  * 추천질문 삭제 (승인 요청 전송 후 실제 데이터 삭제)
  */
 export const deleteRecommendedQuestion = async (id: string | number): Promise<void> => {
-  // 삭제 전에 데이터 조회 (승인 요청에 사용)
-  let deletedItem: RecommendedQuestionItem | null = null;
+  useLoadingStore.getState().start();
   try {
-    deletedItem = await fetchRecommendedQuestion(id);
-  } catch (error) {
-    console.warn('삭제 전 데이터 조회 실패:', error);
-    throw new Error('삭제할 데이터를 조회하지 못했습니다.');
-  }
+    // 삭제 전에 데이터 조회 (승인 요청에 사용)
+    let deletedItem: RecommendedQuestionItem | null = null;
+    try {
+      deletedItem = await fetchRecommendedQuestion(id);
+    } catch (error) {
+      console.warn('삭제 전 데이터 조회 실패:', error);
+      throw new Error('삭제할 데이터를 조회하지 못했습니다.');
+    }
 
-  // 승인 요청 전송
-  if (deletedItem) {
-    await sendApprovalRequest(DATA_DELETION, [deletedItem]);
+    // 승인 요청 전송
+    if (deletedItem) {
+      await sendApprovalRequest(DATA_DELETION, [deletedItem]);
 
-    // 결재 요청 성공 후 실제 데이터 삭제
-    await deleteApprovedQuestions([deletedItem]);
-  } else {
-    throw new Error('삭제할 데이터를 찾을 수 없습니다.');
+      // 결재 요청 성공 후 실제 데이터 삭제
+      await deleteApprovedQuestions([deletedItem]);
+    } else {
+      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
+    }
+  } finally {
+    useLoadingStore.getState().stop();
   }
 };
 
@@ -683,24 +683,29 @@ export const deleteRecommendedQuestions = async (
     return;
   }
 
-  // 삭제 전에 데이터 조회 (승인 요청에 사용)
-  const deletedItems: RecommendedQuestionItem[] = [];
-  for (const id of itemIdsToDelete) {
-    try {
-      const item = await fetchRecommendedQuestion(id);
-      deletedItems.push(item);
-    } catch (error) {
-      console.warn(`삭제 전 데이터 조회 실패 (id: ${id}):`, error);
+  useLoadingStore.getState().start();
+  try {
+    // 삭제 전에 데이터 조회 (승인 요청에 사용)
+    const deletedItems: RecommendedQuestionItem[] = [];
+    for (const id of itemIdsToDelete) {
+      try {
+        const item = await fetchRecommendedQuestion(id);
+        deletedItems.push(item);
+      } catch (error) {
+        console.warn(`삭제 전 데이터 조회 실패 (id: ${id}):`, error);
+      }
     }
-  }
 
-  // 승인 요청 전송
-  if (deletedItems.length > 0) {
-    await sendApprovalRequest(DATA_DELETION, deletedItems);
+    // 승인 요청 전송
+    if (deletedItems.length > 0) {
+      await sendApprovalRequest(DATA_DELETION, deletedItems);
 
-    // 결재 요청 성공 후 실제 데이터 삭제
-    await deleteApprovedQuestions(deletedItems);
-  } else {
-    throw new Error('삭제할 데이터를 찾을 수 없습니다.');
+      // 결재 요청 성공 후 실제 데이터 삭제
+      await deleteApprovedQuestions(deletedItems);
+    } else {
+      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
+    }
+  } finally {
+    useLoadingStore.getState().stop();
   }
 };

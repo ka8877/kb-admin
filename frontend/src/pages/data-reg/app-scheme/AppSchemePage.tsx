@@ -38,11 +38,6 @@ const AppSchemePage: React.FC = () => {
   });
   const isDataLoading = isLoading || isFetching;
 
-  // 페이지가 마운트되거나 경로가 변경될 때 데이터 리프레시 (뒤로가기 시 자동 리프레시)
-  useEffect(() => {
-    refetch();
-  }, [location.pathname, refetch]);
-
   const handleCreate = useCallback(() => {
     navigate(ROUTES.APP_SCHEME_CREATE);
   }, [navigate]);

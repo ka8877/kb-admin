@@ -171,6 +171,9 @@ export const useCreateRecommendedQuestion = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
     },
   });
 };
@@ -186,6 +189,9 @@ export const useCreateRecommendedQuestionsBatch = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
     },
   });
 };
@@ -203,6 +209,9 @@ export const useUpdateRecommendedQuestion = () => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
     },
   });
 };
@@ -218,6 +227,9 @@ export const useDeleteRecommendedQuestion = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
     },
   });
 };
@@ -233,6 +245,9 @@ export const useDeleteRecommendedQuestions = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: approvalRequestKeys.list('recommended-questions'),
+      });
     },
   });
 };

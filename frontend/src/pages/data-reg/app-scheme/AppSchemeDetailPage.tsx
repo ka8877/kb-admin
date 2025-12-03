@@ -29,9 +29,6 @@ const AppSchemeDetailPage: React.FC = () => {
 
   const { data, isLoading, refetch } = useAppScheme(id);
 
-  // 편집 가능 여부: 저장 후에는 편집 불가 (결재 요청이 들어갔으므로)
-  const [canEdit, setCanEdit] = React.useState(true);
-
   const handleBack = React.useCallback(() => {
     navigate(ROUTES.APP_SCHEME);
   }, [navigate]);
@@ -54,9 +51,8 @@ const AppSchemeDetailPage: React.FC = () => {
 
       try {
         await updateMutation.mutateAsync({ id, data: updatedData });
-        // 저장 성공 후 refetch 및 편집 불가 처리
+        // 저장 성공 후 refetch
         await refetch();
-        setCanEdit(false); // 저장 후 편집 불가
       } catch (error) {
         console.error('수정 요청 실패:', error);
         throw error;
@@ -130,7 +126,7 @@ const AppSchemeDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
-        canEdit={canEdit}
+        canEdit={true}
       />
     </Box>
   );

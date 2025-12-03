@@ -7,10 +7,11 @@ import {
   deleteAppSchemes,
   updateAppScheme,
   createAppScheme,
+  createAppSchemesBatch,
   fetchApprovalDetailAppSchemes,
 } from '@/pages/data-reg/app-scheme/api';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
-import { appSchemeKeys } from '@/constants/queryKey';
+import { appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
 
 /**
  * 앱스킴 목록 조회 훅 파라미터 타입
@@ -56,6 +57,23 @@ export const useCreateAppScheme = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+    },
+  });
+};
+
+/**
+ * 앱스킴 일괄 생성 뮤테이션 훅
+ */
+export const useCreateAppSchemesBatch = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createAppSchemesBatch,
+    onSuccess: () => {
+      // 목록 쿼리 무효화하여 자동 리패칭
+      queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
     },
   });
 };
@@ -84,6 +102,7 @@ export const useUpdateAppScheme = () => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
     },
   });
 };
@@ -99,6 +118,7 @@ export const useDeleteAppScheme = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
     },
   });
 };
@@ -114,6 +134,7 @@ export const useDeleteAppSchemes = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
     },
   });
 };

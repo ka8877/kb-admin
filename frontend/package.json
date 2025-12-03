@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
+    "build:dev": "tsc && vite build --mode dev",
     "preview": "vite preview --port 5173 --strictPort",
     "lint": "eslint . --ext .ts,.tsx --cache",
     "lint:fix": "npm run lint -- --fix",

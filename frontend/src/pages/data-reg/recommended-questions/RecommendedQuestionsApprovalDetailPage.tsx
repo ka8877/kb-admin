@@ -47,7 +47,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   }, []);
 
   // React Query로 데이터 fetching
-  const { data = [], isLoading } = useApprovalDetailQuestions(id);
+  const { data = [], isLoading, isError } = useApprovalDetailQuestions(id);
 
   // 승인 요청 정보 조회
   const { data: approvalRequest } = useQuery({
@@ -136,6 +136,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         onFinalApproval={handleFinalApproval}
         showFinalApprovalButton={canShowFinalApprovalButton}
         isLoading={isLoading}
+        isError={isError}
       />
     </Box>
   );

@@ -85,7 +85,10 @@ const ApprovalManualForm: React.FC = () => {
         title: CONFIRM_TITLES.SAVE,
         message: CONFIRM_MESSAGES.SAVE,
         onConfirm: () => {
-          handleSubmit(onSubmit)();
+          const executeSubmit = async () => {
+            await handleSubmit(onSubmit)();
+          };
+          executeSubmit();
         },
       });
     }

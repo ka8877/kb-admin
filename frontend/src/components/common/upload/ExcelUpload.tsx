@@ -322,17 +322,20 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
       title: CONFIRM_TITLES.SAVE,
       message: CONFIRM_MESSAGES.SAVE,
       onConfirm: () => {
-        try {
-          console.log('🔍 저장 확인 - onSave에 전달할 데이터:', parsedData);
-          // ExcelListPreview에서 편집된 데이터를 전달
-          onSave(parsedData as any);
-        } catch (error) {
-          showAlert({
-            title: ALERT_MESSAGES.UPLOAD_FAILED,
-            message: ALERT_MESSAGES.UPLOAD_ERROR_RETRY,
-            severity: 'error',
-          });
-        }
+        const executeSave = async () => {
+          try {
+            console.log('🔍 저장 확인 - onSave에 전달할 데이터:', parsedData);
+            // ExcelListPreview에서 편집된 데이터를 전달
+            await onSave(parsedData as any);
+          } catch (error) {
+            showAlert({
+              title: ALERT_MESSAGES.UPLOAD_FAILED,
+              message: ALERT_MESSAGES.UPLOAD_ERROR_RETRY,
+              severity: 'error',
+            });
+          }
+        };
+        executeSave();
       },
     });
   }, [selectedFile, parsedData, showAlert, showConfirm, onSave, validator, displayColumns]);

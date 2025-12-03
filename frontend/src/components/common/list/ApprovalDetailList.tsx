@@ -6,6 +6,7 @@ import DetailNavigationActions from '../actions/DetailNavigationActions';
 import MediumButton from '../button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import GlobalLoadingSpinner from '../spinner/GlobalLoadingSpinner';
 
 export type ApprovalDetailListProps<T extends GridValidRowModel = GridValidRowModel> = {
   /** 그리드에 표시할 데이터 */
@@ -24,6 +25,8 @@ export type ApprovalDetailListProps<T extends GridValidRowModel = GridValidRowMo
   finalApprovalButtonLabel?: string;
   /** 로딩 상태 */
   isLoading?: boolean;
+  /** 에러 상태 */
+  isError?: boolean;
   /** 그리드 높이 (기본: 600) */
   gridHeight?: number;
 };
@@ -41,8 +44,13 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
   showFinalApprovalButton = false,
   finalApprovalButtonLabel = '최종 결재 요청',
   isLoading = false,
+  isError = false,
   gridHeight = 600,
 }: ApprovalDetailListProps<T>) => {
+  if (isLoading) {
+    return <GlobalLoadingSpinner isLoading={true} />;
+  }
+
   const { showConfirm } = useConfirmDialog();
 
   const handleFinalApprovalClick = useCallback(() => {
@@ -51,11 +59,17 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
     showConfirm({
       title: CONFIRM_TITLES.APPROVAL_REQUEST,
       message: CONFIRM_MESSAGES.APPROVAL_REQUEST,
-      onConfirm: async () => {
-        await onFinalApproval();
+      onConfirm: () => {
+        const executeApproval = async () => {
+          await onFinalApproval();
+        };
+        executeApproval();
       },
     });
   }, [onFinalApproval, showConfirm]);
+
+  // 에러가 발생했거나 로딩 중이면 버튼을 표시하지 않음
+  const shouldShowButton = showFinalApprovalButton && onFinalApproval && !isError;
 
   return (
     <>
@@ -84,7 +98,7 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
       </Box>
 
       {/* 최종 결재 버튼 (그리드 오른쪽 하단) */}
-      {showFinalApprovalButton && onFinalApproval && (
+      {shouldShowButton && (
         <Box display="flex" justifyContent="flex-end">
           <MediumButton variant="contained" onClick={handleFinalApprovalClick} size="medium">
             {finalApprovalButtonLabel}
