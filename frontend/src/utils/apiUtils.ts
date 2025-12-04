@@ -3,6 +3,8 @@
 
 import { useLoadingStore } from '@/store/loading';
 import { env } from '@/config';
+import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
 import {
   DATA_REGISTRATION,
   DATA_MODIFICATION,
@@ -56,6 +58,8 @@ export interface FetchApiOptions<T = unknown> {
   transform?: (data: unknown) => T;
   /** 에러 메시지 (기본값: '데이터를 불러오지 못했습니다.') */
   errorMessage?: string;
+  /** 성공 메시지 (옵션) */
+  successMessage?: string;
 }
 
 export interface StandardApiResponse<T> {
@@ -72,6 +76,25 @@ export interface FetchApiResponse<T> {
 }
 
 /**
+ * 성공 메시지를 반환하는 헬퍼 함수
+ */
+const getSuccessMessage = (method: HttpMethod, customMessage?: string): string => {
+  if (customMessage) return customMessage;
+
+  switch (method) {
+    case 'POST':
+      return TOAST_MESSAGES.SAVE_SUCCESS;
+    case 'PUT':
+    case 'PATCH':
+      return TOAST_MESSAGES.SAVE_SUCCESS;
+    case 'DELETE':
+      return TOAST_MESSAGES.DELETE_SUCCESS;
+    default:
+      return '';
+  }
+};
+
+/**
  * 범용 fetch API 함수
  * @param options - API 호출 옵션
  * @returns Promise<FetchApiResponse<T>>
@@ -86,10 +109,12 @@ export async function fetchApi<T = unknown>(
     body,
     headers = {},
     transform,
-    errorMessage = '데이터를 불러오지 못했습니다.',
+    errorMessage: providedErrorMessage,
+    successMessage: providedSuccessMessage,
   } = options;
 
   const url = `${baseURL}${endpoint}`;
+
   //const url = '';
   const requestHeaders: HeadersInit = {
     'Content-Type': 'application/json',
@@ -116,7 +141,16 @@ export async function fetchApi<T = unknown>(
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      throw new Error(`${errorMessage} (${response.status})`);
+      let serverErrorMessage = response.statusText;
+      try {
+        const errorData = await response.json();
+        if (errorData && typeof errorData.message === 'string') {
+          serverErrorMessage = errorData.message;
+        }
+      } catch (e) {
+        // ignore json parse error
+      }
+      throw new Error(serverErrorMessage);
     }
 
     const rawData = await response.json();
@@ -131,16 +165,38 @@ export async function fetchApi<T = unknown>(
     // 현재 로직 (변경 전)
     const data = transform ? transform(rawData) : (rawData as T);
 
+    // CUD 작업 성공 시 토스트 메시지 표시
+    if (isCudOperation(method)) {
+      const successMessage = getSuccessMessage(method, providedSuccessMessage);
+
+      if (successMessage) {
+        // toastId를 메시지 내용으로 설정하여 동일한 메시지가 중복되어 표시되지 않도록 함
+        toast.success(successMessage, { toastId: successMessage });
+      }
+    }
+
     return {
       data,
       status: response.status,
       statusText: response.statusText,
     };
   } catch (error) {
+    let message = '';
+    if (providedErrorMessage) {
+      message = providedErrorMessage;
+    } else if (error instanceof Error) {
+      message = error.message;
+    } else {
+      message = TOAST_MESSAGES.LOAD_DATA_FAILED;
+    }
+
+    // 중복 토스트 방지를 위해 toastId 설정
+    toast.error(message, { toastId: `${endpoint}-${message}-${method}` });
+
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error(errorMessage);
+    throw new Error(message);
   } finally {
     // CUD 작업인 경우 로딩 종료
     if (shouldShowLoading) {
@@ -361,7 +417,7 @@ export const sendApprovalRequest = async <T>(
 
   try {
     await postApi(endpoint, approvalData, {
-      errorMessage: '승인 요청 전송에 실패했습니다.',
+      errorMessage: TOAST_MESSAGES.APPROVAL_REQUEST_FAILED,
     });
     console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
   } catch (error) {

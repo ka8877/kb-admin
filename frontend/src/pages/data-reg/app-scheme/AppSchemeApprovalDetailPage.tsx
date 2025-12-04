@@ -86,7 +86,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalDetailQuestions(id!) });
       queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
 
-      toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
+      // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
       handleBack();
     } catch (error) {
       console.error('결재 승인 실패:', error);

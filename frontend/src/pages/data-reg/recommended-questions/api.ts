@@ -269,7 +269,7 @@ export const fetchRecommendedQuestions = async (
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.LIST,
     {
       transform: transformRecommendedQuestions,
-      errorMessage: '추천질문 데이터를 불러오지 못했습니다.',
+      errorMessage: TOAST_MESSAGES.LOAD_DATA_FAILED,
     },
   );
 
@@ -285,7 +285,7 @@ export const fetchRecommendedQuestion = async (
   const response = await getApi<Partial<RecommendedQuestionItem> & Record<string, any>>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.DETAIL(id),
     {
-      errorMessage: '추천질문 상세 데이터를 불러오지 못했습니다.',
+      errorMessage: TOAST_MESSAGES.LOAD_DETAIL_FAILED,
     },
   );
 
@@ -301,7 +301,7 @@ export const fetchApprovalRequest = async (
 ): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
   const response = await getApi<any>(endpoint, {
-    errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
+    errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_INFO_FAILED,
   });
 
   const v = response.data;
@@ -334,7 +334,7 @@ export const fetchApprovalDetailQuestions = async (
 
   const response = await getApi<RecommendedQuestionItem[]>(endpoint, {
     transform: transformRecommendedQuestions,
-    errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
+    errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_DETAIL_FAILED,
   });
 
   console.log('🔍 fetchApprovalDetailQuestions API 완료, data:', response.data);
@@ -414,7 +414,7 @@ export const updateApprovalRequestStatus = async (
   }
 
   await patchApi(endpoint, updateData, {
-    errorMessage: '승인 요청 상태 수정에 실패했습니다.',
+    errorMessage: TOAST_MESSAGES.APPROVAL_STATUS_UPDATE_FAILED,
   });
 
   console.log('🔍 updateApprovalRequestStatus API 완료');
@@ -445,10 +445,8 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
 
   // Firebase REST API를 통해 Multi-Path Update 실행
   const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
 
   console.log('🔍 createApprovedQuestions API 호출:', {
-    updatesUrl,
     updates,
     itemsCount: items.length,
   });
@@ -457,23 +455,10 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
   useLoadingStore.getState().start();
 
   try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
+    await patchApi('/.json', updates, {
+      baseURL: databaseUrl,
+      errorMessage: '승인된 항목 등록에 실패했습니다.',
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔍 createApprovedQuestions API 실패:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText,
-      });
-      throw new Error(`승인된 항목 등록에 실패했습니다. (${response.status})`);
-    }
 
     console.log(`🔍 승인된 항목 ${items.length}개가 등록되었습니다.`);
   } finally {
@@ -512,7 +497,7 @@ const updateApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
       console.log('🔍 개별 항목 수정:', { qst_id: qstId, endpoint });
 
       await putApi<RecommendedQuestionItem>(endpoint, item, {
-        errorMessage: `추천질문 수정에 실패했습니다. (qstId: ${qstId})`,
+        errorMessage: `${TOAST_MESSAGES.UPDATE_FAILED} (qstId: ${qstId})`,
       });
     }
 
@@ -581,10 +566,8 @@ const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
 
   // Firebase REST API를 통해 Multi-Path Update 실행
   const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
 
   console.log('🔍 deleteApprovedQuestions Firebase 업데이트:', {
-    updatesUrl,
     updates,
     updatesCount: Object.keys(updates).length,
   });
@@ -593,27 +576,14 @@ const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
   useLoadingStore.getState().start();
 
   try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
+    await patchApi('/.json', updates, {
+      baseURL: databaseUrl,
+      errorMessage: TOAST_MESSAGES.DELETE_FAILED,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔍 deleteApprovedQuestions API 실패:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText,
-      });
-      throw new Error(`승인된 항목 삭제에 실패했습니다. (${response.status})`);
-    }
 
     console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
   } catch (error) {
-    toast.error(TOAST_MESSAGES.DELETE_FAILED);
+    // toast.error(TOAST_MESSAGES.DELETE_FAILED); // patchApi에서 처리됨
     throw error;
   } finally {
     useLoadingStore.getState().stop();

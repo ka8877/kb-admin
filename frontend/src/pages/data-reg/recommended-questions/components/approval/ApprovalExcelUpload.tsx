@@ -100,7 +100,7 @@ const ApprovalExcelUpload: React.FC = () => {
 
         // 일괄 등록 API 호출
         await createBatchMutation.mutateAsync(apiDataList);
-        toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiDataList.length}개 항목)`);
+        //toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiDataList.length}개 항목)`);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
         const returnUrl = sessionStorage.getItem(APPROVAL_RETURN_URL);
@@ -112,7 +112,7 @@ const ApprovalExcelUpload: React.FC = () => {
         }
       } catch (error) {
         console.error('데이터 처리 오류:', error);
-        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+        // toast.error(TOAST_MESSAGES.SAVE_FAILED);
         throw error;
       }
     },

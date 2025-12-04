@@ -275,13 +275,14 @@ const DataRegApprovalPage: React.FC = () => {
             );
           }
         }
-        toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
+        // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
         }
         queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
       } catch (error) {
+        // TODO: 나중에 제거 예정
         toast.error('최종 결재 처리에 실패했습니다.');
       }
     },

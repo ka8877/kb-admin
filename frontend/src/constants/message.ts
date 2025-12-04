@@ -40,6 +40,12 @@ export const TOAST_MESSAGES = {
   UPDATE_FAILED: '수정을 실패하였습니다.',
   SAVE_FAILED: '저장에 실패했습니다.',
   DELETE_FAILED: '삭제에 실패했습니다.',
+  LOAD_DATA_FAILED: '데이터를 불러오지 못했습니다.',
+  LOAD_DETAIL_FAILED: '상세 데이터를 불러오지 못했습니다.',
+  LOAD_APPROVAL_INFO_FAILED: '승인 요청 정보를 불러오지 못했습니다.',
+  LOAD_APPROVAL_DETAIL_FAILED: '승인 요청 상세 데이터를 불러오지 못했습니다.',
+  APPROVAL_REQUEST_FAILED: '승인 요청 전송에 실패했습니다.',
+  APPROVAL_STATUS_UPDATE_FAILED: '승인 요청 상태 수정에 실패했습니다.',
 } as const;
 
 // ========== 알림 다이얼로그 제목 ==========

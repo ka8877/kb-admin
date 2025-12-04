@@ -12,6 +12,7 @@ import {
 import { useLoadingStore } from '@/store/loading';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
+import { TOAST_MESSAGES } from '@/constants/message';
 import type { AppSchemeItem } from './types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
@@ -128,7 +129,7 @@ export const fetchAppSchemes = async (params?: FetchAppSchemesParams): Promise<A
 
   const response = await getApi<AppSchemeItem[]>(API_ENDPOINTS.APP_SCHEME.LIST, {
     transform: transformAppSchemes,
-    errorMessage: '앱스킴 데이터를 불러오지 못했습니다.',
+    errorMessage: TOAST_MESSAGES.LOAD_DATA_FAILED,
   });
 
   return response.data;
@@ -141,7 +142,7 @@ export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem
   const response = await getApi<Partial<AppSchemeItem> & Record<string, any>>(
     API_ENDPOINTS.APP_SCHEME.DETAIL(id),
     {
-      errorMessage: '앱스킴 상세 데이터를 불러오지 못했습니다.',
+      errorMessage: TOAST_MESSAGES.LOAD_DETAIL_FAILED,
     },
   );
 
@@ -246,32 +247,17 @@ const createApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> =
 
   // Firebase REST API를 통해 Multi-Path Update 실행
   const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
 
   console.log('🔍 createApprovedAppSchemes API 호출:', {
-    updatesUrl,
     updates,
     itemsCount: items.length,
   });
 
   try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
+    await patchApi('/.json', updates, {
+      baseURL: databaseUrl,
+      errorMessage: '승인된 항목 등록에 실패했습니다.',
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔍 createApprovedAppSchemes API 실패:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText,
-      });
-      throw new Error(`승인된 항목 등록에 실패했습니다. (${response.status})`);
-    }
 
     console.log(`🔍 승인된 항목 ${items.length}개가 등록되었습니다.`);
   } catch (error) {
@@ -331,7 +317,7 @@ export const fetchApprovalRequest = async (
 ): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
   const response = await getApi<any>(endpoint, {
-    errorMessage: '승인 요청 정보를 불러오지 못했습니다.',
+    errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_INFO_FAILED,
   });
 
   const v = response.data;
@@ -364,7 +350,7 @@ export const fetchApprovalDetailAppSchemes = async (
 
   const response = await getApi<AppSchemeItem[]>(endpoint, {
     transform: transformAppSchemes,
-    errorMessage: '승인 요청 상세 데이터를 불러오지 못했습니다.',
+    errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_DETAIL_FAILED,
   });
 
   console.log('🔍 fetchApprovalDetailAppSchemes API 완료, data:', response.data);
@@ -390,7 +376,7 @@ export const updateApprovalRequestStatus = async (
   }
 
   await patchApi(endpoint, updateData, {
-    errorMessage: '승인 요청 상태 수정에 실패했습니다.',
+    errorMessage: TOAST_MESSAGES.APPROVAL_STATUS_UPDATE_FAILED,
   });
 
   console.log('🔍 updateApprovalRequestStatus API 완료');
@@ -454,32 +440,17 @@ const deleteApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> =
 
   // Firebase REST API를 통해 Multi-Path Update 실행
   const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-  const updatesUrl = `${databaseUrl}/.json`;
 
   console.log('🔍 deleteApprovedAppSchemes Firebase 업데이트:', {
-    updatesUrl,
     updates,
     updatesCount: Object.keys(updates).length,
   });
 
   try {
-    const response = await fetch(updatesUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
+    await patchApi('/.json', updates, {
+      baseURL: databaseUrl,
+      errorMessage: '승인된 항목 삭제에 실패했습니다.',
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔍 deleteApprovedAppSchemes API 실패:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText,
-      });
-      throw new Error(`승인된 항목 삭제에 실패했습니다. (${response.status})`);
-    }
 
     console.log(`🔍 승인된 항목 ${idsToDelete.length}개가 삭제되었습니다.`);
   } catch (error) {

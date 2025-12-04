@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { GridValidRowModel, GridColDef } from '@mui/x-data-grid';
 import type { ValidationResult } from '@/types/types';
 import { hasDataChanges } from '@/utils/dataUtils';
@@ -12,7 +12,7 @@ import {
   ALERT_TITLES,
 } from '@/constants/message';
 
-type UseDataDetailValidationParams<T> = {
+type UseDataDetailValidationParams<T extends GridValidRowModel> = {
   data: T | undefined;
   editedData: T | undefined;
   columns: GridColDef<T>[];
@@ -87,13 +87,14 @@ export const useDataDetailValidation = <T extends GridValidRowModel>({
           if (editedData && onSave) {
             try {
               await onSave(editedData);
-              toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+              // toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
               setIsEditMode(false);
               setHasInitialFocus(false);
               tabKeyPressedRef.current = null;
               shouldMoveToNextCellRef.current = false;
             } catch (error) {
-              toast.error(TOAST_MESSAGES.UPDATE_FAILED);
+              // TODO : 나중에 제거 예정
+              // toast.error(TOAST_MESSAGES.UPDATE_FAILED);
               console.error('저장 실패:', error);
             }
           }

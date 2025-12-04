@@ -116,7 +116,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
         queryKey: approvalRequestKeys.list('recommended-questions'),
       });
 
-      toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
+      // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
       handleBack();
     } catch (error) {
       console.error('결재 승인 실패:', error);

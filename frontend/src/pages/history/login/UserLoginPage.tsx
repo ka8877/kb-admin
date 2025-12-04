@@ -4,7 +4,7 @@ import PageHeader from '@/components/common/PageHeader';
 import SimpleList from '@/components/common/list/SimpleList';
 import type { UserLoginItem } from './type';
 import { userLoginColumns } from './components/columns/columns';
-import { mockUserLogins, typeOptions } from './data';
+import { mockUserLogins, resultOptions } from './data';
 
 const listApi = {
   list: async (): Promise<UserLoginItem[]> => {
@@ -13,7 +13,7 @@ const listApi = {
 };
 
 const selectFieldsConfig = {
-  type: typeOptions,
+  result: resultOptions,
 };
 
 const UserLoginPage: React.FC = () => {

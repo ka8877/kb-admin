@@ -38,7 +38,7 @@ const AppSchemeDetailPage: React.FC = () => {
 
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+      // toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
       navigate(-1);
     } catch (error) {
       toast.error(TOAST_MESSAGES.DELETE_FAILED);

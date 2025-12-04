@@ -61,7 +61,6 @@ const ApprovalExcelUpload: React.FC = () => {
         // 백엔드 API 호출
         await createBatchMutation.mutateAsync(apiData);
 
-        toast.success(`${TOAST_MESSAGES.SAVE_SUCCESS} (${apiData.length}개 항목)`);
         navigate(-1);
       } catch (error) {
         console.error('데이터 처리 오류:', error);

@@ -55,7 +55,7 @@ const AppSchemePage: React.FC = () => {
       }
       try {
         await deleteMutation.mutateAsync(ids);
-        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+        //toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
       } catch (error) {
         toast.error(TOAST_MESSAGES.DELETE_FAILED);
       }

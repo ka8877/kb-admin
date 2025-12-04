@@ -54,7 +54,7 @@ const ApprovalManualForm: React.FC = () => {
         });
 
         await createMutation.mutateAsync(apiData);
-        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+        // toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
 
         // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
         const returnUrl = sessionStorage.getItem('approval_return_url');
@@ -66,7 +66,7 @@ const ApprovalManualForm: React.FC = () => {
         }
       } catch (error) {
         console.error('앱스킴 생성 실패:', error);
-        toast.error(TOAST_MESSAGES.SAVE_FAILED);
+        // toast.error(TOAST_MESSAGES.SAVE_FAILED);
       }
     },
     [createMutation, navigate],

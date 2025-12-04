@@ -64,8 +64,9 @@ const RecommendedQuestionsPage: React.FC = () => {
       }
       try {
         await deleteMutation.mutateAsync(ids);
-        toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
+        //toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
       } catch (error) {
+        // TODO : 나중에 제거 예정
         toast.error(TOAST_MESSAGES.DELETE_FAILED);
       }
     },
