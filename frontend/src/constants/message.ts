@@ -21,6 +21,9 @@ export const CONFIRM_MESSAGES = {
   SAVE: '저장 하시겠습니까?',
   SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
   DELETE: '삭제 하시겠습니까?',
+  DELETE_SELECTED_ITEMS: '선택한 항목을 삭제하시겠습니까?',
+  DELETE_CODE_GROUP:
+    '해당 코드그룹과 관련된 모든 코드아이템(소분류)도 함께 삭제됩니다.\n정말 삭제하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
   FINAL_APPROVAL: '최종 결재를 넘기시겠습니까?',
 } as const;
@@ -35,6 +38,12 @@ export const TOAST_MESSAGES = {
   SAVE_SUCCESS: '저장되었습니다.',
   DELETE_SUCCESS: '삭제를 요청하였습니다.',
   FINAL_APPROVAL_SUCCESS: '최종 결재가 완료되었습니다.',
+  CODE_ITEM_CREATED: '코드아이템이 생성되었습니다.',
+  CODE_ITEM_UPDATED: '코드아이템이 수정되었습니다.',
+  CODE_ITEM_DELETED: '코드아이템이 삭제되었습니다.',
+  CODE_GROUP_CREATED: '코드그룹이 생성되었습니다.',
+  CODE_GROUP_UPDATED: '코드그룹이 수정되었습니다.',
+  SORT_ORDER_SAVED: '순서가 저장되었습니다.',
 
   // 실패 메시지
   UPDATE_FAILED: '수정을 실패하였습니다.',
@@ -46,11 +55,19 @@ export const TOAST_MESSAGES = {
   LOAD_APPROVAL_DETAIL_FAILED: '승인 요청 상세 데이터를 불러오지 못했습니다.',
   APPROVAL_REQUEST_FAILED: '승인 요청 전송에 실패했습니다.',
   APPROVAL_STATUS_UPDATE_FAILED: '승인 요청 상태 수정에 실패했습니다.',
+  CODE_ITEM_SAVE_FAILED: '코드아이템 저장 중 오류가 발생했습니다.',
+  CODE_ITEM_DELETE_FAILED: '코드아이템 삭제 중 오류가 발생했습니다.',
+  CODE_GROUP_SAVE_FAILED: '코드그룹 저장 중 오류가 발생했습니다.',
+  CODE_GROUP_DELETE_FAILED: '코드그룹 삭제 중 오류가 발생했습니다.',
+  SORT_ORDER_SAVE_FAILED: '순서 저장 중 오류가 발생했습니다.',
 } as const;
 
 // ========== 알림 다이얼로그 제목 ==========
 export const ALERT_TITLES = {
   VALIDATION_CHECK: '입력값 확인',
+  NOTIFICATION: '알림',
+  SUCCESS: '성공',
+  ERROR: '오류',
 } as const;
 
 // ========== 알림 메시지 ==========
@@ -60,6 +77,12 @@ export const ALERT_MESSAGES = {
   NO_ITEMS_TO_APPROVE: '최종 결재할 항목이 없습니다.',
   NO_ITEMS_SELECTED: '선택된 항목이 없습니다.',
   APPROVED_ITEMS_CANNOT_SELECT: '승인완료된 항목은 선택할 수 없습니다.',
+  SELECT_CODE_GROUP_FIRST: '먼저 코드그룹을 선택해주세요.',
+  DELETE_ITEMS_SELECT: '삭제할 항목을 선택해주세요.',
+  CODE_ALREADY_EXISTS: '이미 존재하는 코드입니다.',
+  CODE_NAME_ALREADY_EXISTS: '이미 존재하는 코드명입니다.',
+  GROUP_CODE_ALREADY_EXISTS: '이미 존재하는 그룹코드입니다.',
+  NO_VALID_DATA_TO_SAVE: '저장할 유효한 데이터가 없습니다.',
 
   // Validation 관련
   VALIDATION_MISSING_REQUIRED: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.',
@@ -114,4 +137,29 @@ export const getDeleteConfirmMessage = (rowNumbers: number[]): string => {
 export const getFileFormatErrorMessage = (formats: string[]): string => {
   const formatList = formats.map((f) => f.replace('.', '')).join(', ');
   return `파일 포맷을 확인해주세요\n(가능포맷: ${formatList})`;
+};
+
+/**
+ * 코드아이템 삭제 성공 메시지 생성
+ * @param count - 삭제된 코드아이템 개수
+ * @returns 삭제 성공 메시지
+ * @example
+ * getCodeItemDeleteSuccessMessage(3) // "3개의 코드아이템이 삭제되었습니다."
+ */
+export const getCodeItemDeleteSuccessMessage = (count: number): string => {
+  return `${count}개의 코드아이템이 삭제되었습니다.`;
+};
+
+/**
+ * 코드그룹 삭제 성공 메시지 생성
+ * @param relatedItemsCount - 관련 코드아이템 개수
+ * @returns 삭제 성공 메시지
+ * @example
+ * getCodeGroupDeleteSuccessMessage(3) // "코드그룹 및 관련 코드아이템 3개가 삭제되었습니다."
+ * getCodeGroupDeleteSuccessMessage(0) // "코드그룹이 삭제되었습니다."
+ */
+export const getCodeGroupDeleteSuccessMessage = (relatedItemsCount: number): string => {
+  return relatedItemsCount > 0
+    ? `코드그룹 및 관련 코드아이템 ${relatedItemsCount}개가 삭제되었습니다.`
+    : '코드그룹이 삭제되었습니다.';
 };
