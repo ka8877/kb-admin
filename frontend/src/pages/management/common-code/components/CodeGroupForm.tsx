@@ -1,34 +1,33 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  Box,
-  Stack,
-  TextField,
-  Typography,
-  Paper,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-} from '@mui/material';
+import { Box, Stack, TextField, Typography, Paper, MenuItem } from '@mui/material';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import type { CodeTypeOption } from '@/mocks/commonCodeDb';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import type { CodeGroup } from '../types';
+import { CodeGroupValidator } from '../validation/commonCodeValidation';
+import Section from '@/components/layout/Section';
 
-type MajorCodeFormProps = {
-  selectedItem: CodeTypeOption | null;
+type CodeGroupFormProps = {
+  selectedItem: CodeGroup | null;
   isNew: boolean;
-  onSave: (item: CodeTypeOption) => void;
+  onSave: (
+    item: Omit<
+      CodeGroup,
+      'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
+    >,
+  ) => void;
   onCancel: () => void;
-  onDelete: (value: string) => void;
+  onDelete: (codeGroupId: number) => void;
   disabled?: boolean;
 };
 
-const INITIAL_DATA: CodeTypeOption = {
-  value: '',
-  label: '',
-  useYn: 'Y',
+const INITIAL_DATA = {
+  group_code: '',
+  group_name: '',
+  is_active: 1,
 };
 
-const MajorCodeForm: React.FC<MajorCodeFormProps> = ({
+const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
   selectedItem,
   isNew,
   onSave,
@@ -37,34 +36,36 @@ const MajorCodeForm: React.FC<MajorCodeFormProps> = ({
   disabled = false,
 }) => {
   const { showConfirm } = useConfirmDialog();
-  const [formData, setFormData] = useState<CodeTypeOption>(INITIAL_DATA);
+  const [formData, setFormData] = useState(INITIAL_DATA);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (selectedItem) {
-      setFormData(selectedItem);
+      setFormData({
+        group_code: selectedItem.group_code,
+        group_name: selectedItem.group_name,
+        is_active: selectedItem.is_active,
+      });
     } else if (isNew) {
       setFormData(INITIAL_DATA);
     }
     setFieldErrors({});
   }, [selectedItem, isNew]);
 
-  const handleChange = useCallback((field: keyof CodeTypeOption, value: string) => {
+  const handleChange = useCallback((field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // 입력시 해당 필드 오류 제거
     setFieldErrors((prev) => ({ ...prev, [field]: '' }));
   }, []);
 
   const validateAndShowErrors = useCallback((): boolean => {
+    const validationResults = CodeGroupValidator.validateByField(formData);
     const errors: Record<string, string> = {};
 
-    if (!formData.value || !formData.value.trim()) {
-      errors.value = '코드 타입 ID는 필수입니다';
-    }
-
-    if (!formData.label || !formData.label.trim()) {
-      errors.label = '코드 타입 명은 필수입니다';
-    }
+    Object.entries(validationResults).forEach(([field, result]) => {
+      if (!result.isValid && result.message) {
+        errors[field] = result.message;
+      }
+    });
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -80,10 +81,10 @@ const MajorCodeForm: React.FC<MajorCodeFormProps> = ({
   const handleDelete = useCallback(() => {
     if (selectedItem) {
       showConfirm({
-        title: '삭제 확인',
-        message: '정말 삭제하시겠습니까?',
+        title: CONFIRM_TITLES.DELETE,
+        message: CONFIRM_MESSAGES.DELETE_CODE_GROUP,
         onConfirm: () => {
-          onDelete(selectedItem.value);
+          onDelete(selectedItem.code_group_id);
         },
       });
     }
@@ -92,73 +93,63 @@ const MajorCodeForm: React.FC<MajorCodeFormProps> = ({
   if (!selectedItem && !isNew) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center', color: 'text.secondary', height: '100%' }}>
-        코드 타입을 선택하거나 추가하세요
+        코드그룹을 선택하거나 추가하세요
       </Paper>
     );
   }
 
   return (
-    <Paper sx={{ p: 2 }}>
+    <Section>
       <Stack spacing={2}>
         <Typography variant="subtitle1" fontWeight="bold">
-          {isNew ? '코드 타입 추가' : '코드 타입 수정'}
+          {isNew ? '코드그룹 추가' : '코드그룹 수정'}
         </Typography>
 
         <Stack direction="row" spacing={2}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              코드 타입 ID *
-            </Typography>
             <TextField
               fullWidth
               size="small"
-              value={formData.value || ''}
-              onChange={(e) => handleChange('value', e.target.value)}
+              label="그룹코드"
+              value={formData.group_code || ''}
+              onChange={(e) => handleChange('group_code', e.target.value)}
               disabled={!isNew || disabled}
-              placeholder="예: SERVICE_NAME"
-              error={!!fieldErrors.value}
-              helperText={fieldErrors.value}
+              placeholder="예: SERVICE_TYPE"
+              required
+              error={!!fieldErrors.group_code}
+              helperText={fieldErrors.group_code}
             />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              코드 타입 명 *
-            </Typography>
             <TextField
               fullWidth
               size="small"
-              value={formData.label || ''}
-              onChange={(e) => handleChange('label', e.target.value)}
+              label="그룹명"
+              value={formData.group_name || ''}
+              onChange={(e) => handleChange('group_name', e.target.value)}
               disabled={disabled}
-              placeholder="예: 서비스명"
-              error={!!fieldErrors.label}
-              helperText={fieldErrors.label}
+              placeholder="예: 서비스 타입"
+              required
+              error={!!fieldErrors.group_name}
+              helperText={fieldErrors.group_name}
             />
           </Box>
         </Stack>
 
         <Box>
-          <Typography variant="caption" color="text.secondary">
-            사용 여부
-          </Typography>
-          <RadioGroup
-            row
-            value={formData.useYn || 'Y'}
-            onChange={(e) => handleChange('useYn', e.target.value)}
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label="사용여부"
+            value={formData.is_active}
+            onChange={(e) => handleChange('is_active', Number(e.target.value))}
+            disabled={disabled}
+            required
           >
-            <FormControlLabel
-              value="Y"
-              control={<Radio size="small" />}
-              label="사용"
-              disabled={disabled}
-            />
-            <FormControlLabel
-              value="N"
-              control={<Radio size="small" />}
-              label="미사용"
-              disabled={disabled}
-            />
-          </RadioGroup>
+            <MenuItem value={1}>사용</MenuItem>
+            <MenuItem value={0}>미사용</MenuItem>
+          </TextField>
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1 }}>
@@ -180,8 +171,8 @@ const MajorCodeForm: React.FC<MajorCodeFormProps> = ({
           </MediumButton>
         </Box>
       </Stack>
-    </Paper>
+    </Section>
   );
 };
 
-export default MajorCodeForm;
+export default CodeGroupForm;

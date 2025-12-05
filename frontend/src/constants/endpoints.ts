@@ -30,15 +30,26 @@ export const API_ENDPOINTS = {
     APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
   },
 
-  // 공통코드 관련
+  // 공통코드 관련 (cm_code_group, cm_code_item, cm_code_mapping)
   COMMON_CODE: {
     BASE: '/management/common-code',
-    CODE_TYPES: '/management/common-code/code-types.json',
-    LIST: '/management/common-code.json',
-    DETAIL: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
-    CREATE: '/management/common-code.json',
-    UPDATE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
-    DELETE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
+    // 코드그룹 (cm_code_group)
+    CODE_GROUPS: '/management/common-code/code-groups.json',
+    CODE_GROUP_DETAIL: (id: number) => `/management/common-code/code-groups/${id}.json`,
+    CODE_GROUP_CREATE: '/management/common-code/code-groups.json',
+    CODE_GROUP_UPDATE: (id: number) => `/management/common-code/code-groups/${id}.json`,
+    CODE_GROUP_DELETE: (id: number) => `/management/common-code/code-groups/${id}.json`,
+    // 코드아이템 (cm_code_item)
+    CODE_ITEMS: '/management/common-code/code-items.json',
+    CODE_ITEM_DETAIL: (id: number) => `/management/common-code/code-items/${id}.json`,
+    CODE_ITEM_CREATE: '/management/common-code/code-items.json',
+    CODE_ITEM_UPDATE: (id: number) => `/management/common-code/code-items/${id}.json`,
+    CODE_ITEM_DELETE: (id: number) => `/management/common-code/code-items/${id}.json`,
+    // 코드 매핑 (cm_code_mapping)
+    CODE_MAPPINGS: '/management/common-code/code-mappings.json',
+    CODE_MAPPING_CREATE: '/management/common-code/code-mappings.json',
+    CODE_MAPPING_UPDATE: (id: number) => `/management/common-code/code-mappings/${id}.json`,
+    CODE_MAPPING_DELETE: (id: number) => `/management/common-code/code-mappings/${id}.json`,
   },
 
   // 사용자 역할 변경 이력
