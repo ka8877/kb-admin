@@ -40,4 +40,16 @@ export const API_ENDPOINTS = {
     UPDATE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
     DELETE: (serviceCode: string) => `/management/common-code/${serviceCode}.json`,
   },
+
+  // 사용자 역할 변경 이력
+  USER_ROLE_CHANGE: {
+    BASE: '/history/user-role-change',
+    LIST: '/history/user-role-change.json',
+  },
+
+  // 로그인 이력
+  USER_LOGIN: {
+    BASE: '/history/login',
+    LIST: '/history/login.json',
+  },
 } as const;

@@ -53,7 +53,9 @@ const PermissionPage = React.lazy(() => import('@pages/management/permission/Per
 
 // === 이력 ===
 const UserLoginPage = React.lazy(() => import('@pages/history/login/UserLoginPage'));
-const TransactionPage = React.lazy(() => import('@pages/history/transaction/TransactionPage'));
+const UserRoleChangePage = React.lazy(
+  () => import('@/pages/history/user-role-change/UserRoelChangePage'),
+);
 
 export type AppRoute = {
   path: string;
@@ -127,7 +129,7 @@ export const frontRoutes: AppRoute[] = [
     Component: () => React.createElement(Navigate, { to: ROUTES.USER_LOGIN, replace: true }),
   },
   { path: ROUTES.USER_LOGIN, Component: UserLoginPage },
-  { path: ROUTES.TRANSACTION, Component: TransactionPage },
+  { path: ROUTES.USER_ROLE_CHANGE, Component: UserRoleChangePage },
 ];
 
 // Helper for validating DB-provided menu paths

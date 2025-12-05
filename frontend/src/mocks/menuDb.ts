@@ -164,9 +164,9 @@ class MenuMockDb {
     },
     {
       id: 13,
-      screen_id: 'TRANSACTION',
-      screen_name: '사용자 사용 이력',
-      path: '/history/transaction',
+      screen_id: 'USER_ROLE_CHANGE',
+      screen_name: '사용자 역할 변경 이력',
+      path: '/history/user-role-change',
       depth: 1,
       order: 2,
       parent_screen_id: 'HISTORY',

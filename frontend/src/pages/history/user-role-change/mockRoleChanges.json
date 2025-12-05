@@ -1,0 +1,41 @@
+[
+  {
+    "no": 560,
+    "historyId": 1001,
+    "kcUserId": "taron.k",
+    "roleId": "ROLE_ADMIN",
+    "changeType": "GRANT",
+    "itsvcNo": "ITSVC-2025-001",
+    "reason": "신규 프로젝트 리더 선임",
+    "beforeState": "{}",
+    "afterState": "{\"role\": \"ROLE_ADMIN\"}",
+    "changedBy": "admin",
+    "changedAt": "2025-04-01 10:00:00"
+  },
+  {
+    "no": 562,
+    "historyId": 1002,
+    "kcUserId": "alex.c",
+    "roleId": "ROLE_USER",
+    "changeType": "REVOKE",
+    "itsvcNo": "ITSVC-2025-002",
+    "reason": "부서 이동으로 인한 권한 회수",
+    "beforeState": "{\"role\": \"ROLE_USER\"}",
+    "afterState": "{}",
+    "changedBy": "manager",
+    "changedAt": "2025-04-01 11:30:00"
+  },
+  {
+    "no": 563,
+    "historyId": 1003,
+    "kcUserId": "jason.h",
+    "roleId": "ROLE_VIEWER",
+    "changeType": "MODIFY",
+    "itsvcNo": "ITSVC-2025-003",
+    "reason": "임시 접근 권한 요청",
+    "beforeState": "{\"role\": \"ROLE_GUEST\"}",
+    "afterState": "{\"role\": \"ROLE_VIEWER\"}",
+    "changedBy": "admin",
+    "changedAt": "2025-04-01 14:15:00"
+  }
+]

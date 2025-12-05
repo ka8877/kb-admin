@@ -5,6 +5,7 @@ import type {
   GridValidRowModel,
   GridRowId,
   GridRowSelectionModel,
+  GridEventListener,
 } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
@@ -33,6 +34,7 @@ export type SimpleListProps<T extends GridValidRowModel = GridValidRowModel> = {
   size?: 'small' | 'medium';
   enableClientSearch?: boolean;
   onRowClick?: (params: { id: string | number; row: T }) => void;
+  onCellClick?: GridEventListener<'cellClick'>;
   onBack?: () => void; // 목록으로 돌아가기 버튼
   /**
    * (선택) 목록 상단에 표시할 사용자 정의 액션 노드(컴포넌트)
@@ -94,11 +96,12 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   fetcher,
   rows,
   rowIdGetter,
-  defaultPageSize = 10,
+  defaultPageSize = 20,
   searchPlaceholder = '검색어를 입력하세요',
   size = 'small',
   enableClientSearch = true,
   onRowClick,
+  onCellClick,
   onBack,
   actionsNode,
   enableStatePreservation = true,
@@ -330,6 +333,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           columnHeaderHeight={46}
           autoHeight={autoHeight}
           onRowClick={onRowClick ? handleRowClick : undefined}
+          onCellClick={onCellClick}
           loading={isLoading}
           sx={SIMPLE_LIST_GRID_SX}
         />

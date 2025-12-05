@@ -43,7 +43,7 @@ export const ROUTES = {
   // === 이력 ===
   HISTORY: '/history',
   USER_LOGIN: '/history/login',
-  TRANSACTION: '/history/transaction',
+  USER_ROLE_CHANGE: '/history/user-role-change',
 } as const;
 
 export const frontMenus: MenuItem[] = [
@@ -103,8 +103,8 @@ export const frontMenus: MenuItem[] = [
         path: ROUTES.USER_LOGIN,
       },
       {
-        label: '사용자 사용 이력',
-        path: ROUTES.TRANSACTION,
+        label: '사용자 역할 변경 이력',
+        path: ROUTES.USER_ROLE_CHANGE,
       },
     ],
   },

@@ -77,3 +77,33 @@ export const commonCodeKeys = {
   details: () => [...commonCodeKeys.all, 'detail'] as const,
   detail: (serviceCode: string) => [...commonCodeKeys.details(), serviceCode] as const,
 };
+
+/**
+ * 사용자 역할 변경 이력 관련 QueryKey
+ */
+export const USER_ROLE_CHANGE = 'user-role-change';
+
+export const userRoleChangeKeys = {
+  all: [USER_ROLE_CHANGE] as const,
+  lists: () => [...userRoleChangeKeys.all, 'list'] as const,
+  list: (params?: {
+    page?: number;
+    pageSize?: number;
+    searchParams?: Record<string, string | number>;
+  }) => [...userRoleChangeKeys.lists(), params] as const,
+};
+
+/**
+ * 로그인 이력 관련 QueryKey
+ */
+export const USER_LOGIN = 'user-login';
+
+export const userLoginKeys = {
+  all: [USER_LOGIN] as const,
+  lists: () => [...userLoginKeys.all, 'list'] as const,
+  list: (params?: {
+    page?: number;
+    pageSize?: number;
+    searchParams?: Record<string, string | number>;
+  }) => [...userLoginKeys.lists(), params] as const,
+};
