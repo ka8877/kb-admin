@@ -9,6 +9,7 @@ export type MenuItem = {
 export const ROUTES = {
   // === 기본 페이지 ===
   HOME: '/',
+  LOGIN: '/login',
 
   // === 데이터 등록/노출 ===
   DATA_REG: '/data-reg',

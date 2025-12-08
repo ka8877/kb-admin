@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ROUTES } from './menu';
 
+const LoginPage = React.lazy(() => import('@pages/login/Login'));
 const HomePage = React.lazy(() => import('@pages/index'));
 
 // === 데이터 등록/노출 - 추천 질문 ===
@@ -62,6 +63,7 @@ export type AppRoute = {
 
 export const frontRoutes: AppRoute[] = [
   // === 기본 페이지 ===
+  { path: ROUTES.LOGIN, Component: LoginPage },
   { path: ROUTES.HOME, Component: HomePage },
 
   // === 데이터 등록/노출 ===
