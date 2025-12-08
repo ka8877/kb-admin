@@ -325,8 +325,8 @@ function getCategoryDataAsCommonCode(): CommonCodeItem[] {
 
   otherCodeTypeMockData.forEach((item) => {
     result.push({
-      no: globalNo++,
       ...item,
+      no: globalNo++,
     });
   });
 
@@ -361,10 +361,10 @@ export const commonCodeMockDb = {
             : 1;
         const newItem: ServiceNameItem = {
           no: newNo,
-          service_cd: input.service_cd,
-          service_nm: input.category_nm,
+          service_cd: input.service_cd as string,
+          service_nm: input.category_nm as string,
           category_nm: '서비스명',
-          display_yn: input.status_code,
+          display_yn: input.status_code as string,
           sort_order: 999,
         };
         serviceNameMockData = [...serviceNameMockData, newItem];
@@ -377,11 +377,11 @@ export const commonCodeMockDb = {
             : 1;
         const newItem: QuestionCategoryItem = {
           no: newNo,
-          qst_ctgr_cd: input.service_cd,
-          service_cd: input.parent_service_cd || '',
-          service_group_name: input.service_group_name,
-          qst_ctgr_nm: input.category_nm,
-          display_yn: input.status_code,
+          qst_ctgr_cd: input.service_cd as string,
+          service_cd: (input.parent_service_cd as string) || '',
+          service_group_name: input.service_group_name as string | undefined,
+          qst_ctgr_nm: input.category_nm as string,
+          display_yn: input.status_code as string,
           sort_order: 999,
         };
         questionCategoryMockData = [...questionCategoryMockData, newItem];
@@ -392,9 +392,9 @@ export const commonCodeMockDb = {
           ageGroupMockData.length > 0 ? Math.max(...ageGroupMockData.map((i) => i.no)) + 1 : 1;
         const newItem: AgeGroupItem = {
           no: newNo,
-          age_grp_cd: input.service_cd,
-          age_grp_nm: input.category_nm,
-          display_yn: input.status_code,
+          age_grp_cd: input.service_cd as string,
+          age_grp_nm: input.category_nm as string,
+          display_yn: input.status_code as string,
           sort_order: 999,
         };
         ageGroupMockData = [...ageGroupMockData, newItem];

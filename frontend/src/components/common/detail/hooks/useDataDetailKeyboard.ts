@@ -1,17 +1,16 @@
 import { useCallback, useRef } from 'react';
-import type { GridValidRowModel } from '@mui/x-data-grid';
-import type { GridApiRef } from '@mui/x-data-grid';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridValidRowModel, GridColDef } from '@mui/x-data-grid';
+import { useGridApiRef } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
-import { isSelectField as checkIsSelectField } from '../utils/columnUtils.tsx';
+import { isSelectField as checkIsSelectField } from '../utils/columnUtils';
 
-type UseDataDetailKeyboardParams<T> = {
+type UseDataDetailKeyboardParams<T extends GridValidRowModel> = {
   isEditMode: boolean;
   processedColumns: GridColDef<T>[];
   readOnlyFields: string[];
   selectFields?: Record<string, SelectFieldOption[]>;
   dynamicSelectFields?: Record<string, (data: T | undefined) => SelectFieldOption[]>;
-  dataGridRef: GridApiRef;
+  dataGridRef: ReturnType<typeof useGridApiRef>;
   tabKeyPressedRef: React.MutableRefObject<{ field: string; rowId: string | number } | null>;
   shouldMoveToNextCellRef: React.MutableRefObject<boolean>;
 };
@@ -58,7 +57,11 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
             dataGridRef.current.setCellFocus(rowId, nextCell.field);
             const cellElement = dataGridRef.current.getCellElement(rowId, nextCell.field);
             if (cellElement) {
-              cellElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+              cellElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest',
+              });
             }
           }
         }, 50);
@@ -81,7 +84,12 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
       const currentField = params.field;
       const rowId = params.id;
 
-      const isSelect = checkIsSelectField(currentField, processedColumns, selectFields, dynamicSelectFields);
+      const isSelect = checkIsSelectField(
+        currentField,
+        processedColumns,
+        selectFields,
+        dynamicSelectFields,
+      );
 
       if (isSelect) {
         if (shouldMoveToNextCellRef.current && tabKeyPressedRef.current) {
@@ -96,7 +104,11 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
           }
         }
 
-        if (tabKeyPressedRef.current && tabKeyPressedRef.current.field === currentField && tabKeyPressedRef.current.rowId === rowId) {
+        if (
+          tabKeyPressedRef.current &&
+          tabKeyPressedRef.current.field === currentField &&
+          tabKeyPressedRef.current.rowId === rowId
+        ) {
           tabKeyPressedRef.current = null;
         }
         shouldMoveToNextCellRef.current = false;
@@ -108,7 +120,16 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
         }, 10);
       }
     },
-    [isEditMode, moveToNextCell, processedColumns, selectFields, dynamicSelectFields, dataGridRef, tabKeyPressedRef, shouldMoveToNextCellRef],
+    [
+      isEditMode,
+      moveToNextCell,
+      processedColumns,
+      selectFields,
+      dynamicSelectFields,
+      dataGridRef,
+      tabKeyPressedRef,
+      shouldMoveToNextCellRef,
+    ],
   );
 
   // 셀 키보드 이벤트 핸들러
@@ -123,7 +144,12 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
         const currentField = params.field;
         const rowId = params.id;
         const isEditing = params.cellMode === 'edit';
-        const isSelect = checkIsSelectField(currentField, processedColumns, selectFields, dynamicSelectFields);
+        const isSelect = checkIsSelectField(
+          currentField,
+          processedColumns,
+          selectFields,
+          dynamicSelectFields,
+        );
 
         if (isEditing) {
           if (isSelect) {
@@ -148,17 +174,35 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
       } else if (event.key === 'Enter') {
         const currentField = params.field;
         const rowId = params.id;
-        const isSelect = checkIsSelectField(currentField, processedColumns, selectFields, dynamicSelectFields);
+        const isSelect = checkIsSelectField(
+          currentField,
+          processedColumns,
+          selectFields,
+          dynamicSelectFields,
+        );
 
         if (isSelect) {
           shouldMoveToNextCellRef.current = false;
-          if (tabKeyPressedRef.current && tabKeyPressedRef.current.field === currentField && tabKeyPressedRef.current.rowId === rowId) {
+          if (
+            tabKeyPressedRef.current &&
+            tabKeyPressedRef.current.field === currentField &&
+            tabKeyPressedRef.current.rowId === rowId
+          ) {
             tabKeyPressedRef.current = null;
           }
         }
       }
     },
-    [isEditMode, processedColumns, selectFields, dynamicSelectFields, moveToNextCell, dataGridRef, tabKeyPressedRef, shouldMoveToNextCellRef],
+    [
+      isEditMode,
+      processedColumns,
+      selectFields,
+      dynamicSelectFields,
+      moveToNextCell,
+      dataGridRef,
+      tabKeyPressedRef,
+      shouldMoveToNextCellRef,
+    ],
   );
 
   return {
@@ -166,4 +210,3 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
     handleCellEditStop,
   };
 };
-

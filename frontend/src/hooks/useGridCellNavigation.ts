@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import type { GridColDef, GridRenderEditCellParams, GridApiCommunity, GridValidRowModel } from '@mui/x-data-grid';
+import type { GridColDef, GridRenderEditCellParams, GridValidRowModel } from '@mui/x-data-grid';
+import { useGridApiRef } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
 
 export type UseGridCellNavigationOptions<T extends GridValidRowModel> = {
@@ -11,7 +12,7 @@ export type UseGridCellNavigationOptions<T extends GridValidRowModel> = {
   dateFields?: string[];
   dynamicSelectFields?: string[];
   getRowId: (row: T) => string | number;
-  dataGridRef: React.MutableRefObject<GridApiCommunity | null>;
+  dataGridRef: React.MutableRefObject<ReturnType<typeof useGridApiRef>['current'] | null>;
 };
 
 export type CellNavigationHandlers = {
@@ -287,4 +288,3 @@ export const useGridCellNavigation = <T extends GridValidRowModel = GridValidRow
     handleCellEditStop,
   };
 };
-

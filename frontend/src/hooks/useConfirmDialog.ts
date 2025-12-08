@@ -53,7 +53,7 @@ export const useConfirmDialogStore = create<ConfirmDialogStore>((set, get) => ({
       try {
         const result = state.onConfirm();
         // onConfirm이 Promise를 반환하는 경우 처리
-        if (result instanceof Promise) {
+        if (result != null && typeof result === 'object' && 'then' in result) {
           await result;
         }
         console.log('🔍 onConfirm 실행 완료');

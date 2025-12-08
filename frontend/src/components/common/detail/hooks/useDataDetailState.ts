@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { GridValidRowModel, GridApiCommunity } from '@mui/x-data-grid';
-import type { GridApiRef } from '@mui/x-data-grid';
+import type { GridValidRowModel } from '@mui/x-data-grid';
+import { useGridApiRef } from '@mui/x-data-grid';
 
 type UseDataDetailStateParams<T> = {
   data: T | undefined;
   columns: Array<{ field: string }>;
   readOnlyFields: string[];
   getRowId: (row: T) => string | number;
-  dataGridRef: GridApiRef;
+  dataGridRef: ReturnType<typeof useGridApiRef>;
 };
 
 /**
@@ -90,4 +90,3 @@ export const useDataDetailState = <T extends GridValidRowModel>({
     handleCancelEdit,
   };
 };
-

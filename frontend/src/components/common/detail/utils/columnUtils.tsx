@@ -1,10 +1,10 @@
 import React from 'react';
-import type { GridColDef, GridRenderEditCellParams } from '@mui/x-data-grid';
+import type { GridColDef, GridRenderEditCellParams, GridValidRowModel } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 import DateEditCell from '@/components/common/grid/DateEditCell';
 
-type ProcessColumnParams<T> = {
+type ProcessColumnParams<T extends GridValidRowModel> = {
   col: GridColDef<T>;
   isEditMode: boolean;
   readOnlyFields: string[];
