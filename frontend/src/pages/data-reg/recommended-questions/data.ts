@@ -1,5 +1,6 @@
 import type { SearchField } from '@/types/types';
 import { categoryMockDb } from '@/mocks/commonCodeDb';
+import { statusOptions, yesNoOptions } from '@/constants/options';
 
 // **************공통 코드 옵션 데이터 **************
 // 서비스 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
@@ -35,18 +36,6 @@ export const ageGroupOptions = [
   { label: '30대', value: '30' },
   { label: '40대', value: '40' },
   { label: '50대', value: '50' },
-];
-
-// 17세 미만 노출 여부 옵션 데이터
-export const under17Options = [
-  { label: '예', value: 'Y' },
-  { label: '아니오', value: 'N' },
-];
-
-// 데이터 등록 반영 상태 옵션 데이터
-export const statusOptions = [
-  { label: '서비스 중', value: 'in_service' },
-  { label: '서비스 종료', value: 'out_of_service' },
 ];
 
 // 질문 카테고리 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
@@ -128,7 +117,7 @@ export const questionCategoryOptions = questionCategoryGroupedOptions.flatMap(
 export const selectFieldsConfig = {
   serviceNm: serviceOptions,
   ageGrp: ageGroupOptions,
-  showU17: under17Options,
+  showU17: yesNoOptions,
   status: statusOptions,
   qstCtgr: questionCategoryOptions,
 };
@@ -140,7 +129,7 @@ export const createSelectFieldsConfig = (options: {
 }) => ({
   serviceNm: options.serviceOptions,
   ageGrp: options.ageGroupOptions,
-  showU17: under17Options,
+  showU17: yesNoOptions,
   status: statusOptions,
   qstCtgr: questionCategoryOptions,
 });
@@ -204,7 +193,7 @@ export const searchFields: SearchField[] = [
   { field: 'qstCtgr', label: '질문카테고리', type: 'select', options: questionCategoryOptions },
   { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
   { field: 'ageGrp', label: '연령대', type: 'select', options: ageGroupOptions },
-  { field: 'showU17', label: '17세 미만 여부', type: 'radio', options: under17Options },
+  { field: 'showU17', label: '17세 미만 여부', type: 'radio', options: yesNoOptions },
   {
     field: 'imp_start',
     dataField: 'impStartDate',
@@ -263,6 +252,6 @@ export const excelExcludeFields = ['qstId', 'updatedAt', 'createdAt', 'status'];
 export const excelReferenceData = {
   서비스코드: serviceOptions,
   연령대: ageGroupOptions,
-  '17세미만노출여부': under17Options,
+  '17세미만노출여부': yesNoOptions,
   질문카테고리: questionCategoryOptions,
 };

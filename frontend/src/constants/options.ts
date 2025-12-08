@@ -90,3 +90,15 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
  */
 export const APPROVAL_PAGE_STATE = 'approval_page_state' as const;
 export const APPROVAL_RETURN_URL = 'approval_return_url' as const;
+
+// 데이터 등록 반영 상태 옵션 데이터
+export const statusOptions = [
+  { label: '서비스 중', value: 'in_service' },
+  { label: '서비스 종료', value: 'out_of_service' },
+];
+
+// 예 아니오 옵션 데이터
+export const yesNoOptions = [
+  { label: '예', value: 'Y' },
+  { label: '아니오', value: 'N' },
+];

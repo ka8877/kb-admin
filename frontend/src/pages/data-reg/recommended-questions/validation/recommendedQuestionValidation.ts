@@ -5,7 +5,8 @@
  * 폼 validation과 엑셀 validation에서 공통으로 사용
  */
 
-import { serviceOptions, ageGroupOptions, under17Options, questionCategoryOptions } from '../data';
+import { serviceOptions, ageGroupOptions, questionCategoryOptions } from '../data';
+import { yesNoOptions } from '@/constants/options';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
 // 공통 validation 규칙 인터페이스
@@ -168,7 +169,7 @@ export class RecommendedQuestionValidator {
       return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
     }
 
-    const validOptions = under17Options.map((option) => option.value);
+    const validOptions = yesNoOptions.map((option) => option.value);
     if (!validOptions.includes(value)) {
       return { isValid: false, message: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
     }

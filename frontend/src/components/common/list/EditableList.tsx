@@ -18,6 +18,8 @@ import { createProcessedColumns } from '@/components/common/upload/utils/listUti
 import type { SelectFieldOption } from '@/types/types';
 import type { ValidationResult } from '@/types/types';
 
+import { ALERT_MESSAGES } from '@/constants/message';
+
 export type EditableListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
   fetcher?: () => Promise<T[]>;
@@ -80,7 +82,6 @@ const defaultGetRowId =
     if (typeof getter === 'function') return getter(row);
     return row[getter as keyof T] as string | number;
   };
-
 
 const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
@@ -368,6 +369,7 @@ const EditableList = <T extends GridValidRowModel = GridValidRowModel>({
           onCellEditStop={isEditMode ? handleCellEditStop : undefined}
           apiRef={dataGridRef}
           loading={isLoading}
+          localeText={{ noRowsLabel: ALERT_MESSAGES.NO_DATA }}
           sx={EDITABLE_LIST_GRID_SX}
         />
       </Box>

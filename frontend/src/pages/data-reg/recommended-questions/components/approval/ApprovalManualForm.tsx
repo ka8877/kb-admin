@@ -12,8 +12,8 @@ import RadioInput from '@/components/common/input/RadioInput';
 import {
   loadServiceOptions,
   loadAgeGroupOptions,
-  under17Options,
 } from '@/pages/data-reg/recommended-questions/data';
+import { yesNoOptions } from '@/constants/options';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
@@ -382,7 +382,7 @@ const ApprovalManualForm: React.FC = () => {
                 <RadioInput
                   label="17세 미만 노출 여부"
                   value={field.value || ''}
-                  options={under17Options}
+                  options={yesNoOptions}
                   onChange={field.onChange}
                   required
                   row

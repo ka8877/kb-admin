@@ -17,6 +17,8 @@ import { useListState } from '@/hooks/useListState';
 import type { SelectFieldOption } from '@/types/types';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 
+import { ALERT_MESSAGES } from '@/constants/message';
+
 export type SimpleListRenderProps = {
   selectionMode: boolean;
   selectedIds: GridRowSelectionModel;
@@ -335,6 +337,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           onRowClick={onRowClick ? handleRowClick : undefined}
           onCellClick={onCellClick}
           loading={isLoading}
+          localeText={{ noRowsLabel: ALERT_MESSAGES.NO_DATA }}
           sx={SIMPLE_LIST_GRID_SX}
         />
       </Box>

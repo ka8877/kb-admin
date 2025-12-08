@@ -2,12 +2,7 @@ import type { SearchField } from '@/types/types';
 import { APPROVAL_FORM_OPTIONS, APPROVAL_STATUS_OPTIONS } from '@/constants/options';
 import dayjs from 'dayjs';
 import { FormData } from '@/pages/data-reg/app-scheme/types';
-
-// 데이터 등록 반영 상태 옵션 데이터
-export const statusOptions = [
-  { label: '서비스 중', value: 'in_service' },
-  { label: '서비스 종료', value: 'out_of_service' },
-];
+import { statusOptions } from '@/constants/options';
 
 // **************검색 페이지**************
 export const searchFields: SearchField[] = [

@@ -83,6 +83,7 @@ export const ALERT_MESSAGES = {
   CODE_NAME_ALREADY_EXISTS: '이미 존재하는 코드명입니다.',
   GROUP_CODE_ALREADY_EXISTS: '이미 존재하는 그룹코드입니다.',
   NO_VALID_DATA_TO_SAVE: '저장할 유효한 데이터가 없습니다.',
+  NO_DATA: '데이터가 없습니다.',
 
   // Validation 관련
   VALIDATION_MISSING_REQUIRED: '필수 정보가 누락되었습니다. 확인 후 작성해주세요.',

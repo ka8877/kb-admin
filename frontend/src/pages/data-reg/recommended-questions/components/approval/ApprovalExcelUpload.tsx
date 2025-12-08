@@ -2,11 +2,8 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
-import {
-  serviceOptions,
-  ageGroupOptions,
-  under17Options,
-} from '@/pages/data-reg/recommended-questions/data';
+import { serviceOptions, ageGroupOptions } from '@/pages/data-reg/recommended-questions/data';
+import { yesNoOptions } from '@/constants/options';
 import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questions/components/columns/columns';
 import { RecommendedQuestionValidator } from '@/pages/data-reg/recommended-questions/validation/recommendedQuestionValidation';
 import {
@@ -157,7 +154,7 @@ const ApprovalExcelUpload: React.FC = () => {
     () => ({
       serviceCd: serviceOptions,
       ageGrp: ageGroupOptions,
-      showU17: under17Options,
+      showU17: yesNoOptions,
       qstCtgr: [], // 동적으로 변경되므로 빈 배열
     }),
     [],

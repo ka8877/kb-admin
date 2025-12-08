@@ -14,6 +14,8 @@ import ExcelEditActions from '@/components/common/actions/ExcelEditActions';
 import { useGridCellNavigation } from '@/hooks/useGridCellNavigation';
 import ListSelect from '../select/ListSelect';
 
+import { ALERT_MESSAGES } from '@/constants/message';
+
 export type ExcelPreviewListProps<T extends GridValidRowModel = GridValidRowModel> = {
   data: T[];
   columns: GridColDef<T>[];
@@ -214,6 +216,7 @@ const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
           onCellKeyDown={handleCellKeyDown}
           onCellEditStop={handleCellEditStop}
           apiRef={dataGridRef}
+          localeText={{ noRowsLabel: ALERT_MESSAGES.NO_DATA }}
           sx={EXCEL_LIST_GRID_SX}
         />
       </Box>

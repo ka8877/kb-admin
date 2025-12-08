@@ -18,6 +18,8 @@ import type { SelectFieldOption } from '@/types/types';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import { parseSearchParams } from '@/utils/apiUtils';
 
+import { ALERT_MESSAGES } from '@/constants/message';
+
 export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns: GridColDef<T>[];
   /** 데이터를 가져오는 함수 (페이지/검색 조건 변경 시 자동 호출) */
@@ -342,6 +344,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           autoHeight={false}
           onRowClick={onRowClick ? handleRowClick : undefined}
           loading={isLoading}
+          localeText={{ noRowsLabel: ALERT_MESSAGES.NO_DATA }}
           sx={MANAGEMENT_LIST_GRID_SX}
         />
       </Box>
