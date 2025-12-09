@@ -18,9 +18,9 @@ export const CONFIRM_TITLES = {
 
 // ========== 확인 다이얼로그 메시지 ==========
 export const CONFIRM_MESSAGES = {
-  SAVE: '저장 하시겠습니까?',
+  SAVE: '저장하시겠습니까?',
   SAVE_CHANGES: '변경사항을 저장하시겠습니까?',
-  DELETE: '삭제 하시겠습니까?',
+  DELETE: '삭제하시겠습니까?',
   DELETE_SELECTED_ITEMS: '선택한 항목을 삭제하시겠습니까?',
   DELETE_CODE_GROUP:
     '해당 코드그룹과 관련된 모든 코드아이템(소분류)도 함께 삭제됩니다.\n정말 삭제하시겠습니까?',
@@ -46,7 +46,7 @@ export const TOAST_MESSAGES = {
   SORT_ORDER_SAVED: '순서가 저장되었습니다.',
 
   // 실패 메시지
-  UPDATE_FAILED: '수정을 실패하였습니다.',
+  UPDATE_FAILED: '수정에 실패하였습니다.',
   SAVE_FAILED: '저장에 실패했습니다.',
   DELETE_FAILED: '삭제에 실패했습니다.',
   LOAD_DATA_FAILED: '데이터를 불러오지 못했습니다.',
@@ -55,6 +55,8 @@ export const TOAST_MESSAGES = {
   LOAD_APPROVAL_DETAIL_FAILED: '승인 요청 상세 데이터를 불러오지 못했습니다.',
   APPROVAL_REQUEST_FAILED: '승인 요청 전송에 실패했습니다.',
   APPROVAL_STATUS_UPDATE_FAILED: '승인 요청 상태 수정에 실패했습니다.',
+  APPROVAL_ID_MISSING: '승인 요청 ID가 없습니다.',
+  FINAL_APPROVAL_FAILED: '결재 승인에 실패했습니다.',
   CODE_ITEM_SAVE_FAILED: '코드아이템 저장 중 오류가 발생했습니다.',
   CODE_ITEM_DELETE_FAILED: '코드아이템 삭제 중 오류가 발생했습니다.',
   CODE_GROUP_SAVE_FAILED: '코드그룹 저장 중 오류가 발생했습니다.',
@@ -76,7 +78,7 @@ export const ALERT_MESSAGES = {
   NO_ITEMS_TO_DELETE: '삭제할 항목이 없습니다.',
   NO_ITEMS_TO_APPROVE: '최종 결재할 항목이 없습니다.',
   NO_ITEMS_SELECTED: '선택된 항목이 없습니다.',
-  APPROVED_ITEMS_CANNOT_SELECT: '승인완료된 항목은 선택할 수 없습니다.',
+  APPROVED_ITEMS_CANNOT_SELECT: '승인 완료된 항목은 선택할 수 없습니다.',
   SELECT_CODE_GROUP_FIRST: '먼저 코드그룹을 선택해주세요.',
   DELETE_ITEMS_SELECT: '삭제할 항목을 선택해주세요.',
   CODE_ALREADY_EXISTS: '이미 존재하는 코드입니다.',
@@ -95,8 +97,8 @@ export const ALERT_MESSAGES = {
 
   // 파일 업로드 관련
   FILE_VALIDATION_COMPLETE: '파일 검증 완료',
-  FILE_UPLOAD_SUCCESS: '등록이 완료되었습니다',
-  UPLOAD_SUCCESS: '등록을 성공하였습니다',
+  FILE_UPLOAD_SUCCESS: '등록이 완료되었습니다.',
+  UPLOAD_SUCCESS: '등록을 성공하였습니다.',
   FILE_SELECT_REQUIRED: '파일 선택 필요',
   PLEASE_SELECT_FILE: '파일을 선택해주세요.',
   FILE_FORMAT_ERROR: '파일 포맷 오류',
@@ -112,6 +114,12 @@ export const ALERT_MESSAGES = {
   FILE_READ_ERROR: '파일을 읽는 중 오류가 발생했습니다.',
   CSV_TEMPLATE_DOWNLOAD_ERROR: 'CSV 템플릿 다운로드 중 오류가 발생했습니다.',
   TEMPLATE_DOWNLOAD_ERROR: '템플릿 다운로드 중 오류가 발생했습니다.',
+} as const;
+
+// ========== 안내 메시지 ==========
+export const GUIDE_MESSAGES = {
+  EXCEL_UPLOAD_DESCRIPTION:
+    '엑셀을 업로드하여 다수의 데이터를 한 번에 신규 등록할 수 있습니다. (수정/삭제는 불가)',
 } as const;
 
 // ========== 동적 메시지 생성 함수 ==========

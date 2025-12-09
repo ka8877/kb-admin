@@ -193,16 +193,16 @@ export class RecommendedQuestionValidator {
     return { isValid: true };
   }
 
-  // 노출 시작 일시 validation (수정용 - 현재 일시 체크 없음)
+  // 노출 시작일시 validation (수정용 - 현재 일시 체크 없음)
   static validateImpStartDate(
     value: string | Date | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
     if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 시작 일시는 필수입니다' };
+      return { isValid: false, message: '노출 시작일시는 필수입니다' };
     }
 
-    const dateValidation = this.validateDate(value, '노출 시작 일시');
+    const dateValidation = this.validateDate(value, '노출 시작일시');
     if (!dateValidation.isValid) {
       return dateValidation;
     }
@@ -210,16 +210,16 @@ export class RecommendedQuestionValidator {
     return { isValid: true };
   }
 
-  // 노출 시작 일시 validation (등록용 - 현재 일시 체크 포함)
+  // 노출 시작일시 validation (등록용 - 현재 일시 체크 포함)
   static validateImpStartDateForCreate(
     value: string | Date | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
     if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 시작 일시는 필수입니다' };
+      return { isValid: false, message: '노출 시작일시는 필수입니다' };
     }
 
-    const dateValidation = this.validateDate(value, '노출 시작 일시');
+    const dateValidation = this.validateDate(value, '노출 시작일시');
     if (!dateValidation.isValid) {
       return dateValidation;
     }
@@ -233,7 +233,7 @@ export class RecommendedQuestionValidator {
       if (startDateTime < now) {
         return {
           isValid: false,
-          message: '노출 시작 일시는 현재 일시 이후여야 합니다',
+          message: '노출 시작일시는 현재 일시 이후여야 합니다',
         };
       }
     }
@@ -241,16 +241,16 @@ export class RecommendedQuestionValidator {
     return { isValid: true };
   }
 
-  // 노출 종료 일시 validation
+  // 노출 종료일시 validation
   static validateImpEndDate(
     value: string | Date | null | undefined,
     data?: RecommendedQuestionData,
   ): ValidationResult {
     if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 종료 일시는 필수입니다' };
+      return { isValid: false, message: '노출 종료일시는 필수입니다' };
     }
 
-    const dateValidation = this.validateDate(value, '노출 종료 일시');
+    const dateValidation = this.validateDate(value, '노출 종료일시');
     if (!dateValidation.isValid) {
       return dateValidation;
     }
@@ -267,7 +267,7 @@ export class RecommendedQuestionValidator {
         if (endDateTime <= startDateTime) {
           return {
             isValid: false,
-            message: '노출 종료 일시는 노출 시작 일시보다 커야 합니다',
+            message: '노출 종료일시는 노출 시작일시보다 커야 합니다',
           };
         }
       }

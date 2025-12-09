@@ -14,7 +14,7 @@ import {
 import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
 import { useCreateAppSchemesBatch } from '@/pages/data-reg/app-scheme/hooks';
 import { toast } from 'react-toastify';
-import { TOAST_MESSAGES } from '@/constants/message';
+import { TOAST_MESSAGES, GUIDE_MESSAGES } from '@/constants/message';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -107,7 +107,7 @@ const ApprovalExcelUpload: React.FC = () => {
       validator={handleValidate}
       exampleData={exampleData}
       acceptedFormats={['.xlsx', '.csv']}
-      description="엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)"
+      description={GUIDE_MESSAGES.EXCEL_UPLOAD_DESCRIPTION}
       templateLabel="엑셀 양식 다운로드"
       size="medium"
       dateFields={excelDateFieldsConfig}

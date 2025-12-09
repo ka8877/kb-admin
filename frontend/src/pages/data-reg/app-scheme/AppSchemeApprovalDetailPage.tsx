@@ -17,6 +17,7 @@ import { formatDateForStorage } from '@/utils/dateUtils';
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import { appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const AppSchemeApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,7 +73,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
   const handleFinalApproval = useCallback(async () => {
     try {
       if (!id) {
-        toast.error('승인 요청 ID가 없습니다.');
+        toast.error(TOAST_MESSAGES.APPROVAL_ID_MISSING);
         return;
       }
 
@@ -90,13 +91,13 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
       handleBack();
     } catch (error) {
       console.error('결재 승인 실패:', error);
-      toast.error('결재 승인에 실패했습니다.');
+      toast.error(TOAST_MESSAGES.FINAL_APPROVAL_FAILED);
     }
   }, [queryClient, id, handleBack]);
 
   return (
     <Box>
-      <PageHeader title="앱스킴 결재 상세" />
+      <PageHeader title={PAGE_TITLES.APP_SCHEME_APPROVAL_DETAIL} />
 
       <ApprovalDetailList<AppSchemeItem>
         rows={data}

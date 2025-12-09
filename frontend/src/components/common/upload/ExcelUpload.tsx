@@ -17,6 +17,7 @@ import {
   CONFIRM_TITLES,
   CONFIRM_MESSAGES,
   getFileFormatErrorMessage,
+  GUIDE_MESSAGES,
 } from '@/constants/message';
 import type { ExcelUploadProps } from './type';
 export type { ValidationFunction, ReferenceData } from './type';
@@ -36,7 +37,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
   referenceData,
   acceptedFormats = ['.xlsx', '.csv'],
   title = '엑셀 파일로 일괄 등록',
-  description = '엑셀을 업로드하여 다수의 데이터를 한번에 신규등록 할 수 있습니다. (수정/삭제는 불가)',
+  description = GUIDE_MESSAGES.EXCEL_UPLOAD_DESCRIPTION,
   templateLabel = '엑셀 양식 다운로드',
   onTemplateDownload,
   saveLabel = '저장',

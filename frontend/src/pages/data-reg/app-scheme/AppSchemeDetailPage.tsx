@@ -20,6 +20,7 @@ import { createAppSchemeYupSchema } from '@/pages/data-reg/app-scheme/validation
 import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import type { ValidationResult } from '@/types/types';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const AppSchemeDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ const AppSchemeDetailPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="앱스킴 상세" />
+      <PageHeader title={PAGE_TITLES.APP_SCHEME_DETAIL} />
       <DataDetail<AppSchemeItem>
         data={data}
         columns={appSchemeColumns}
