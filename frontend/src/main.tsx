@@ -10,41 +10,35 @@ import './styles/variables.css';
 import './styles/globals.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useAuthStore } from './store/auth';
+import { initKeycloak } from './utils/keycloak';
 
-// Temporary mock auth bootstrap: assume user is logged in
-// This block sets a mock token and user for global availability via Zustand.
-// Remove when real authentication is implemented.
-(() => {
-  const { accessToken, setToken, setUser, user } = useAuthStore.getState();
-  if (!accessToken) {
-    setToken('mock-dev-token');
-  }
-  if (!user) {
-    setUser({ id: 'u-001', name: '개발자', email: 'dev@example.com', roles: ['ADMIN'] });
-  }
-})();
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <App />
-        </BrowserRouter>
-        <ToastContainer
-          position="top-right"
-          autoClose={2500}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
-      </QueryClientProvider>
-    </ThemeProvider>
-  </StrictMode>,
-);
+// Initialize Keycloak and render App
+initKeycloak()
+  .then(() => {
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <QueryClientProvider client={queryClient}>
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
+              <App />
+            </BrowserRouter>
+            <ToastContainer
+              position="top-right"
+              autoClose={2500}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </StrictMode>,
+    );
+  })
+  .catch((error) => {
+    console.error('Failed to initialize app:', error);
+  });

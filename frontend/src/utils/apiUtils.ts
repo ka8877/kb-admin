@@ -2,7 +2,7 @@
 // 반환 타입, 엔드포인트 등을 props로 전달받아 유동적으로 사용 가능
 
 import { useLoadingStore } from '@/store/loading';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import {
@@ -23,21 +23,19 @@ const isCudOperation = (method: HttpMethod): boolean => {
   return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
 };
 
+import { keycloak } from '@/config/env';
+import { updateToken } from '@/utils/keycloak';
+
 /**
  * 공통 헤더를 반환하는 헬퍼 함수
  * Authorization 토큰 등 모든 요청에 포함되어야 할 헤더를 정의합니다.
  */
 const getCommonHeaders = (): Record<string, string> => {
-  // TODO: 실제 토큰 관리 로직에 맞게 수정 필요 (예: localStorage, cookie, zustand store 등)
-  const token = localStorage.getItem('accessToken');
+  const headers: Record<string, string> = {};
 
-  const headers: Record<string, string> = {
-    // 필요한 공통 헤더 정의
-    // 'X-App-Version': '1.0.0',
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (keycloak.token) {
+    // TODO 로그인 개발 후 주석 제거
+    //  headers['Authorization'] = `Bearer ${keycloak.token}`;
   }
 
   return headers;
@@ -112,6 +110,13 @@ export async function fetchApi<T = unknown>(
     errorMessage: providedErrorMessage,
     successMessage: providedSuccessMessage,
   } = options;
+
+  // API 요청 전 토큰 갱신 시도 (만료 임박 시)
+  try {
+    await updateToken();
+  } catch (e) {
+    console.warn('Token update failed, proceeding with existing token', e);
+  }
 
   const url = `${baseURL}${endpoint}`;
 

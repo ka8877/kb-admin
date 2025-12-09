@@ -15,7 +15,7 @@ import ApprovalListActions from '@/components/common/actions/ApprovalListActions
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { updateApprovalRequestStatus as updateRecommendedQuestionStatus } from '@/pages/data-reg/recommended-questions/api';

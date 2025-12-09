@@ -1,6 +1,6 @@
 // Axios-based HTTP client with interceptors and typed helpers
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { env } from '../config';
+import { env } from '@/config/env';
 import { getAccessToken } from './auth';
 import { useLoadingStore } from '../store/loading';
 

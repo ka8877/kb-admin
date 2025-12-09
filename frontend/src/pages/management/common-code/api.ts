@@ -3,7 +3,7 @@
 
 import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import type { CodeGroup, CodeItem, CodeGroupDisplay, CodeItemDisplay } from './types';
 
 const codeGroupsBasePath = 'management/common-code/code-groups';

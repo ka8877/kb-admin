@@ -11,7 +11,7 @@ import {
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';

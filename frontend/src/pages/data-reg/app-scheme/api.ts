@@ -11,7 +11,7 @@ import {
 } from '@/utils/apiUtils';
 import { useLoadingStore } from '@/store/loading';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import { TOAST_MESSAGES } from '@/constants/message';
 import type { AppSchemeItem } from './types';
 import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
