@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
-import { processColumn } from '../utils/columnUtils.tsx';
+import { processColumn } from '../utils/columnUtils';
 
-type UseDataDetailColumnsParams<T> = {
+type UseDataDetailColumnsParams<T extends GridValidRowModel> = {
   columns: GridColDef<T>[];
   isEditMode: boolean;
   readOnlyFields: string[];
@@ -59,4 +59,3 @@ export const useDataDetailColumns = <T extends GridValidRowModel>({
 
   return processedColumns;
 };
-

@@ -334,7 +334,9 @@ export const updateCodeItem = async (
   const endpointKey = firebaseKey || codeItemId;
 
   const response = await putApi<CodeItem>(
-    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_UPDATE(endpointKey),
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_UPDATE(
+      typeof endpointKey === 'number' ? endpointKey : Number(endpointKey),
+    ),
     updateData,
     {
       baseURL: env.testURL,
@@ -378,10 +380,15 @@ export const deleteCodeItem = async (codeItemId: number, firebaseKey?: string): 
   const endpointKey = firebaseKey || codeItemId;
   console.log('삭제 요청:', { codeItemId, firebaseKey, endpointKey });
 
-  await deleteApi(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DELETE(endpointKey), {
-    baseURL: env.testURL,
-    errorMessage: '코드아이템 삭제에 실패했습니다.',
-  });
+  await deleteApi(
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DELETE(
+      typeof endpointKey === 'number' ? endpointKey : Number(endpointKey),
+    ),
+    {
+      baseURL: env.testURL,
+      errorMessage: '코드아이템 삭제에 실패했습니다.',
+    },
+  );
 };
 
 /**

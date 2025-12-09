@@ -36,12 +36,6 @@ const AppSchemeApprovalDetailPage = React.lazy(
 
 // === 관리 ===
 const CommonCodePage = React.lazy(() => import('@pages/management/common-code/CommonCodePage'));
-const HierarchicalCodePage = React.lazy(
-  () => import('@pages/management/code-hierarchy/HierarchicalCodePage'),
-);
-const CodeHierarchyEditPage = React.lazy(
-  () => import('@pages/management/code-hierarchy/CodeHierarchyEditPage'),
-);
 const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/AdminAuthPage'));
 const AdminAuthEditPage = React.lazy(
   () => import('@pages/management/admin-auth/AdminAuthEditPage'),
@@ -90,10 +84,6 @@ export const frontRoutes: AppRoute[] = [
 
   // 공통 코드 관리
   { path: ROUTES.COMMON_CODE, Component: CommonCodePage },
-
-  // 계층형 코드 관리
-  { path: ROUTES.CODE_HIERARCHY, Component: HierarchicalCodePage },
-  { path: ROUTES.CODE_HIERARCHY_EDIT, Component: CodeHierarchyEditPage },
 
   // 사용자 관리
   { path: ROUTES.ADMIN_AUTH, Component: AdminAuthPage },
