@@ -43,10 +43,10 @@ export const createAppSchemeYupSchema = () => {
   return yup.object({
     productMenuName: yup
       .string()
-      .required('AI검색 노출버튼명은 필수입니다')
+      .required('AI 검색 노출 버튼명은 필수입니다')
       .trim()
-      .min(1, 'AI검색 노출버튼명은 필수입니다')
-      .max(200, 'AI검색 노출버튼명은 200자(공백 포함)를 초과할 수 없습니다'),
+      .min(1, 'AI 검색 노출 버튼명은 필수입니다')
+      .max(200, 'AI 검색 노출 버튼명은 200자(공백 포함)를 초과할 수 없습니다'),
 
     description: yup
       .string()
@@ -122,8 +122,8 @@ export const createAppSchemeYupSchema = () => {
     startDate: yup
       .mixed()
       .nullable()
-      .required('노출 시작 일시는 필수입니다')
-      .test('startDate', '노출 시작 일시 형식이 올바르지 않습니다', function (value) {
+      .required('노출 시작일시는 필수입니다')
+      .test('startDate', '노출 시작일시 형식이 올바르지 않습니다', function (value) {
         if (!value) {
           return false;
         }
@@ -131,7 +131,7 @@ export const createAppSchemeYupSchema = () => {
           return isValidDate(value as any);
         } catch (error) {
           return this.createError({
-            message: '노출 시작 일시를 확인할 수 없습니다',
+            message: '노출 시작일시를 확인할 수 없습니다',
           });
         }
       }),
@@ -139,8 +139,8 @@ export const createAppSchemeYupSchema = () => {
     endDate: yup
       .mixed()
       .nullable()
-      .required('노출 종료 일시는 필수입니다')
-      .test('endDate', '노출 종료 일시 형식이 올바르지 않습니다', function (value) {
+      .required('노출 종료일시는 필수입니다')
+      .test('endDate', '노출 종료일시 형식이 올바르지 않습니다', function (value) {
         if (!value) {
           return false;
         }
@@ -168,7 +168,7 @@ export const createAppSchemeYupSchema = () => {
 
               if (endDateTime <= startDateTime) {
                 return this.createError({
-                  message: '노출 종료 일시는 노출 시작 일시보다 커야 합니다',
+                  message: '노출 종료일시는 노출 시작일시보다 커야 합니다',
                 });
               }
             }
@@ -177,7 +177,7 @@ export const createAppSchemeYupSchema = () => {
           return true;
         } catch (error) {
           return this.createError({
-            message: '노출 종료 일시를 확인할 수 없습니다',
+            message: '노출 종료일시를 확인할 수 없습니다',
           });
         }
       }),

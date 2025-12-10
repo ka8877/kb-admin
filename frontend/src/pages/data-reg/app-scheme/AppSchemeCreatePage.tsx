@@ -3,16 +3,18 @@ import React from 'react';
 import { Box } from '@mui/material';
 import DualTabs from '@/components/common/tabs/DualTabs';
 import PageHeader from '@/components/common/PageHeader';
-import ApprovalManualForm from '@/pages/data-reg/app-scheme/components/approval/ApprovalManualForm';
 import ApprovalExcelUpload from '@/pages/data-reg/app-scheme/components/approval/ApprovalExcelUpload';
+import ApprovalManualForm from '@/pages/data-reg/app-scheme/components/approval/ApprovalManualForm';
+import { PAGE_TITLES } from '@/constants/pageTitle';
+import { LABELS } from '@/constants/label';
 
 const AppSchemeCreatePage: React.FC = () => {
   return (
     <Box>
-      <PageHeader title="앱스킴 등록" />
+      <PageHeader title={PAGE_TITLES.APP_SCHEME_CREATE} />
       <DualTabs
-        label1="직접 입력하기"
-        label2="엑셀파일로 일괄등록"
+        label1={LABELS.MANUAL_INPUT}
+        label2={LABELS.EXCEL_UPLOAD}
         component1={<ApprovalManualForm />}
         component2={
           <>

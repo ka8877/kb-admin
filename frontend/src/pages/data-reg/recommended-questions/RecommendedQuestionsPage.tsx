@@ -20,6 +20,7 @@ import {
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ const RecommendedQuestionsPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="추천질문 관리" />
+      <PageHeader title={PAGE_TITLES.RECOMMENDED_QUESTIONS} />
       <ManagementList<RecommendedQuestionItem>
         onRowClick={handleRowClick}
         columns={recommendedQuestionColumns}
@@ -93,7 +94,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
         enableClientSearch={false}
-        exportFileName="추천질문목록"
+        exportFileName={`${PAGE_TITLES.RECOMMENDED_QUESTIONS} 목록`}
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"

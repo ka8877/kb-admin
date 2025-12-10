@@ -1,11 +1,13 @@
 import type React from 'react';
-import { AppBar, Box, Toolbar, Typography, Button } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { AppBar, Box, Toolbar, Typography, Button, IconButton, Tooltip } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { APP_TITLE } from '@/constants';
 import type { MenuItem } from '@/routes/menu';
 import { useEffect, useState } from 'react';
 import { menuMockDb } from '@/mocks/menuDb';
 import { buildMenuTree } from '@/utils/menuUtils';
+import { logoutKeycloak } from '@/utils/keycloak';
 
 // Global application top bar (앱 전역 헤더)
 
@@ -32,7 +34,12 @@ const isPathUnderMenu = (menu: MenuItem, pathname: string): boolean => {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 0, right }) => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [menus, setMenus] = useState<MenuItem[]>([]);
+
+  const handleLogout = () => {
+    logoutKeycloak();
+  };
 
   useEffect(() => {
     const loadMenus = async () => {
@@ -97,6 +104,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 
 
         <Box sx={{ flexGrow: 1 }} />
         {right}
+        <Tooltip title="로그아웃">
+          <IconButton onClick={handleLogout} sx={{ ml: 1, color: 'text.secondary' }}>
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
       </Toolbar>
     </AppBar>
   );

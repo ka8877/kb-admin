@@ -9,7 +9,7 @@ export const searchFields: SearchField[] = [
   {
     type: 'textGroup',
     fields: [
-      { field: 'productMenuName', label: 'AI검색 노출버튼명' },
+      { field: 'productMenuName', label: 'AI 검색 노출 버튼명' },
       { field: 'description', label: '앱스킴 설명' },
       { field: 'goodsNameList', label: '연관 상품/서비스 리스트' },
       { field: 'parentId', label: 'MID' },
@@ -17,19 +17,19 @@ export const searchFields: SearchField[] = [
     ],
   },
 
-  { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
+  { field: 'status', label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
 
   {
     field: 'start',
     dataField: 'startDate',
-    label: '노출시작일시',
+    label: '노출 시작일시',
     type: 'dateRange',
     position: 'start',
   },
   {
     field: 'end',
     dataField: 'endDate',
-    label: '노출종료일시',
+    label: '노출 종료일시',
     type: 'dateRange',
     position: 'end',
   },
@@ -87,14 +87,14 @@ export const fieldGuides: Record<string, string> = {
   parentId: '선택 | 50자 이하 (예: M020011)',
   parentTitle: '선택 | 200자 이하',
   startDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
-  endDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
+  endDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출 시작일시 이후여야 함)',
 };
 
 // 예시 데이터 (자동 생성 필드 제외)
 export const exampleData = [
   {
-    productMenuName: 'AI 검색 노출버튼명 예시',
-    description: '앱스킴설명 예시입니다.',
+    productMenuName: 'AI 검색 노출 버튼명 예시',
+    description: '앱스킴 설명 예시입니다.',
     appSchemeLink: 'https://appscheme.to/abcd',
     oneLink: 'https://onelink.to/abcd',
     goodsNameList: '자유적금, 햇살론 15',

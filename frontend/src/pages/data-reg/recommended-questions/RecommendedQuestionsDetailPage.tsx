@@ -26,6 +26,7 @@ import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questio
 import { RecommendedQuestionValidator } from '@/pages/data-reg/recommended-questions/validation/recommendedQuestionValidation';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const RecommendedQuestionDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -141,7 +142,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="추천질문 상세" />
+      <PageHeader title={PAGE_TITLES.RECOMMENDED_QUESTIONS_DETAIL} />
       <DataDetail<RecommendedQuestionItem>
         data={data}
         columns={recommendedQuestionColumns}

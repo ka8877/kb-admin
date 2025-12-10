@@ -135,7 +135,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // impStartDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     impStartDate: (value, row) => {
       if (!value) {
-        return { isValid: false, message: '노출 시작 일시는 필수입니다' };
+        return { isValid: false, message: '노출 시작일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
@@ -164,7 +164,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       if (startDate && startDate < now) {
         return {
           isValid: false,
-          message: '노출 시작 일시는 현재 일시 이후여야 합니다',
+          message: '노출 시작일시는 현재 일시 이후여야 합니다',
         };
       }
 
@@ -174,7 +174,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // impEndDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     impEndDate: (value, row) => {
       if (!value) {
-        return { isValid: false, message: '노출 종료 일시는 필수입니다' };
+        return { isValid: false, message: '노출 종료일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
@@ -205,7 +205,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
         if (startDate && endDate && endDate <= startDate) {
           return {
             isValid: false,
-            message: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
+            message: '노출 종료일시는 시작일시보다 이후여야 합니다',
           };
         }
       }

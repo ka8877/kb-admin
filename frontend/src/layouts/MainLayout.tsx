@@ -9,11 +9,14 @@ import { useAuthStore } from '../store/auth';
 import { useLocation } from 'react-router-dom';
 import { menuMockDb } from '@/mocks/menuDb';
 import { buildMenuTree } from '@/utils/menuUtils';
+import { useIsCurrentPath } from '@/hooks';
+import { ROUTES } from '@/routes/menu';
 
 const MainLayout = ({ children }: PropsWithChildren) => {
   const user = useAuthStore((s) => s.user);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const { pathname } = useLocation();
+  const isLoginPage = useIsCurrentPath(ROUTES.LOGIN);
 
   useEffect(() => {
     const loadMenus = async () => {
@@ -23,6 +26,10 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     };
     loadMenus();
   }, [pathname]); // pathname 변경 시마다 메뉴 다시 로드
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   const right = user ? (
     <Stack direction="row" spacing={1} alignItems="center">

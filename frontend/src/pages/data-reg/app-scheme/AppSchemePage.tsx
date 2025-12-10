@@ -13,6 +13,7 @@ import { useDeleteAppSchemes, useAppSchemes } from '@/pages/data-reg/app-scheme/
 import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const AppSchemePage: React.FC = () => {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ const AppSchemePage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader title="앱스킴 관리" />
+      <PageHeader title={PAGE_TITLES.APP_SCHEME} />
       <ManagementList<AppSchemeItem>
         onRowClick={handleRowClick}
         columns={appSchemeColumns}
@@ -83,7 +84,7 @@ const AppSchemePage: React.FC = () => {
         onDeleteConfirm={handleDeleteConfirm}
         enableStatePreservation={true}
         enableClientSearch={false}
-        exportFileName="앱스킴목록"
+        exportFileName={`${PAGE_TITLES.APP_SCHEME} 목록`}
         selectFields={selectFieldsConfig}
         dateFields={dateFieldsConfig}
         dateFormat="YYYYMMDDHHmmss"

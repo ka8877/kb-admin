@@ -5,6 +5,8 @@ import { frontRoutes } from './routes/registry';
 import GlobalConfirmDialog from './components/common/dialog/GlobalConfirmDialog';
 import GlobalAlertDialog from './components/common/dialog/GlobalAlertDialog';
 import GlobalLoadingSpinner from './components/common/spinner/GlobalLoadingSpinner';
+import RequireAuth from './components/guards/RequireAuth';
+import { ROUTES } from './routes/menu';
 
 const App: React.FC = () => {
   return (
@@ -12,14 +14,25 @@ const App: React.FC = () => {
       <MainLayout>
         <Suspense fallback={<GlobalLoadingSpinner isLoading={true} />}>
           <Routes>
-            {/**
-             * 보호 라우트 적용 예시 (RequireAuth 사용):
-             * <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
-             * - 실제로 적용하려면 위 컴포넌트 임포트와 해당 라우트 컴포넌트를 추가.
-             */}
-            {frontRoutes.map(({ path, Component }) => (
-              <Route key={path} path={path} element={<Component />} />
-            ))}
+            {frontRoutes.map(({ path, Component }) => {
+              // 로그인 페이지는 보호하지 않음
+              if (path === ROUTES.LOGIN) {
+                return <Route key={path} path={path} element={<Component />} />;
+              }
+              // 나머지 모든 페이지는 로그인 필요
+              return (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    // TODO 로그인 개발 후 주석 제거
+                    // <RequireAuth>
+                      <Component />
+                    //</RequireAuth>
+                  }
+                />
+              );
+            })}
             <Route path="/404" element={<div>Not Found</div>} />
             <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>

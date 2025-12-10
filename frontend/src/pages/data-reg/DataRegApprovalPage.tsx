@@ -15,13 +15,14 @@ import ApprovalListActions from '@/components/common/actions/ApprovalListActions
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
+import { env } from '@/config/env';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { updateApprovalRequestStatus as updateRecommendedQuestionStatus } from '@/pages/data-reg/recommended-questions/api';
 import { updateApprovalRequestStatus as updateAppSchemeStatus } from '@/pages/data-reg/app-scheme/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 // 경로 타입 정의
 type ApprovalPageType = 'recommended-questions' | 'app-scheme';
@@ -126,14 +127,14 @@ const DataRegApprovalPage: React.FC = () => {
   const pageConfig = useMemo(() => {
     if (pageType === 'app-scheme') {
       return {
-        title: '앱스킴 결재 요청',
+        title: PAGE_TITLES.APP_SCHEME_APPROVAL,
         searchFields: APPROVAL_SEARCH_FIELDS,
         defaultReturnRoute: ROUTES.APP_SCHEME,
         approvalDetailRoute: (id: string | number) => ROUTES.APP_SCHEME_APPROVAL_DETAIL(id),
       };
     }
     return {
-      title: '추천질문 결재 요청',
+      title: PAGE_TITLES.RECOMMENDED_QUESTIONS_APPROVAL,
       searchFields: APPROVAL_SEARCH_FIELDS,
       defaultReturnRoute: ROUTES.RECOMMENDED_QUESTIONS,
       approvalDetailRoute: (id: string | number) =>

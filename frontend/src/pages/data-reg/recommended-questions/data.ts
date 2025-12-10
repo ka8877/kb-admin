@@ -184,27 +184,27 @@ export const searchFields: SearchField[] = [
   {
     type: 'textGroup',
     fields: [
-      { field: 'displayCtnt', label: '질문내용' },
-      { field: 'qstStyle', label: '질문스타일' },
+      { field: 'displayCtnt', label: '질문 내용' },
+      { field: 'qstStyle', label: '질문 스타일' },
     ],
   },
   { field: 'serviceNm', label: '서비스명', type: 'select', options: serviceOptions },
 
-  { field: 'qstCtgr', label: '질문카테고리', type: 'select', options: questionCategoryOptions },
-  { field: 'status', label: '데이터등록반영상태', type: 'select', options: statusOptions },
+  { field: 'qstCtgr', label: '질문 카테고리', type: 'select', options: questionCategoryOptions },
+  { field: 'status', label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
   { field: 'ageGrp', label: '연령대', type: 'select', options: ageGroupOptions },
   { field: 'showU17', label: '17세 미만 여부', type: 'radio', options: yesNoOptions },
   {
     field: 'imp_start',
     dataField: 'impStartDate',
-    label: '노출시작일시',
+    label: '노출 시작일시',
     type: 'dateRange',
     position: 'start',
   },
   {
     field: 'imp_end',
     dataField: 'impEndDate',
-    label: '노출종료일시',
+    label: '노출 종료일시',
     type: 'dateRange',
     position: 'end',
   },
@@ -218,12 +218,12 @@ export const fieldGuides: Record<string, string> = {
   promptCtnt: '선택 | 1000자 이하',
   qstCtgr: '필수 | 참조 데이터 확인',
   qstStyle: '선택 | 질문 관련 태그나 스타일',
-  parentId: '조건부 필수 | AI검색 mid/story인 경우 필수 (예: M020011)',
-  parentNm: '조건부 필수 | AI검색 mid/story인 경우 필수',
+  parentId: '조건부 필수 | AI 검색 mid/story인 경우 필수 (예: M020011)',
+  parentNm: '조건부 필수 | AI 검색 mid/story인 경우 필수',
   ageGrp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
   showU17: '필수 | Y 또는 N',
   impStartDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
-  impEndDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출시작일시 이후여야 함)',
+  impEndDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출 시작일시 이후여야 함)',
 };
 
 // 예시 데이터 (자동 생성 필드 제외)

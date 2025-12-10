@@ -17,13 +17,13 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // productMenuName: 필수, 200자 이하
     productMenuName: (value, row) => {
       if (!value || String(value).trim() === '') {
-        return { isValid: false, message: 'AI검색 노출버튼명은 필수입니다' };
+        return { isValid: false, message: 'AI 검색 노출 버튼명은 필수입니다' };
       }
       const strValue = String(value);
       if (strValue.length > 200) {
         return {
           isValid: false,
-          message: 'AI검색 노출버튼명은 200자(공백 포함)를 초과할 수 없습니다',
+          message: 'AI 검색 노출 버튼명은 200자(공백 포함)를 초과할 수 없습니다',
         };
       }
       return { isValid: true };
@@ -138,7 +138,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // startDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     startDate: (value, row) => {
       if (!value) {
-        return { isValid: false, message: '노출 시작 일시는 필수입니다' };
+        return { isValid: false, message: '노출 시작일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
@@ -166,7 +166,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // endDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
     endDate: (value, row) => {
       if (!value) {
-        return { isValid: false, message: '노출 종료 일시는 필수입니다' };
+        return { isValid: false, message: '노출 종료일시는 필수입니다' };
       }
 
       const strValue = String(value).trim();
@@ -197,7 +197,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
         if (startDate && endDate && endDate <= startDate) {
           return {
             isValid: false,
-            message: '노출 종료 일시는 시작 일시보다 이후여야 합니다',
+            message: '노출 종료일시는 시작일시보다 이후여야 합니다',
           };
         }
       }

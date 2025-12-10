@@ -110,8 +110,8 @@ const ApprovalManualForm: React.FC = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="AI검색 노출버튼명"
-                  placeholder="AI검색 노출버튼명을 입력하세요"
+                  label="AI 검색 노출 버튼명"
+                  placeholder="AI 검색 노출 버튼명을 입력하세요"
                   fullWidth
                   required
                   inputProps={{ maxLength: 200 }}
@@ -147,7 +147,7 @@ const ApprovalManualForm: React.FC = () => {
                 <TextField
                   {...field}
                   label="앱스킴 주소"
-                  placeholder="앱스킴 주소를 입력하세요 (예: https://appscheme.to/abcd)"
+                  placeholder="앱스킴 주소를 입력하세요 (예: kakaobank://mini?type=pocket_money_message_card)"
                   fullWidth
                   required
                   inputProps={{ maxLength: 500 }}
@@ -164,7 +164,7 @@ const ApprovalManualForm: React.FC = () => {
                 <TextField
                   {...field}
                   label="원링크 주소"
-                  placeholder="원링크 주소를 입력하세요 (예: https://onelink.to/abcd)"
+                  placeholder="원링크 주소를 입력하세요 (예: https://kakaobank.onelink.me/4YTm/crdkrh44)"
                   fullWidth
                   required
                   inputProps={{ maxLength: 500 }}
@@ -213,7 +213,7 @@ const ApprovalManualForm: React.FC = () => {
                 <TextField
                   {...field}
                   label="MID 상품/서비스명"
-                  placeholder="MID 상품/서비스명을 입력하세요 (예: 26주 적금)"
+                  placeholder="MID 상품/서비스명을 입력하세요 (예: 이체/출금)"
                   fullWidth
                   inputProps={{ maxLength: 200 }}
                   error={hasTriedSubmit && !!errors.parentTitle}
@@ -227,7 +227,7 @@ const ApprovalManualForm: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <DateInput
-                  label="노출 시작 일시"
+                  label="노출 시작일시"
                   value={field.value}
                   onChange={field.onChange}
                   required
@@ -243,7 +243,7 @@ const ApprovalManualForm: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <DateInput
-                  label="노출 종료 일시"
+                  label="노출 종료일시"
                   value={field.value}
                   onChange={field.onChange}
                   required

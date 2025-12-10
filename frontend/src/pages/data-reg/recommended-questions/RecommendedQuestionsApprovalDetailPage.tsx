@@ -25,6 +25,7 @@ import { formatDateForStorage } from '@/utils/dateUtils';
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,7 +101,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   const handleFinalApproval = useCallback(async () => {
     try {
       if (!id) {
-        toast.error('승인 요청 ID가 없습니다.');
+        toast.error(TOAST_MESSAGES.APPROVAL_ID_MISSING);
         return;
       }
 
@@ -120,13 +121,13 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       handleBack();
     } catch (error) {
       console.error('결재 승인 실패:', error);
-      toast.error('결재 승인에 실패했습니다.');
+      toast.error(TOAST_MESSAGES.FINAL_APPROVAL_FAILED);
     }
   }, [queryClient, id, handleBack]);
 
   return (
     <Box>
-      <PageHeader title="추천질문 결재 상세" />
+      <PageHeader title={PAGE_TITLES.RECOMMENDED_QUESTIONS_APPROVAL_DETAIL} />
 
       <ApprovalDetailList<RecommendedQuestionItem>
         rows={data}

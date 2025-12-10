@@ -348,7 +348,7 @@ const ApprovalManualForm: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <DateInput
-                  label="노출 시작 일시"
+                  label="노출 시작일시"
                   value={field.value}
                   onChange={field.onChange}
                   required
@@ -364,7 +364,7 @@ const ApprovalManualForm: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <DateInput
-                  label="노출 종료 일시"
+                  label="노출 종료일시"
                   value={field.value}
                   onChange={field.onChange}
                   required
