@@ -113,7 +113,7 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
               label="그룹코드"
               value={formData.group_code || ''}
               onChange={(e) => handleChange('group_code', e.target.value)}
-              disabled={!isNew || disabled}
+              disabled={disabled}
               placeholder="예: SERVICE_TYPE"
               required
               error={!!fieldErrors.group_code}

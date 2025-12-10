@@ -1,7 +1,14 @@
 // 공통코드 관련 React Query 훅
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { commonCodeKeys } from '@/constants/queryKey';
-import type { CodeGroup, CodeItem, CodeGroupDisplay, CodeItemDisplay } from './types';
+import type {
+  CodeGroup,
+  CodeItem,
+  CodeGroupDisplay,
+  CodeItemDisplay,
+  ServiceMapping,
+  QuestionMapping,
+} from './types';
 import {
   fetchCodeGroups,
   fetchCodeGroup,
@@ -14,6 +21,13 @@ import {
   updateCodeItem,
   deleteCodeItem,
   deleteCodeItems,
+  fetchServiceMappings,
+  upsertServiceMapping,
+  deleteServiceMapping,
+  fetchQuestionMappings,
+  createQuestionMapping,
+  deleteQuestionMapping,
+  deleteQuestionMappingsByService,
   type FetchCodeItemsParams,
 } from './api';
 
@@ -64,8 +78,15 @@ export const useUpdateCodeGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ codeGroupId, data }: { codeGroupId: number; data: Partial<CodeGroup> }) =>
-      updateCodeGroup(codeGroupId, data),
+    mutationFn: ({
+      codeGroupId,
+      data,
+      firebaseKey,
+    }: {
+      codeGroupId: number;
+      data: Partial<CodeGroup>;
+      firebaseKey?: string;
+    }) => updateCodeGroup(codeGroupId, data, firebaseKey),
     onSuccess: (_, variables) => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeGroups() });
@@ -102,7 +123,7 @@ export const useCodeItems = (params?: FetchCodeItemsParams) => {
   return useQuery({
     queryKey: commonCodeKeys.codeItemsList(params),
     queryFn: () => fetchCodeItems(params),
-    enabled: params?.codeGroupId !== undefined, // codeGroupId가 있을 때만 활성화
+    enabled: params === undefined || params.codeGroupId !== undefined, // params가 없거나 codeGroupId가 있을 때 활성화
   });
 };
 
@@ -178,6 +199,170 @@ export const useDeleteCodeItems = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
+    },
+  });
+};
+
+// ======================
+// 코드 매핑 (cm_code_mapping) Hooks
+// ======================
+
+/**
+ * 코드 매핑 목록 조회 훅
+ * TODO: ServiceMapping, QuestionMapping으로 교체 예정
+ */
+/*
+export const useCodeMappings = (params?: {
+  parentCodeItemId?: number;
+  childCodeItemId?: number;
+}) => {
+  return useQuery({
+    queryKey: ['codeMappings', params],
+    queryFn: () => fetchCodeMappings(params),
+    enabled: params !== undefined,
+  });
+};
+
+export const useCreateCodeMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createCodeMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['codeMappings'] });
+    },
+  });
+};
+
+export const useUpdateCodeMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ codeMappingId, data }: { codeMappingId: number; data: Partial<any> }) =>
+      updateCodeMapping(codeMappingId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['codeMappings'] });
+    },
+  });
+};
+
+export const useDeleteCodeMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteCodeMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['codeMappings'] });
+    },
+  });
+};
+
+export const useDeleteCodeMappingsByParent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteCodeMappingsByParent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['codeMappings'] });
+    },
+  });
+};
+*/
+
+// ======================
+// ServiceMapping (서비스코드 ↔ 서비스명) Hooks
+// ======================
+
+/**
+ * 서비스 매핑 목록 조회 훅
+ */
+export const useServiceMappings = () => {
+  return useQuery({
+    queryKey: ['serviceMappings'],
+    queryFn: () => fetchServiceMappings(),
+  });
+};
+
+/**
+ * 서비스 매핑 생성/수정 뮤테이션 훅
+ */
+export const useUpsertServiceMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: upsertServiceMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['serviceMappings'] });
+    },
+  });
+};
+
+/**
+ * 서비스 매핑 삭제 뮤테이션 훅
+ */
+export const useDeleteServiceMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteServiceMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['serviceMappings'] });
+    },
+  });
+};
+
+// ======================
+// QuestionMapping (서비스코드 ↔ 질문카테고리) Hooks
+// ======================
+
+/**
+ * 질문 매핑 목록 조회 훅
+ */
+export const useQuestionMappings = (params?: { serviceCodeItemId?: number }) => {
+  return useQuery({
+    queryKey: ['questionMappings', params],
+    queryFn: () => fetchQuestionMappings(params),
+  });
+};
+
+/**
+ * 질문 매핑 생성 뮤테이션 훅
+ */
+export const useCreateQuestionMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createQuestionMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
+    },
+  });
+};
+
+/**
+ * 질문 매핑 삭제 뮤테이션 훅
+ */
+export const useDeleteQuestionMapping = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteQuestionMapping,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
+    },
+  });
+};
+
+/**
+ * 특정 서비스의 모든 질문 매핑 삭제 뮤테이션 훅
+ */
+export const useDeleteQuestionMappingsByService = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteQuestionMappingsByService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
     },
   });
 };

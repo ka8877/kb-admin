@@ -3,12 +3,12 @@ import { Box, Stack, TextField, MenuItem, Typography, Paper } from '@mui/materia
 import MediumButton from '@/components/common/button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
-import type { CodeItem } from '../types';
+import type { CodeItem, CodeItemDisplay } from '../types';
 import { CodeItemValidator } from '../validation/commonCodeValidation';
 import Section from '@/components/layout/Section';
 
 type CodeItemFormProps = {
-  selectedItem: CodeItem | null;
+  selectedItem: CodeItemDisplay | null;
   isNew: boolean;
   selectedCodeGroupId: number | null;
   initialSortOrder?: number; // 추가 시 기본 정렬순서
@@ -64,7 +64,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
     setFieldErrors({});
   }, [selectedItem, isNew, selectedCodeGroupId, initialSortOrder]);
 
-  const handleChange = useCallback((field: string, value: string | number) => {
+  const handleChange = useCallback((field: string, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: '' }));
   }, []);
@@ -125,7 +125,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               label="코드"
               value={formData.code || ''}
               onChange={(e) => handleChange('code', e.target.value)}
-              disabled={!isNew || disabled}
+              disabled={disabled}
               placeholder="코드 입력"
               required
               error={!!fieldErrors.code}

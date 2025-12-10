@@ -36,6 +36,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
     isLoading: isItemLoading,
     refetch: refetchCodeItems,
   } = useCodeItems(selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined);
+
   const createItemMutation = useCreateCodeItem();
   const updateItemMutation = useUpdateCodeItem();
   const deleteItemMutation = useDeleteCodeItem();
@@ -79,6 +80,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
   const handleItemRowClick = useCallback(
     (params: { id: string | number; row: CodeItemDisplay }) => {
       const item = params.row;
+      console.log('🔍 Item clicked:', item);
+
       setSelectedItem(item);
       setIsItemFormOpen(true);
       setIsNewItem(false);
@@ -132,6 +135,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       >,
     ) => {
       try {
+        console.log('handleSaveItem:', { isNewItem, selectedItem, data });
+
         if (isNewItem) {
           if (checkItemCodeDuplicate(data.code_group_id, data.code)) {
             showAlert({
@@ -149,13 +154,21 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
             });
             return;
           }
+
+          console.log('Creating new item...');
           await createItemMutation.mutateAsync(data);
+
           showAlert({
             title: ALERT_TITLES.SUCCESS,
             message: TOAST_MESSAGES.CODE_ITEM_CREATED,
             severity: 'success',
           });
-        } else if (selectedItem) {
+        } else {
+          console.log('Updating existing item...');
+          if (!selectedItem) {
+            console.error('selectedItem is null in update mode');
+            return;
+          }
           if (checkItemCodeDuplicate(data.code_group_id, data.code, selectedItem.code_item_id)) {
             showAlert({
               title: ALERT_TITLES.NOTIFICATION,
@@ -182,14 +195,17 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
               firebaseKey: selectedItem.firebaseKey,
             },
           });
+
           showAlert({
             title: ALERT_TITLES.SUCCESS,
             message: TOAST_MESSAGES.CODE_ITEM_UPDATED,
             severity: 'success',
           });
         }
+
         setIsItemFormOpen(false);
         setIsNewItem(false);
+        setSelectedItem(null);
       } catch (error) {
         console.error('Failed to save code item:', error);
         showAlert({
@@ -331,7 +347,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
             code_group_id: item.code_group_id,
             code: item.code,
             code_name: item.code_name,
-            sort_order: idx,
+            sort_order: idx + 1,
             is_active: item.is_active,
             firebaseKey: item.firebaseKey,
           },
@@ -452,16 +468,20 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       {isItemFormOpen && selectedGroup && (
         <Box sx={{ mt: 2 }}>
           <CodeItemForm
-            selectedItem={isNewItem ? null : (selectedItem as CodeItem | null)}
+            selectedItem={isNewItem ? null : selectedItem}
             isNew={isNewItem}
             selectedCodeGroupId={selectedGroup.code_group_id}
             initialSortOrder={
               isNewItem && codeItems.length > 0
                 ? Math.max(...codeItems.map((item) => item.sort_order)) + 1
-                : 0
+                : 1
             }
             onSave={handleSaveItem}
-            onCancel={() => setIsItemFormOpen(false)}
+            onCancel={() => {
+              setIsItemFormOpen(false);
+              setIsNewItem(false);
+              setSelectedItem(null);
+            }}
             onDelete={handleDeleteItem}
           />
         </Box>
