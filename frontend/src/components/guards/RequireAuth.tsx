@@ -10,10 +10,9 @@ import { useAuthStore } from '../../store/auth';
 const RequireAuth = ({ children }: PropsWithChildren) => {
   const token = useAuthStore((s) => s.accessToken);
   const location = useLocation();
-  // TODO 로그인 개발 후 주석 제거
-  // if (!token) {
-  //   return <Navigate to="/login" replace state={{ from: location }} />;
-  // }
+   if (!token) {
+     return <Navigate to="/login" replace state={{ from: location }} />;
+   }
   return <>{children}</>;
 };
 
