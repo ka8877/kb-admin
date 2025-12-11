@@ -105,6 +105,11 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
 
   const checkItemCodeDuplicate = useCallback(
     (codeGroupId: number, code: string, excludeItemId?: number) => {
+      // 코드가 비어있으면 자동 채번되므로 중복 체크 스킵
+      // 단, API 레벨에서 자동 생성된 코드는 6자리(약 1600만 조합)로 충돌 가능성 거의 없음
+      if (!code || code.trim() === '') {
+        return false;
+      }
       return codeItems.some(
         (item) =>
           item.code_group_id === codeGroupId &&

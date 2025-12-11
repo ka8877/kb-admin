@@ -41,9 +41,9 @@ export const codeGroupColumns: GridColDef<CodeGroupDisplay>[] = [
  */
 export const codeItemColumns: GridColDef<CodeItemDisplay>[] = [
   {
-    field: 'no',
-    headerName: 'No',
-    width: 60,
+    field: 'sort_order',
+    headerName: '정렬순서',
+    width: 100,
     align: 'center',
     headerAlign: 'center',
   },
@@ -56,13 +56,6 @@ export const codeItemColumns: GridColDef<CodeItemDisplay>[] = [
     field: 'code_name',
     headerName: '코드명',
     flex: 1,
-  },
-  {
-    field: 'sort_order',
-    headerName: '정렬순서',
-    width: 100,
-    align: 'center',
-    headerAlign: 'center',
   },
   {
     field: 'is_active',

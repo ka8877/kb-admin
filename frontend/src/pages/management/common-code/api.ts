@@ -13,9 +13,30 @@ import type {
   QuestionMapping,
 } from './types';
 
+// Firebase POST 응답 타입
+interface FirebasePostResponse {
+  name: string;
+}
+
 const codeGroupsBasePath = 'management/common-code/code-groups';
 const codeItemsBasePath = 'management/common-code/code-items';
 const codeMappingsBasePath = 'management/common-code/code-mappings';
+
+/**
+ * Firebase 키에서 코드 생성 헬퍼 함수
+ * 키의 뒤 6자리를 추출하고 대문자를 소문자로 변환하여 code_ 접두사 추가
+ * (중복 방지를 위해 4자리 대신 6자리 사용 - 약 1600만 가지 조합)
+ * @param firebaseKey Firebase 자동 생성 키
+ * @returns code_xxxxxx 형식의 코드
+ */
+const generateCodeFromFirebaseKey = (firebaseKey: string): string => {
+  // 뒤 6자리 추출 (중복 방지를 위해 4자리 대신 6자리 사용)
+  const last6 = firebaseKey.slice(-6);
+  // 대문자를 소문자로 변환
+  const lowercased = last6.toLowerCase();
+  // code_ 접두사 추가
+  return `code_${lowercased}`;
+};
 
 /**
  * CodeGroup 변환 헬퍼 함수
@@ -74,13 +95,21 @@ const transformCodeGroups = (raw: unknown): CodeGroup[] => {
  * CodeItem 변환 헬퍼 함수
  */
 const transformCodeItemItem = (
-  v: Partial<CodeItem> & Record<string, any>,
+  v: Partial<CodeItem> & Record<string, unknown>,
   options: { index: number; fallbackId?: string | number },
 ): CodeItem | null => {
   const { fallbackId } = options;
 
-  // 유효한 데이터만 변환 (code, code_name, code_group_id가 있어야 함)
-  if (!v.code || !v.code_name || !v.code_group_id || v.code_group_id === 0) {
+  // code가 없으면 firebaseKey를 기반으로 code 생성
+  let code = v.code || '';
+  if (!code && v.firebaseKey) {
+    code = generateCodeFromFirebaseKey(v.firebaseKey as string);
+  } else if (!code && fallbackId) {
+    code = generateCodeFromFirebaseKey(fallbackId as string);
+  }
+
+  // 유효한 데이터만 변환 (code_name, code_group_id가 있어야 함)
+  if (!code || !v.code_name || !v.code_group_id || v.code_group_id === 0) {
     return null;
   }
 
@@ -95,7 +124,7 @@ const transformCodeItemItem = (
   return {
     code_item_id: codeItemId,
     code_group_id: v.code_group_id || 0,
-    code: v.code || '',
+    code: code,
     code_name: v.code_name || '',
     sort_order: v.sort_order ?? 0,
     is_active: v.is_active ?? 1,
@@ -408,19 +437,53 @@ export const createCodeItem = async (
   const timestamp = Date.now();
   const code_item_id = timestamp;
 
+  // 코드가 비어있으면 일단 임시로 저장 (나중에 firebaseKey로 업데이트)
+  const codeValue = data.code && data.code.trim() !== '' ? data.code : null;
+
   const newData = {
     ...data,
+    code: codeValue,
     code_item_id,
     created_by: 1, // TODO: 실제 로그인 사용자 ID로 교체
     created_at: new Date().toISOString(),
   };
 
-  const response = await postApi<CodeItem>(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_CREATE, newData, {
-    baseURL: env.testURL,
-    errorMessage: '코드아이템 생성에 실패했습니다.',
-  });
+  const response = await postApi<FirebasePostResponse>(
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_CREATE,
+    newData,
+    {
+      baseURL: env.testURL,
+      errorMessage: '코드아이템 생성에 실패했습니다.',
+    },
+  );
 
-  return response.data;
+  // Firebase POST 응답: {name: "생성된키"}
+  const firebaseKey = response.data.name;
+
+  // 코드가 없었던 경우 Firebase 키에서 코드 생성
+  const finalCode = codeValue || generateCodeFromFirebaseKey(firebaseKey);
+
+  if (!codeValue) {
+    // Firebase에 code 필드를 생성된 코드로 업데이트
+    await putApi(`${codeItemsBasePath}/${firebaseKey}/code.json`, finalCode, {
+      baseURL: env.testURL,
+      errorMessage: '코드 업데이트에 실패했습니다.',
+    });
+  }
+
+  // 생성된 아이템 반환
+  const createdItem: CodeItem = {
+    ...newData,
+    code: finalCode,
+    firebaseKey: firebaseKey,
+    code_item_id,
+    created_by: 1,
+    created_at: newData.created_at,
+    updated_by: null,
+    updated_at: null,
+  };
+
+  return createdItem;
 };
 
 /**
