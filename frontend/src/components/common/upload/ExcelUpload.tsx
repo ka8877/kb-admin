@@ -1,5 +1,5 @@
 // frontend/src/components/common/upload/ExcelUpload.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
 import CreateDataActions from '../actions/CreateDataActions';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
@@ -21,7 +21,9 @@ import {
 } from '@/constants/message';
 import type { ExcelUploadProps } from './type';
 export type { ValidationFunction, ReferenceData } from './type';
-import ExcelPreviewList from '@/components/common/list/ExcelPreviewList';
+import ExcelPreviewList, {
+  type ExcelPreviewListRef,
+} from '@/components/common/list/ExcelPreviewList';
 import { parseRowData, hasRowData } from './utils/excelUtils';
 import type { GridValidRowModel } from '@mui/x-data-grid';
 
@@ -55,6 +57,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
   readOnlyFields = ['no'],
   rowIdGetter,
   dynamicSelectFields,
+  preSaveCheck,
 }: ExcelUploadProps<T>): JSX.Element => {
   // 그리드 표시용 컬럼 (gridColumns가 있으면 사용, 없으면 columns 사용)
   const displayColumns = gridColumns || columns;
@@ -64,6 +67,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
   const [isDragOver, setIsDragOver] = useState(false);
   const [parsedData, setParsedData] = useState<Record<string, unknown>[]>([]);
   const [uploadKey, setUploadKey] = useState(0); // 파일 업로드 시마다 증가
+  const excelPreviewListRef = useRef<ExcelPreviewListRef>(null);
 
   // 새 행 추가 핸들러
   const handleAddRow = useCallback(() => {
@@ -309,6 +313,12 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
                 title: '입력값 확인',
                 message: errorMessage,
                 severity: 'error',
+                onConfirm: () => {
+                  // alert 확인 후 해당 행과 셀로 포커스 이동
+                  if (excelPreviewListRef.current) {
+                    excelPreviewListRef.current.focusCell(rowIndex, fieldName);
+                  }
+                },
               });
               return;
             }
@@ -316,6 +326,19 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
         }
       }
       console.log('🔍 모든 validation 통과');
+    }
+
+    // preSaveCheck (중복 체크 등) 실행
+    if (preSaveCheck) {
+      const checkResult = preSaveCheck(parsedData as T[]);
+      if (checkResult) {
+        showAlert({
+          title: '데이터 확인',
+          message: checkResult,
+          severity: 'warning',
+        });
+        return;
+      }
     }
 
     // Validation 통과 후 confirm 표시
@@ -482,6 +505,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
 
       {parsedData.length > 0 && columns && (
         <ExcelPreviewList
+          ref={excelPreviewListRef}
           key={uploadKey}
           data={parsedData as any}
           columns={displayColumns as any}

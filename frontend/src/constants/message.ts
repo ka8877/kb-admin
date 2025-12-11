@@ -25,7 +25,7 @@ export const CONFIRM_MESSAGES = {
   DELETE_CODE_GROUP:
     '해당 코드그룹과 관련된 모든 코드아이템(소분류)도 함께 삭제됩니다.\n정말 삭제하시겠습니까?',
   APPROVAL_REQUEST: '저장 및 반영하기 결재를 요청하시겠습니까?',
-  FINAL_APPROVAL: '최종 결재를 넘기시겠습니까?',
+  FINAL_APPROVAL: '최종 결재를 요청하시겠습니까?',
 } as const;
 
 // ========== 토스트 메시지 ==========

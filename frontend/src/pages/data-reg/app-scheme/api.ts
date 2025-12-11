@@ -151,23 +151,25 @@ export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem
 };
 
 /**
- * 승인 요청 API 호출
+ * 승인 요청 API 호출 (1:1 관계로 각 item마다 개별 결재 요청 생성)
  */
 const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: AppSchemeItem[],
 ): Promise<void> => {
-  // targetId는 단건일 경우 appSchemeId, 다건일 경우 콤마로 구분
-  const targetId = items.map((item) => item.appSchemeId).join(',');
+  // 각 item마다 개별 결재 요청 생성 (1:1 관계)
+  for (const item of items) {
+    const targetId = item.appSchemeId;
 
-  await sendApprovalRequestCommon(
-    API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST,
-    approvalForm,
-    items,
-    '앱스킴',
-    TARGET_TYPE_APP,
-    targetId,
-  );
+    await sendApprovalRequestCommon(
+      API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST,
+      approvalForm,
+      [item], // 단건 배열로 전달
+      item.description || '앱스킴',
+      TARGET_TYPE_APP,
+      targetId,
+    );
+  }
 };
 
 /**

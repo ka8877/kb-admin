@@ -224,3 +224,51 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
   };
 };
+
+/**
+ * 엑셀 데이터 중복 체크
+ * 서비스코드, 질문카테고리, 연령대, 17세미만노출여부가 동일한 행이 있는지 검사
+ */
+export const validateExcelDuplicates = (data: any[]): string | null => {
+  const duplicateMap = new Map<string, number[]>();
+
+  data.forEach((row, index) => {
+    const serviceCd = String(row.serviceCd || '').trim();
+    const qstCtgr = String(row.qstCtgr || '').trim();
+
+    let ageGrp = row.ageGrp;
+    if (ageGrp !== null && ageGrp !== undefined && String(ageGrp).trim() !== '') {
+      ageGrp = String(Number(ageGrp));
+    } else {
+      ageGrp = '';
+    }
+
+    let showU17 = row.showU17;
+    if (showU17) {
+      showU17 = String(showU17).toUpperCase();
+    } else {
+      showU17 = '';
+    }
+
+    const key = `${serviceCd}|${qstCtgr}|${ageGrp}|${showU17}`;
+
+    if (!duplicateMap.has(key)) {
+      duplicateMap.set(key, []);
+    }
+    duplicateMap.get(key)?.push(index + 1);
+  });
+
+  // 2. 중복 확인 (하나라도 발견되면 즉시 반환)
+  for (const [key, indices] of duplicateMap) {
+    if (indices.length > 1) {
+      const rowsStr =
+        indices.length === 2
+          ? `${indices[0]}행과 ${indices[1]}행`
+          : indices.map((i) => `${i}행`).join(', ');
+
+      return `${rowsStr}의 데이터가 중복 됩니다.`;
+    }
+  }
+
+  return null;
+};

@@ -11,8 +11,6 @@ import {
   useQuestionCategoryOptionsMap,
 } from '@/pages/data-reg/recommended-questions/hooks';
 import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
-import { toast } from 'react-toastify';
-import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import { excludeFields } from '@/pages/data-reg/recommended-questions/data';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
@@ -23,6 +21,7 @@ import {
   excelExcludeFields,
   excelReferenceData,
 } from '@/pages/data-reg/recommended-questions/data';
+import { validateExcelDuplicates } from '@/pages/data-reg/recommended-questions/validation';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -193,6 +192,7 @@ const ApprovalExcelUpload: React.FC = () => {
       getDynamicSelectOptions={dynamicQuestionCategoryOptionsGetter}
       dynamicSelectFields={['qstCtgr']}
       onProcessRowUpdate={handleRowSanitizer}
+      preSaveCheck={validateExcelDuplicates}
     />
   );
 };
