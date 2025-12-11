@@ -3,6 +3,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import type { ApprovalRequestItem } from '../types/types';
 
 export const approvalRequestColumns: GridColDef<ApprovalRequestItem>[] = [
+  { field: 'no', headerName: 'No', width: 80 }, // No
   // id 필드는 숨김 처리 (행 구분용)
   { field: 'approvalRequestId', headerName: '아이디', width: 120 }, // PK 결재요청 PK
   { field: 'targetType', headerName: '대상 타입', flex: 2, minWidth: 200 }, // 대상 타입 IX(복합)

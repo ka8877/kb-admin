@@ -8,7 +8,7 @@ type QuestionCategoryGroup = {
   groupValue: string;
   options: { label: string; value: string }[];
 };
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { approvalRequestKeys, recommendedQuestionsKeys } from '@/constants/queryKey';
 import {
   fetchRecommendedQuestions,
@@ -135,6 +135,7 @@ export const useRecommendedQuestions = (params?: UseRecommendedQuestionsParams) 
   return useQuery({
     queryKey: recommendedQuestionsKeys.list(params),
     queryFn: () => fetchRecommendedQuestions(params),
+    placeholderData: keepPreviousData,
   });
 };
 

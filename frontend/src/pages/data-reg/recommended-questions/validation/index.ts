@@ -11,7 +11,7 @@ export type { RecommendedQuestionData } from './recommendedQuestionValidation';
 
 // 어댑터들
 export { createRecommendedQuestionYupSchema } from './adapters/yupAdapter';
-export { createExcelValidationRules } from './adapters/excelAdapter';
+export { createExcelValidationRules, validateExcelDuplicates } from './adapters/excelAdapter';
 export type { ValidationFunction } from './adapters/excelAdapter';
 
 // 사용 예시:

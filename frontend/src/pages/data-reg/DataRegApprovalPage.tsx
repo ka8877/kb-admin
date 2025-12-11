@@ -207,7 +207,7 @@ const DataRegApprovalPage: React.FC = () => {
       sessionStorage.setItem(APPROVAL_PAGE_STATE, currentApprovalUrl);
 
       const detailUrl = pageConfig.approvalDetailRoute(params.id);
-      navigate(detailUrl);
+      // navigate(detailUrl);
     },
     [location.pathname, location.search, navigate, pageConfig],
   );
@@ -290,11 +290,35 @@ const DataRegApprovalPage: React.FC = () => {
     [approvalRequests, pageType, showAlert, queryClient, handleApproveSelect],
   );
 
+  // 컬럼 필터링 (No, 결재양식, 제목, 내용, 요청자, 요청부서, 요청일, 처리상태, 처리일만 표시)
+  const filteredColumns = useMemo(() => {
+    const visibleFields = [
+      'no',
+      'requestKind',
+      'title',
+      'content',
+      'createdBy',
+      'department',
+      'createdAt',
+      'approvalStatus',
+      'updatedAt',
+    ];
+
+    return approvalRequestColumns
+      .filter((col) => visibleFields.includes(col.field))
+      .map((col) => {
+        if (col.field === 'updatedAt') {
+          return { ...col, headerName: '처리일' };
+        }
+        return col;
+      });
+  }, []);
+
   return (
     <Box>
       <PageHeader title={pageConfig.title} />
       <SimpleList<ApprovalRequestItem>
-        columns={approvalRequestColumns}
+        columns={filteredColumns}
         searchFields={pageConfig.searchFields}
         fetcher={listApi.list}
         isLoading={isDataLoading}

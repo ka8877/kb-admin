@@ -77,7 +77,7 @@ export interface FetchApiResponse<T> {
  * 성공 메시지를 반환하는 헬퍼 함수
  */
 const getSuccessMessage = (method: HttpMethod, customMessage?: string): string => {
-  if (customMessage) return customMessage;
+  if (customMessage !== undefined) return customMessage;
 
   switch (method) {
     case 'POST':
@@ -388,6 +388,7 @@ export const sendApprovalRequest = async <T>(
   label: string,
   targetType: string,
   targetId: string,
+  successMessage: string = '',
 ): Promise<void> => {
   const titleMap: Record<ApprovalFormType, string> = {
     [DATA_REGISTRATION]: '데이터 등록',
@@ -396,9 +397,9 @@ export const sendApprovalRequest = async <T>(
   };
 
   const contentMap: Record<ApprovalFormType, string> = {
-    [DATA_REGISTRATION]: `${label} 등록 요청드립니다`,
-    [DATA_MODIFICATION]: `${label} 수정 요청드립니다`,
-    [DATA_DELETION]: `${label} 삭제 요청드립니다`,
+    [DATA_REGISTRATION]: `${label} 등록`,
+    [DATA_MODIFICATION]: `${label} 수정`,
+    [DATA_DELETION]: `${label} 삭제`,
   };
 
   // approval_form에 따라 적절한 status 설정
@@ -423,6 +424,7 @@ export const sendApprovalRequest = async <T>(
   try {
     await postApi(endpoint, approvalData, {
       errorMessage: TOAST_MESSAGES.APPROVAL_REQUEST_FAILED,
+      successMessage,
     });
     console.log(`승인 요청이 전송되었습니다. (${titleMap[approvalForm]})`);
   } catch (error) {

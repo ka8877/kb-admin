@@ -36,4 +36,10 @@ export type ExcelUploadProps<T extends GridValidRowModel = GridValidRowModel> = 
   onProcessRowUpdate?: (newRow: T, oldRow: T) => T;
   rowSanitizer?: (newRow: T, oldRow: T) => T; // onProcessRowUpdate와 동일한 역할 (alias)
   getRequiredFields?: (row: T) => string[];
+  /**
+   * 저장 전 추가 유효성 검사 (예: 중복 체크)
+   * 문자열을 반환하면 alert을 띄우고 저장을 중단함
+   * null을 반환하면 저장 진행 (confirm 창 표시)
+   */
+  preSaveCheck?: (data: T[]) => string | null;
 };

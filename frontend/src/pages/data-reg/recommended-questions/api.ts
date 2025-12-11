@@ -90,23 +90,25 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
 };
 
 /**
- * 승인 요청 API 호출
+ * 승인 요청 API 호출 (1:1 관계로 각 item마다 개별 결재 요청 생성)
  */
 const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: RecommendedQuestionItem[],
 ): Promise<void> => {
-  // targetId는 단건일 경우 qstId, 다건일 경우 콤마로 구분
-  const targetId = items.map((item) => item.qstId).join(',');
+  // 각 item마다 개별 결재 요청 생성 (1:1 관계)
+  for (const item of items) {
+    const targetId = item.qstId;
 
-  await sendApprovalRequestCommon(
-    API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
-    approvalForm,
-    items,
-    '추천질문',
-    TARGET_TYPE_RECOMMEND,
-    targetId,
-  );
+    await sendApprovalRequestCommon(
+      API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
+      approvalForm,
+      [item], // 단건 배열로 전달
+      item.displayCtnt || '추천질문',
+      TARGET_TYPE_RECOMMEND,
+      targetId,
+    );
+  }
 };
 
 /**
@@ -579,6 +581,7 @@ const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
     await patchApi('/.json', updates, {
       baseURL: databaseUrl,
       errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+      successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
     });
 
     console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);

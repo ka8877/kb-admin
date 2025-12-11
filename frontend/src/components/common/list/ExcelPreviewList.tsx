@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
 import { Box } from '@mui/material';
 import type {
   GridColDef,
@@ -12,6 +12,7 @@ import type { SelectFieldOption } from '@/types/types';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import ExcelEditActions from '@/components/common/actions/ExcelEditActions';
 import { useGridCellNavigation } from '@/hooks/useGridCellNavigation';
+import { usePaginationRowSelection } from '@/hooks/usePaginationRowSelection';
 import ListSelect from '../select/ListSelect';
 
 import { ALERT_MESSAGES } from '@/constants/message';
@@ -33,6 +34,10 @@ export type ExcelPreviewListProps<T extends GridValidRowModel = GridValidRowMode
   onAddRow?: () => void; // 행 추가 핸들러
 };
 
+export type ExcelPreviewListRef = {
+  focusCell: (rowIndex: number, field: string) => void;
+};
+
 const defaultGetRowId =
   <T extends GridValidRowModel>(getter: ExcelPreviewListProps<T>['rowIdGetter']) =>
   (row: T) => {
@@ -44,22 +49,25 @@ const defaultGetRowId =
     return row[getter as keyof T] as string | number;
   };
 
-const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
-  data,
-  columns,
-  rowIdGetter = 'no',
-  readOnlyFields = ['no'],
-  selectFields,
-  dateFields,
-  dateFormat = 'YYYYMMDDHHmmss',
-  validator,
-  getDynamicSelectOptions,
-  dynamicSelectFields,
-  onProcessRowUpdate,
-  getRequiredFields,
-  onDataChange,
-  onAddRow,
-}: ExcelPreviewListProps<T>): JSX.Element => {
+const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>(
+  {
+    data,
+    columns,
+    rowIdGetter = 'no',
+    readOnlyFields = ['no'],
+    selectFields,
+    dateFields,
+    dateFormat = 'YYYYMMDDHHmmss',
+    validator,
+    getDynamicSelectOptions,
+    dynamicSelectFields,
+    onProcessRowUpdate,
+    getRequiredFields,
+    onDataChange,
+    onAddRow,
+  }: ExcelPreviewListProps<T>,
+  ref: React.Ref<ExcelPreviewListRef>,
+): JSX.Element => {
   const [localData, setLocalData] = useState<T[]>(data);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -69,6 +77,15 @@ const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
   const dataGridRef = useGridApiRef();
 
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
+
+  // 페이지네이션을 고려한 행 선택 관리
+  const { handleRowSelectionModelChange } = usePaginationRowSelection({
+    rows: localData,
+    paginationModel,
+    getRowId,
+    selectionModel,
+    setSelectionModel,
+  });
 
   const renderSelectEditCell = useCallback(
     (params: GridRenderEditCellParams, options: SelectFieldOption[]) => {
@@ -189,6 +206,67 @@ const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
     [selectionModel, localData, getRowId],
   );
 
+  // 특정 행과 셀로 포커스 이동하는 메서드
+  const focusCell = useCallback(
+    (rowIndex: number, field: string) => {
+      if (localData.length === 0 || rowIndex < 0 || rowIndex >= localData.length) {
+        return;
+      }
+
+      const targetRow = localData[rowIndex];
+      const rowId = getRowId(targetRow);
+
+      // 해당 행이 있는 페이지로 이동
+      const pageSize = paginationModel.pageSize;
+      const targetPage = Math.floor(rowIndex / pageSize);
+      
+      const needsPageChange = targetPage !== paginationModel.page;
+      
+      if (needsPageChange) {
+        setPaginationModel((prev) => ({
+          ...prev,
+          page: targetPage,
+        }));
+      }
+
+      // 페이지 변경 후 셀에 포커스 (페이지 변경이 있으면 더 긴 지연 필요)
+      const delay = needsPageChange ? 300 : 100;
+      setTimeout(() => {
+        try {
+          if (!dataGridRef.current) return;
+          
+          // 셀에 포커스
+          dataGridRef.current.setCellFocus(rowId, field);
+          
+          // 셀이 보이도록 스크롤
+          const cellElement = dataGridRef.current.getCellElement(rowId, field);
+          if (cellElement) {
+            cellElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+              inline: 'nearest',
+            });
+          }
+          
+          // 셀 편집 모드로 전환
+          setTimeout(() => {
+            if (dataGridRef.current) {
+              dataGridRef.current.startCellEditMode({ id: rowId, field });
+            }
+          }, 50);
+        } catch (error) {
+          console.error('셀 포커스 실패:', error);
+        }
+      }, delay);
+    },
+    [localData, getRowId, paginationModel, dataGridRef],
+  );
+
+  // ref를 통해 focusCell 메서드 expose
+  useImperativeHandle(ref, () => ({
+    focusCell,
+  }), [focusCell]);
+
   if (localData.length === 0) {
     return <></>;
   }
@@ -202,7 +280,7 @@ const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={getRowId}
           checkboxSelection={true}
           rowSelectionModel={selectionModel}
-          onRowSelectionModelChange={setSelectionModel}
+          onRowSelectionModelChange={handleRowSelectionModelChange}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           pageSizeOptions={[10, 20, 50, 100]}
@@ -234,7 +312,12 @@ const ExcelPreviewList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 };
 
-export default ExcelPreviewList;
+// forwardRef를 사용하여 ref 전달
+const ExcelPreviewListWithRef = forwardRef(ExcelPreviewList) as <T extends GridValidRowModel = GridValidRowModel>(
+  props: ExcelPreviewListProps<T> & { ref?: React.Ref<ExcelPreviewListRef> },
+) => JSX.Element;
+
+export default ExcelPreviewListWithRef;
 
 const EXCEL_LIST_GRID_WRAPPER_SX = {
   height: 545,
