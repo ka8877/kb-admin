@@ -181,8 +181,8 @@ const ApprovalManualForm: React.FC = () => {
                 <TextField
                   {...field}
                   label="연관 상품/서비스 리스트"
-                  placeholder="연관 상품/서비스 리스트를 입력하세요 (예: 자유적금, 햇살론 15)"
-                  fullWidth
+                  placeholder="연관 상품/서비스 리스트를 입력하세요 (AI 금융 계산기 필수, 예: 자유적금, 햇살론 15)"
+                  fullWidth 
                   inputProps={{ maxLength: 200 }}
                   error={hasTriedSubmit && !!errors.goodsNameList}
                   helperText={hasTriedSubmit ? errors.goodsNameList?.message : undefined}
