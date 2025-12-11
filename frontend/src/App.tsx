@@ -25,10 +25,9 @@ const App: React.FC = () => {
                   key={path}
                   path={path}
                   element={
-                    // TODO 로그인 개발 후 주석 제거
-                    // <RequireAuth>
+                    <RequireAuth>
                       <Component />
-                    //</RequireAuth>
+                    </RequireAuth>
                   }
                 />
               );
