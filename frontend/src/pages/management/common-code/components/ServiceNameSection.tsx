@@ -5,7 +5,12 @@ import Section from '@/components/layout/Section';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ALERT_TITLES, TOAST_MESSAGES } from '@/constants/message';
-import { useCodeItems, useServiceMappings, useUpsertServiceMapping } from '../hooks';
+import {
+  useCodeItems,
+  useServiceMappings,
+  useUpsertServiceMapping,
+  useDeleteServiceMapping,
+} from '../hooks';
 import type { CodeItemDisplay, ServiceMapping } from '../types';
 
 /**
@@ -22,6 +27,7 @@ export default function ServiceNameSection() {
   const serviceNameItems = allCodeItems.filter((item) => item.group_code === 'service_nm');
   const { data: serviceMappings = [], isLoading } = useServiceMappings();
   const upsertMappingMutation = useUpsertServiceMapping();
+  const deleteMappingMutation = useDeleteServiceMapping();
 
   const [editingValues, setEditingValues] = useState<Record<string | number, string>>({});
   const [editingRows, setEditingRows] = useState<Set<string | number>>(new Set());
@@ -143,6 +149,35 @@ export default function ServiceNameSection() {
     setEditingRows((prev) => new Set(prev).add(serviceCodeItemId));
   };
 
+  const handleDelete = async (serviceCodeItemId: string | number) => {
+    const row = rows.find((r) => r.id === serviceCodeItemId);
+    if (!row || !row.firebaseKey) {
+      showAlert({
+        title: ALERT_TITLES.NOTIFICATION,
+        message: '삭제할 매핑 정보가 없습니다.',
+        severity: 'warning',
+      });
+      return;
+    }
+
+    try {
+      await deleteMappingMutation.mutateAsync(row.firebaseKey);
+
+      showAlert({
+        title: ALERT_TITLES.SUCCESS,
+        message: '서비스명 매핑이 삭제되었습니다.',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to delete service mapping:', error);
+      showAlert({
+        title: ALERT_TITLES.ERROR,
+        message: '서비스명 삭제에 실패했습니다.',
+        severity: 'error',
+      });
+    }
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'no',
@@ -164,7 +199,7 @@ export default function ServiceNameSection() {
     {
       field: 'service_name',
       headerName: '서비스명',
-      width: 400,
+      width: 350,
       renderCell: (params) => {
         const isEditing = editingRows.has(params.row.id);
 
@@ -232,8 +267,8 @@ export default function ServiceNameSection() {
     {
       field: 'actions',
       headerName: '',
-      width: 100,
-      align: 'center',
+      width: 200,
+      align: 'right',
       headerAlign: 'center',
       renderCell: (params) => {
         const isEditing = editingRows.has(params.row.id);
@@ -252,9 +287,22 @@ export default function ServiceNameSection() {
         }
 
         return (
-          <MediumButton variant="outlined" size="small" onClick={() => handleEdit(params.row.id)}>
-            수정
-          </MediumButton>
+          <Stack direction="row" spacing={1}>
+            <MediumButton variant="outlined" size="small" onClick={() => handleEdit(params.row.id)}>
+              수정
+            </MediumButton>
+            {params.row.firebaseKey && (
+              <MediumButton
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={() => handleDelete(params.row.id)}
+                disabled={deleteMappingMutation.isPending}
+              >
+                삭제
+              </MediumButton>
+            )}
+          </Stack>
         );
       },
     },
