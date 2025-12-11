@@ -40,6 +40,7 @@ export const ROUTES = {
   ADMIN_AUTH: '/management/admin-auth',
   MENU_MANAGEMENT: '/management/menu',
   PERMISSION_MANAGEMENT: '/management/permission',
+  SCREEN_PERMISSION: '/management/screen-permission',
 
   // === 이력 ===
   HISTORY: '/history',
@@ -87,6 +88,10 @@ export const frontMenus: MenuItem[] = [
       {
         label: '권한 관리',
         path: ROUTES.PERMISSION_MANAGEMENT,
+      },
+      {
+        label: '화면 권한 관리',
+        path: ROUTES.SCREEN_PERMISSION,
       },
     ],
   },

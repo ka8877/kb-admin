@@ -42,6 +42,9 @@ const AdminAuthEditPage = React.lazy(
 );
 const MenuManagementPage = React.lazy(() => import('@pages/management/menu/MenuManagementPage'));
 const PermissionPage = React.lazy(() => import('@pages/management/permission/PermissionPage'));
+const ScreenPermissionPage = React.lazy(
+  () => import('@pages/management/screen-permission/ScreenPermissionPage'),
+);
 
 // === 이력 ===
 const UserLoginPage = React.lazy(() => import('@pages/history/login/UserLoginPage'));
@@ -95,6 +98,9 @@ export const frontRoutes: AppRoute[] = [
 
   // 권한 관리
   { path: ROUTES.PERMISSION_MANAGEMENT, Component: PermissionPage },
+
+  // 화면 권한 관리
+  { path: ROUTES.SCREEN_PERMISSION, Component: ScreenPermissionPage },
 
   { path: ROUTES.RECOMMENDED_QUESTIONS_CREATE, Component: RecommendedQuestionsCreatePage }, // 등록
   { path: ROUTES.RECOMMENDED_QUESTIONS_APPROVAL, Component: DataRegApprovalPage }, // 결재요청 대기함

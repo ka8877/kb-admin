@@ -63,4 +63,34 @@ export const API_ENDPOINTS = {
     BASE: '/history/login',
     LIST: '/history/login.json',
   },
+
+  // 권한 관리
+  PERMISSION: {
+    BASE: '/management/permission',
+    LIST: '/management/permission.json',
+    DETAIL: (id: number) => `/management/permission/${id}.json`,
+    CREATE: '/management/permission.json',
+    UPDATE: (id: number) => `/management/permission/${id}.json`,
+    DELETE: (id: number) => `/management/permission/${id}.json`,
+  },
+
+  // 화면 권한 관리
+  SCREEN_PERMISSION: {
+    BASE: '/management/screen-permission',
+    LIST: (permissionId: number) => `/management/screen-permission/${permissionId}.json`,
+    SAVE_BULK: (permissionId: number) => `/management/screen-permission/${permissionId}/bulk.json`,
+    DELETE: (permissionId: number, menuId: number) =>
+      `/management/screen-permission/${permissionId}/${menuId}.json`,
+  },
+
+  // 메뉴 관리
+  MENU: {
+    BASE: '/management/menu',
+    LIST: '/management/menu.json',
+    TREE: '/management/menu/tree.json',
+    DETAIL: (id: number) => `/management/menu/${id}.json`,
+    CREATE: '/management/menu.json',
+    UPDATE: (id: number) => `/management/menu/${id}.json`,
+    DELETE: (id: number) => `/management/menu/${id}.json`,
+  },
 } as const;

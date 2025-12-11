@@ -135,6 +135,19 @@ class MenuMockDb {
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
     },
+    {
+      id: 14,
+      screen_id: 'SCREEN_PERMISSION',
+      screen_name: '화면 권한 관리',
+      path: '/management/screen-permission',
+      depth: 1,
+      order: 6,
+      parent_screen_id: 'MANAGEMENT',
+      screen_type: '페이지',
+      display_yn: 'Y',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
 
     // === 이력 ===
     {
@@ -177,7 +190,7 @@ class MenuMockDb {
     },
   ];
 
-  private nextId = 14;
+  private nextId = 15;
 
   async listAll(): Promise<MenuScreenItem[]> {
     return new Promise((resolve) => {
