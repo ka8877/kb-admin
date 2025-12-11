@@ -94,6 +94,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
           await updateGroupMutation.mutateAsync({
             codeGroupId: selectedGroup.code_group_id,
             data,
+            firebaseKey: selectedGroup.firebaseKey,
           });
           showAlert({
             title: ALERT_TITLES.SUCCESS,
