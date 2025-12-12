@@ -57,13 +57,22 @@ const usePermissionCheck = (
     queryFn: async () => {
       if (!role) return false;
 
-      // [현재 버전] 서버에서 역할 정보를 받아와 클라이언트 맵핑 테이블로 권한 확인
-      // 엔드포인트: /role/{role} -> 응답: { role: "admin" }
-      const response = await getApi<{ role: string }>(API_ENDPOINTS.AUTH.PERMISSION(role));
-      const serverRole = response.data.role;
+      try {
+        // [현재 버전] 서버에서 역할 정보를 받아와 클라이언트 맵핑 테이블로 권한 확인
+        // 엔드포인트: /role/{role} -> 응답: { role: "admin" }
+        const response = await getApi<{ role: string }>(API_ENDPOINTS.AUTH.PERMISSION(role));
+        const serverRole = response?.data?.role;
 
-      const rolePermissions = permissionMap[serverRole] || permissionMap[ROLE_NONE];
-      return rolePermissions[type] ?? false;
+        console.log(
+          `[Permission Check] role: ${role}, serverRole: ${serverRole}, type: ${type}, scope: ${scope}`,
+        );
+
+        const rolePermissions = permissionMap[serverRole] || permissionMap[ROLE_NONE];
+        return rolePermissions[type] ?? false;
+      } catch (error) {
+        console.error('[Permission Check Error]', error);
+        return false;
+      }
     },
     // role과 type이 있을 때만 쿼리 실행
     enabled: !!role && !!type,

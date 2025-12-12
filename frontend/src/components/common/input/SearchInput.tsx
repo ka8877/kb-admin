@@ -5,7 +5,6 @@ import SearchSelect from '../select/SearchSelect';
 import MediumButton from '../button/MediumButton';
 import { SearchFieldOption } from '@/types/types';
 
-
 export type SearchInputProps = {
   label?: string;
   value: string;
@@ -39,9 +38,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
     }
   };
 
-  return (  
-     <Box display="flex" alignItems="center" gap={1} sx={sx}>
-    
+  return (
+    <Box display="flex" alignItems="center" gap={1} sx={sx}>
       <SearchSelect
         label={label}
         value={value}
@@ -61,6 +59,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       />
 
       <MediumButton
+        subType="etc"
         variant="contained"
         onClick={onSearch}
         aria-label="검색"
@@ -73,4 +72,3 @@ const SearchInput: React.FC<SearchInputProps> = ({
 };
 
 export default SearchInput;
-

@@ -35,7 +35,11 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
 
   // textGroup 필드 분리
   const textGroupFields = useMemo(
-    () => (searchFields ?? []).filter((sf) => sf.type === 'textGroup') as Extract<SearchField, { type: 'textGroup' }>[],
+    () =>
+      (searchFields ?? []).filter((sf) => sf.type === 'textGroup') as Extract<
+        SearchField,
+        { type: 'textGroup' }
+      >[],
     [searchFields],
   );
 
@@ -102,7 +106,13 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
         {/* textGroup이 없을 때만 검색 버튼 표시 */}
         {textGroupFields.length === 0 && (
           <Box display="flex" justifyContent="flex-end">
-            <MediumButton variant="contained" onClick={handleSearch} aria-label="검색" size="small">
+            <MediumButton
+              subType="etc"
+              variant="contained"
+              onClick={handleSearch}
+              aria-label="검색"
+              size="small"
+            >
               검색
             </MediumButton>
           </Box>
