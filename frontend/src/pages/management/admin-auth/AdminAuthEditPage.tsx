@@ -340,10 +340,10 @@ const AdminAuthEditPage: React.FC = () => {
 
           {!selectionMode && (
             <Stack direction="row" spacing={1}>
-              <MediumButton variant="outlined" onClick={handleCancel} size="small">
+              <MediumButton variant="outlined" onClick={handleCancel} size="small" subType="etc">
                 취소
               </MediumButton>
-              <MediumButton variant="contained" onClick={handleSave} size="small">
+              <MediumButton variant="contained" onClick={handleSave} size="small" subType="u">
                 저장
               </MediumButton>
             </Stack>

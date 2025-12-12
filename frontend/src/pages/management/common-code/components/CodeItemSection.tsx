@@ -396,16 +396,26 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
           <Stack direction="row" spacing={1}>
             {selectedGroup && isItemSelectionMode && (
               <>
-                <MediumButton variant="contained" color="error" onClick={handleConfirmDelete}>
+                <MediumButton
+                  variant="contained"
+                  color="error"
+                  onClick={handleConfirmDelete}
+                  subType="d"
+                >
                   삭제
                 </MediumButton>
-                <MediumButton variant="outlined" onClick={handleToggleBulkDeleteMode}>
+                <MediumButton variant="outlined" onClick={handleToggleBulkDeleteMode} subType="etc">
                   취소
                 </MediumButton>
               </>
             )}
             {selectedGroup && !isItemSortMode && !isItemSelectionMode && codeItems.length > 0 && (
-              <MediumButton variant="outlined" color="error" onClick={handleToggleBulkDeleteMode}>
+              <MediumButton
+                variant="outlined"
+                color="error"
+                onClick={handleToggleBulkDeleteMode}
+                subType="d"
+              >
                 일괄삭제
               </MediumButton>
             )}
@@ -414,6 +424,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
                 variant="outlined"
                 onClick={() => setIsItemSortMode(true)}
                 disabled={codeItems.length === 0}
+                subType="u"
               >
                 순서 편집
               </MediumButton>
@@ -424,16 +435,22 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
                   variant="contained"
                   onClick={handleSaveSortOrder}
                   disabled={!isSortChanged}
+                  subType="u"
                 >
                   저장
                 </MediumButton>
-                <MediumButton variant="outlined" onClick={handleCancelSortMode}>
+                <MediumButton variant="outlined" onClick={handleCancelSortMode} subType="etc">
                   취소
                 </MediumButton>
               </>
             )}
             {!isItemSortMode && !isItemSelectionMode && (
-              <MediumButton variant="contained" onClick={handleAddItem} disabled={!selectedGroup}>
+              <MediumButton
+                variant="contained"
+                onClick={handleAddItem}
+                disabled={!selectedGroup}
+                subType="c"
+              >
                 추가
               </MediumButton>
             )}

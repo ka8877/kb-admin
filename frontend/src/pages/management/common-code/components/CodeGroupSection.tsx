@@ -174,7 +174,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
       <Section>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <h2 style={{ fontSize: '1.2rem' }}>코드그룹 (대분류)</h2>
-          <MediumButton variant="contained" onClick={handleAddGroup}>
+          <MediumButton variant="contained" onClick={handleAddGroup} subType="c">
             추가
           </MediumButton>
         </Stack>

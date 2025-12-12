@@ -280,6 +280,7 @@ export default function ServiceNameSection() {
               size="small"
               onClick={() => handleSave(params.row.id)}
               disabled={upsertMappingMutation.isPending}
+              subType="u"
             >
               저장
             </MediumButton>
@@ -288,7 +289,12 @@ export default function ServiceNameSection() {
 
         return (
           <Stack direction="row" spacing={1}>
-            <MediumButton variant="outlined" size="small" onClick={() => handleEdit(params.row.id)}>
+            <MediumButton
+              variant="outlined"
+              size="small"
+              onClick={() => handleEdit(params.row.id)}
+              subType="u"
+            >
               수정
             </MediumButton>
             {params.row.firebaseKey && (
@@ -298,6 +304,7 @@ export default function ServiceNameSection() {
                 color="error"
                 onClick={() => handleDelete(params.row.id)}
                 disabled={deleteMappingMutation.isPending}
+                subType="d"
               >
                 삭제
               </MediumButton>

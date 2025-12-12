@@ -149,6 +149,7 @@ export default function ScreenPermissionPage() {
                   variant="outlined"
                   onClick={handleCancel}
                   disabled={!hasChanges || savePermissionsMutation.isPending}
+                  subType="etc"
                 >
                   취소
                 </MediumButton>
@@ -156,6 +157,7 @@ export default function ScreenPermissionPage() {
                   variant="contained"
                   onClick={handleSave}
                   disabled={!hasChanges || savePermissionsMutation.isPending}
+                  subType="u"
                 >
                   저장
                 </MediumButton>

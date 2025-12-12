@@ -209,6 +209,7 @@ export default function QuestionMappingSection() {
                   justifyContent: 'flex-start',
                   textAlign: 'left',
                 }}
+                subType="etc"
               >
                 <Box>
                   <Typography variant="body2" fontWeight="bold">
@@ -246,6 +247,7 @@ export default function QuestionMappingSection() {
                     createMappingMutation.isPending ||
                     deleteMappingMutation.isPending
                   }
+                  subType="u"
                 >
                   적용
                 </MediumButton>

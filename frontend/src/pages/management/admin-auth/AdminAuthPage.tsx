@@ -121,12 +121,12 @@ const AdminAuthPage: React.FC = () => {
       <Section>
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1}>
-            <MediumButton variant="contained" onClick={handleEdit}>
+            <MediumButton variant="contained" onClick={handleEdit} subType="u">
               편집
             </MediumButton>
           </Stack>
           <Stack direction="row" spacing={1}>
-            <MediumButton variant="outlined" onClick={handleDownloadAll}>
+            <MediumButton variant="outlined" onClick={handleDownloadAll} subType="etc">
               전체목록 xlsx 다운로드
             </MediumButton>
           </Stack>

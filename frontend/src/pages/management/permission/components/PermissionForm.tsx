@@ -184,16 +184,22 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
                 color="error"
                 onClick={handleDelete}
                 disabled={disabled}
+                subType="d"
               >
                 삭제
               </MediumButton>
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <MediumButton variant="outlined" onClick={onCancel} disabled={disabled}>
+            <MediumButton variant="outlined" onClick={onCancel} disabled={disabled} subType="etc">
               취소
             </MediumButton>
-            <MediumButton variant="contained" onClick={handleSave} disabled={disabled}>
+            <MediumButton
+              variant="contained"
+              onClick={handleSave}
+              disabled={disabled}
+              subType={isNew ? 'c' : 'u'}
+            >
               저장
             </MediumButton>
           </Box>
