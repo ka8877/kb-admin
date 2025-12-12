@@ -93,4 +93,9 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string | number) => `/management/menu/${id}.json`,
     DELETE: (id: string | number) => `/management/menu/${id}.json`,
   },
+
+  // 권한 확인
+  AUTH: {
+    PERMISSION: (role: string) => `/role/${role}.json`,
+  },
 } as const;

@@ -35,7 +35,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     <Stack direction="row" spacing={1} alignItems="center">
       <Avatar sx={{ width: 28, height: 28 }}>{user.name?.charAt(0) || '?'}</Avatar>
       <Typography variant="body2" color="text.secondary">
-        {user.name}
+        {user.name} {user.role}
       </Typography>
     </Stack>
   ) : null;

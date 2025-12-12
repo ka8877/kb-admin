@@ -19,18 +19,18 @@ const DataDetailActions: React.FC<DataDetailActionsProps> = ({
 }) => {
   return (
     <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-      <MediumButton variant="outlined" onClick={onBack}>
+      <MediumButton subType="etc" variant="outlined" onClick={onBack}>
         목록으로
       </MediumButton>
 
       {showEdit && onEdit && (
-        <MediumButton variant="contained" onClick={onEdit}>
+        <MediumButton subType="u" variant="contained" onClick={onEdit}>
           수정
         </MediumButton>
       )}
 
       {showDelete && onDelete && (
-        <MediumButton variant="outlined" color="error" onClick={onDelete}>
+        <MediumButton subType="d" variant="outlined" color="error" onClick={onDelete}>
           삭제
         </MediumButton>
       )}

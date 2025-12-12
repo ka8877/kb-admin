@@ -1,3 +1,6 @@
+import { ROLE_ADMIN, ROLE_NONE, ROLE_CRUD, ROLE_VIEWER } from '@/constants/options';
+import { UserRole } from '@/types/types';
+
 /**
  * 데이터 변경사항 체크 유틸리티
  */
@@ -54,3 +57,15 @@ export function hasDataChanges<T extends Record<string, any>>(
 
   return false;
 }
+
+/**
+ * Keycloak 역할을 앱 내부 역할로 매핑
+ * @param roles - Keycloak 역할 배열
+ * @returns 앱 내부 역할 (admin | crud | viewer | none)
+ */
+export const mapRolesToAppRole = (roles: string[]): UserRole => {
+  if (roles.includes(ROLE_ADMIN)) return ROLE_ADMIN;
+  if (roles.includes(ROLE_CRUD)) return ROLE_CRUD;
+  if (roles.includes(ROLE_VIEWER)) return ROLE_VIEWER;
+  return ROLE_NONE;
+};

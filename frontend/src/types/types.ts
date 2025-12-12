@@ -5,6 +5,10 @@ import {
   CREATE_REQUESTED,
   UPDATE_REQUESTED,
   DELETE_REQUESTED,
+  ROLE_VIEWER,
+  ROLE_ADMIN,
+  ROLE_CRUD,
+  ROLE_NONE,
 } from '@/constants/options';
 
 // 결재 요청 관련 타입 정의
@@ -97,3 +101,16 @@ export interface ApprovalRequestData<T> {
   isRetracted: number;
   list: T[];
 }
+
+// 사용자 역할 타입
+/**
+ * 사용자 액션 유형
+ * c: 등록
+ * d: 삭제
+ * u: 수정
+ * etc: 기타
+ * manage: 관리
+ */
+export type UserAction = 'c' | 'd' | 'u' | 'etc';
+
+export type UserRole = typeof ROLE_ADMIN | typeof ROLE_VIEWER | typeof ROLE_CRUD | typeof ROLE_NONE;

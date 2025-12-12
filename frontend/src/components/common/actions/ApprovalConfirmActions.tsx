@@ -43,6 +43,7 @@ export const ApprovalConfirmActions: React.FC<{
         <Typography variant="body2">선택된 항목: {selectedIds.length}개</Typography>
         <Stack direction="row" spacing={1}>
           <MediumButton
+            subType="c"
             variant="contained"
             color="primary"
             onClick={handleApproveClick}
@@ -50,7 +51,12 @@ export const ApprovalConfirmActions: React.FC<{
           >
             최종 결재 요청
           </MediumButton>
-          <MediumButton variant="outlined" onClick={onCancel} sx={{ minWidth: '80px' }}>
+          <MediumButton
+            subType="etc"
+            variant="outlined"
+            onClick={onCancel}
+            sx={{ minWidth: '80px' }}
+          >
             취소
           </MediumButton>
         </Stack>

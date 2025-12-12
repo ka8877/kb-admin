@@ -1,3 +1,4 @@
+import { UserRole } from '@/types/types';
 import { create } from 'zustand';
 
 export type AuthUser = {
@@ -5,6 +6,7 @@ export type AuthUser = {
   name: string;
   email?: string;
   roles?: string[];
+  role: UserRole;
 };
 
 export interface AuthState {

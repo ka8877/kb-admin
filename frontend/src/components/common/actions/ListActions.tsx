@@ -29,23 +29,22 @@ const ListActions: React.FC<ListActionsProps> = ({
     onToggleSelectionMode(!selectionMode);
   };
 
-
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
       <Stack direction="row" spacing={1.5}>
-        <MediumButton variant="contained" onClick={onCreate}>
+        <MediumButton subType="c" variant="contained" onClick={onCreate}>
           신규 등록
         </MediumButton>
 
-        <MediumButton variant="outlined" onClick={handleToggleSelection}>
+        <MediumButton subType="d" variant="outlined" onClick={handleToggleSelection}>
           {selectionMode ? '삭제 취소' : '선택 삭제'}
         </MediumButton>
 
-        <MediumButton variant="contained" onClick={onRequestApproval}>
+        <MediumButton subType="etc" variant="contained" onClick={onRequestApproval}>
           결재요청 대기함
         </MediumButton>
 
-        <MediumButton variant="outlined" onClick={onDownloadAll}>
+        <MediumButton subType="etc" variant="outlined" onClick={onDownloadAll}>
           전체목록 XLSX 다운로드
         </MediumButton>
       </Stack>
@@ -97,6 +96,7 @@ export const DeleteConfirmBar: React.FC<{
         <Typography variant="body2">선택된 항목: {selectedIds.length}개</Typography>
         <Stack direction="row" spacing={1}>
           <MediumButton
+            subType="d"
             variant="contained"
             color="error"
             onClick={handleDeleteClick}
@@ -104,7 +104,12 @@ export const DeleteConfirmBar: React.FC<{
           >
             삭제
           </MediumButton>
-          <MediumButton variant="outlined" onClick={onCancel} sx={{ minWidth: '80px' }}>
+          <MediumButton
+            subType="etc"
+            variant="outlined"
+            onClick={onCancel}
+            sx={{ minWidth: '80px' }}
+          >
             취소
           </MediumButton>
         </Stack>

@@ -102,3 +102,9 @@ export const yesNoOptions = [
   { label: '예', value: 'Y' },
   { label: '아니오', value: 'N' },
 ];
+
+// 권한 종류
+export const ROLE_ADMIN = 'admin' as const;
+export const ROLE_CRUD = 'crud' as const;
+export const ROLE_VIEWER = 'viewer' as const;
+export const ROLE_NONE = 'none' as const;

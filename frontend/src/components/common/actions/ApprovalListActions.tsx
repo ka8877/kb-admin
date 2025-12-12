@@ -34,17 +34,17 @@ const ApprovalListActions: React.FC<ApprovalListActionsProps> = ({
   return (
     <Stack direction="row" spacing={spacing} sx={{ mt: 1, mb: 1 }}>
       {onBack && (
-        <MediumButton variant="outlined" onClick={onBack}>
+        <MediumButton subType="etc" variant="outlined" onClick={onBack}>
           {backLabel}
         </MediumButton>
       )}
       {onEdit && (
-        <MediumButton variant="contained" onClick={onEdit}>
+        <MediumButton subType="u" variant="contained" onClick={onEdit}>
           {editLabel}
         </MediumButton>
       )}
       {onApproveSelect && (
-        <MediumButton variant="contained" onClick={onApproveSelect}>
+        <MediumButton subType="u" variant="contained" onClick={onApproveSelect}>
           {approveSelectLabel}
         </MediumButton>
       )}
