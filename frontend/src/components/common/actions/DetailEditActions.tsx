@@ -58,6 +58,7 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
         <Stack direction="row" spacing={1}>
           {showDelete && selectedCount > 0 && onDelete && (
             <MediumButton
+              subType="d"
               variant="outlined"
               color="error"
               onClick={handleDeleteClick}
@@ -66,10 +67,10 @@ const DetailEditActions: React.FC<DetailEditActionsProps> = ({
               삭제 ({selectedCount})
             </MediumButton>
           )}
-          <MediumButton variant="contained" onClick={onSave} disabled={isLoading}>
+          <MediumButton subType="u" variant="contained" onClick={onSave} disabled={isLoading}>
             저장
           </MediumButton>
-          <MediumButton variant="outlined" onClick={onCancel} disabled={isLoading}>
+          <MediumButton subType="etc" variant="outlined" onClick={onCancel} disabled={isLoading}>
             취소
           </MediumButton>
         </Stack>

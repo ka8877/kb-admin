@@ -58,6 +58,8 @@ export interface FetchApiOptions<T = unknown> {
   errorMessage?: string;
   /** 성공 메시지 (옵션) */
   successMessage?: string;
+  /** 쿼리 파라미터 (옵션) */
+  params?: Record<string, string | number | boolean>;
 }
 
 export interface StandardApiResponse<T> {
@@ -109,6 +111,7 @@ export async function fetchApi<T = unknown>(
     transform,
     errorMessage: providedErrorMessage,
     successMessage: providedSuccessMessage,
+    params,
   } = options;
 
   // API 요청 전 토큰 갱신 시도 (만료 임박 시)
@@ -118,7 +121,21 @@ export async function fetchApi<T = unknown>(
     console.warn('Token update failed, proceeding with existing token', e);
   }
 
-  const url = `${baseURL}${endpoint}`;
+  let url = `${baseURL}${endpoint}`;
+
+  // 쿼리 파라미터 추가
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    const queryString = searchParams.toString();
+    if (queryString) {
+      url += (url.includes('?') ? '&' : '?') + queryString;
+    }
+  }
 
   //const url = '';
   const requestHeaders: HeadersInit = {

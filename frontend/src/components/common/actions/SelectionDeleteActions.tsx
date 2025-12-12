@@ -13,7 +13,12 @@ const SelectionDeleteButton: React.FC<Props> = ({
   size = 'small',
 }) => {
   return (
-    <MediumButton variant="outlined" size={size} onClick={() => onToggleSelection(!selectionMode)}>
+    <MediumButton
+      subType="d"
+      variant="outlined"
+      size={size}
+      onClick={() => onToggleSelection(!selectionMode)}
+    >
       {selectionMode ? '삭제 취소' : '선택 삭제'}
     </MediumButton>
   );

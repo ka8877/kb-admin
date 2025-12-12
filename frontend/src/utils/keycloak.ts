@@ -1,5 +1,6 @@
 import { keycloak } from '@/config/env';
 import { useAuthStore } from '@/store/auth';
+import { mapRolesToAppRole } from '@/utils/dataUtils';
 
 /**
  * Keycloak 초기화 및 인증 상태 처리
@@ -17,12 +18,17 @@ export const initKeycloak = async (): Promise<boolean> => {
       setToken(keycloak.token);
 
       const profile = await keycloak.loadUserProfile();
+      const roles = keycloak.resourceAccess?.myclient.roles || [];
+
+      // 역할 매핑
+      const role = mapRolesToAppRole(roles);
 
       setUser({
         id: profile.id || '',
         name: profile.username || profile.firstName || 'User',
         email: profile.email || '',
-        roles: keycloak.realmAccess?.roles || [],
+        roles: roles,
+        role: role,
       });
     } else {
       // 인증되지 않은 경우 스토어 초기화 (기존 토큰 제거)

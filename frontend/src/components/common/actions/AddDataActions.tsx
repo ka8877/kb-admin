@@ -24,6 +24,7 @@ const AddDataButton: React.FC<Props> = ({
 }) => {
   return (
     <MediumButton
+      subType="c"
       startIcon={startIcon ?? <AddIcon />}
       size={size}
       variant={variant}

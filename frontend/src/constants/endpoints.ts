@@ -63,4 +63,9 @@ export const API_ENDPOINTS = {
     BASE: '/history/login',
     LIST: '/history/login.json',
   },
+
+  // 권한 확인
+  AUTH: {
+    PERMISSION: (role: string) => `/role/${role}.json`,
+  },
 } as const;

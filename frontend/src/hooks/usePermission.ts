@@ -1,0 +1,91 @@
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/auth';
+import { getApi } from '@/utils/apiUtils';
+import { API_ENDPOINTS } from '@/constants/endpoints';
+import { ROLE_ADMIN, ROLE_CRUD, ROLE_VIEWER, ROLE_NONE } from '@/constants/options';
+
+// 버튼 권한 매핑 테이블
+/**
+ * 버튼 액션 유형
+ * c: 등록
+ * d: 삭제
+ * u: 수정
+ * etc: 기타
+ */
+const BUTTON_PERMISSION_MAP: Record<string, Record<string, boolean>> = {
+  [ROLE_ADMIN]: { c: true, d: true, u: true, etc: true },
+  [ROLE_CRUD]: { c: true, d: true, u: true, etc: true },
+  [ROLE_VIEWER]: { c: false, d: false, u: false, etc: true },
+  [ROLE_NONE]: { c: false, d: false, u: false, etc: false },
+};
+
+// 화면 권한 매핑 테이블
+/**
+ * 화면 액션 유형
+ * c : 등록
+ * detail : 상세
+ * u:  수정
+ * view : 조회
+ * manage: 관리 페이지 접근
+ */
+const PAGE_PERMISSION_MAP: Record<string, Record<string, boolean>> = {
+  [ROLE_ADMIN]: { c: true, detail: true, u: true, view: true, manage: true },
+  [ROLE_CRUD]: { c: true, detail: true, u: true, view: true, manage: false },
+  [ROLE_VIEWER]: { c: false, detail: true, u: false, view: true, manage: false },
+  [ROLE_NONE]: { c: false, detail: false, u: false, view: false, manage: false },
+};
+
+/**
+ * 공통 권한 체크 로직
+ * @param type - 체크할 권한 타입
+ * @param permissionMap - 사용할 권한 매핑 테이블
+ * @param scope - 쿼리 키 구분을 위한 스코프 ('button' | 'page')
+ */
+const usePermissionCheck = (
+  type: string,
+  permissionMap: Record<string, Record<string, boolean>>,
+  scope: string,
+) => {
+  const user = useAuthStore((state) => state.user);
+  const role = user?.role;
+
+  // 디버깅용 로그
+  // console.log('usePermissionCheck params:', { role, type, scope, enabled: !!role && !!type });
+
+  const { data: isAllowed = false } = useQuery({
+    queryKey: ['permission', scope, role, type],
+    queryFn: async () => {
+      if (!role) return false;
+
+      // [현재 버전] 서버에서 역할 정보를 받아와 클라이언트 맵핑 테이블로 권한 확인
+      // 엔드포인트: /role/{role} -> 응답: { role: "admin" }
+      const response = await getApi<{ role: string }>(API_ENDPOINTS.AUTH.PERMISSION(role));
+      const serverRole = response.data.role;
+
+      const rolePermissions = permissionMap[serverRole] || permissionMap[ROLE_NONE];
+      return rolePermissions[type] ?? false;
+    },
+    // role과 type이 있을 때만 쿼리 실행
+    enabled: !!role && !!type,
+    // staleTime: 1000 * 60 * 5, // 5분 캐싱
+    retry: false,
+  });
+
+  return { isAllowed };
+};
+
+/**
+ * 버튼 권한 체크 훅
+ * @param subType - 버튼 기능 타입 ('c', 'd', 'u', 'etc')
+ */
+export const useButtonPermission = (subType: string) => {
+  return usePermissionCheck(subType, BUTTON_PERMISSION_MAP, 'button');
+};
+
+/**
+ * 페이지 접근 권한 체크 훅
+ * @param pageType - 엔드포인트 ('c', 'detail', 'u', 'view', 'manage')
+ */
+export const usePagePermission = (pageType: string) => {
+  return usePermissionCheck(pageType, PAGE_PERMISSION_MAP, 'page');
+};
