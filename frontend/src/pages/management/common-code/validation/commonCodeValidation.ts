@@ -91,10 +91,11 @@ export class CodeItemValidator {
     return /[\x00-\x1F\x7F-\x9F]/.test(value);
   }
 
-  // 코드 validation
+  // 코드 validation (빈 값 허용 - 백엔드 자동 채번)
   static validateCode(value: string | null | undefined): ValidationResult {
+    // 빈 값인 경우 백엔드에서 자동 채번되므로 통과
     if (!value || String(value).trim() === '') {
-      return { isValid: false, message: '코드는 필수입니다' };
+      return { isValid: true };
     }
 
     const code = String(value).trim();

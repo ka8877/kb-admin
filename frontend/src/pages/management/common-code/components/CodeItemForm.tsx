@@ -122,14 +122,13 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
             <TextField
               fullWidth
               size="small"
-              label="코드"
+              label="코드 (선택)"
               value={formData.code || ''}
               onChange={(e) => handleChange('code', e.target.value)}
               disabled={disabled}
-              placeholder="코드 입력"
-              required
+              placeholder="비워두면 자동 생성됩니다"
               error={!!fieldErrors.code}
-              helperText={fieldErrors.code}
+              helperText={fieldErrors.code || '입력하지 않으면 자동으로 생성됩니다'}
             />
           </Box>
           <Box sx={{ flex: 1 }}>

@@ -8,6 +8,5 @@ export const listColumns: GridColDef[] = [
   { field: 'team_1st', headerName: '1차팀', width: 150 },
   { field: 'team_2nd', headerName: '2차팀', width: 150 },
   { field: 'use_permission', headerName: '이용권한', width: 150 },
-  { field: 'approval_permission', headerName: '결재권한', width: 120 },
   { field: 'status', headerName: '활성여부', width: 100 },
 ];

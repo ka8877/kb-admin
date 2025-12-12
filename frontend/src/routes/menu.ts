@@ -76,11 +76,6 @@ export const frontMenus: MenuItem[] = [
         label: '공통 코드 관리',
         path: ROUTES.COMMON_CODE,
       },
-      //2차때 적용??
-      // {
-      //   label: '코드 계층 관리',
-      //   path: ROUTES.CODE_HIERARCHY,
-      // },
       {
         label: '사용자 관리',
         path: ROUTES.ADMIN_AUTH,
