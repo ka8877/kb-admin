@@ -94,6 +94,9 @@ const MenuTreeNode: React.FC<{
           '& .MuiAccordionSummary-content': {
             margin: '2px 0',
           },
+          '& .MuiAccordionSummary-content.Mui-expanded': {
+            margin: '2px 0',
+          },
         }}
       >
         <FormControlLabel

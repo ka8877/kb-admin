@@ -88,9 +88,9 @@ export const API_ENDPOINTS = {
     BASE: '/management/menu',
     LIST: '/management/menu.json',
     TREE: '/management/menu/tree.json',
-    DETAIL: (id: number) => `/management/menu/${id}.json`,
+    DETAIL: (id: string | number) => `/management/menu/${id}.json`,
     CREATE: '/management/menu.json',
-    UPDATE: (id: number) => `/management/menu/${id}.json`,
-    DELETE: (id: number) => `/management/menu/${id}.json`,
+    UPDATE: (id: string | number) => `/management/menu/${id}.json`,
+    DELETE: (id: string | number) => `/management/menu/${id}.json`,
   },
 } as const;

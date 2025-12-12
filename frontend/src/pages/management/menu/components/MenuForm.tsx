@@ -14,7 +14,7 @@ const INITIAL_FORM_DATA: Partial<MenuScreenItem> = {
   order: 1,
   parent_screen_id: '',
   screen_type: '페이지',
-  display_yn: 'Y',
+  display_yn: 'N',
 };
 
 const SCREEN_TYPE_OPTIONS = [
@@ -296,11 +296,11 @@ const MenuForm: React.FC<MenuFormProps> = ({
             select
             fullWidth
             size="small"
-            value={formData.display_yn || 'Y'}
+            value={formData.display_yn || 'N'}
             onChange={(e) => handleChange('display_yn', e.target.value)}
-            disabled={disabled}
+            disabled={isNew || disabled}
             error={!!errors.display_yn}
-            helperText={errors.display_yn}
+            helperText={isNew ? '화면 추가 후 표시로 변경' : errors.display_yn}
           >
             {DISPLAY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>

@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Stack, Box, Paper, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import PageHeader from '@/components/common/PageHeader';
 import Section from '@/components/layout/Section';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
@@ -109,12 +110,10 @@ export default function ScreenPermissionPage() {
   }, [screenPermissions]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '800px', overflow: 'hidden' }}>
-      <Typography variant="h5" sx={{ px: 2, pt: 2, pb: 1 }}>
-        화면 권한 관리
-      </Typography>
+    <Stack spacing={2} sx={{ height: '100%' }}>
+      <PageHeader title="화면 권한 관리" />
 
-      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, px: 2, pb: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* 좌측: 권한 목록 */}
         <Section sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
@@ -194,6 +193,6 @@ export default function ScreenPermissionPage() {
           </Box>
         </Section>
       </Stack>
-    </Box>
+    </Stack>
   );
 }

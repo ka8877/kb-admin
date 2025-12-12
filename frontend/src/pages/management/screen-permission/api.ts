@@ -1,23 +1,23 @@
 // 화면 권한 관리 API
 
-import { getApi, postApi, deleteApi } from '@/utils/apiUtils';
+import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import { permissionMockDb } from '@/mocks/permissionDb';
-import { menuMockDb } from '@/mocks/menuDb';
-import { buildMenuTree } from '@/utils/menuUtils';
 import type { Permission, MenuTreeItem, ScreenPermission, ScreenPermissionInput } from './types';
 
-const screenPermissionBasePath = 'management/screen-permission';
+// Firebase POST 응답 타입
+interface FirebasePostResponse {
+  name: string;
+}
 
-// Mock 화면 권한 데이터
-const mockScreenPermissions: ScreenPermission[] = [];
+const screenPermissionBasePath = 'management/screen-permission';
 
 /**
  * 권한 목록 조회
  */
 export const fetchPermissions = async (): Promise<Permission[]> => {
-  // Mock 데이터 사용
+  // Mock 데이터 사용 (권한은 별도 관리)
   const permissions = await permissionMockDb.listAll();
 
   // PermissionItem을 Permission으로 변환
@@ -33,14 +33,30 @@ export const fetchPermissions = async (): Promise<Permission[]> => {
 };
 
 /**
- * 메뉴 트리 조회
+ * 메뉴 트리 조회 (Firebase에서 가져오기)
  */
 export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
-  // Mock 데이터 사용
-  const menus = await menuMockDb.listAll();
+  const response = await getApi<Record<string, any>>('management/menu.json', {
+    baseURL: env.testURL,
+    errorMessage: '메뉴 트리를 불러오지 못했습니다.',
+  });
+
+  if (!response.data || typeof response.data !== 'object') {
+    return [];
+  }
 
   // display_yn = 'Y'이고 홈이 아닌 항목만 필터링
-  const visibleItems = menus.filter((item) => item.display_yn === 'Y' && item.path !== '/');
+  const visibleItems = Object.entries(response.data)
+    .map(([firebaseKey, data]: [string, any]) => ({
+      id: firebaseKey,
+      menu_code: data.menu_code,
+      menu_name: data.menu_name,
+      menu_path: data.menu_path,
+      parent_menu_code: data.parent_menu_code,
+      sort_order: data.sort_order,
+      is_active: data.is_active,
+    }))
+    .filter((item) => item.is_active === 1 && item.menu_path !== '/');
 
   // ID로 빠른 조회를 위한 맵
   const itemMap = new Map<string | number, MenuTreeItem>();
@@ -50,8 +66,8 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
   visibleItems.forEach((item) => {
     const menuItem: MenuTreeItem = {
       id: item.id,
-      label: item.screen_name,
-      path: item.path,
+      label: item.menu_name,
+      path: item.menu_path,
     };
     itemMap.set(item.id, menuItem);
     childrenMap.set(item.id, []);
@@ -62,13 +78,13 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
   visibleItems.forEach((item) => {
     const menuItem = itemMap.get(item.id)!;
 
-    if (!item.parent_screen_id) {
+    if (!item.parent_menu_code) {
       // 최상위 메뉴
       tree.push(menuItem);
     } else {
-      // 하위 메뉴 - parent_screen_id로 부모 찾기
+      // 하위 메뉴 - parent_menu_code로 부모 찾기
       const parent = Array.from(itemMap.values()).find(
-        (m) => visibleItems.find((i) => i.id === m.id)?.screen_id === item.parent_screen_id,
+        (m) => visibleItems.find((i) => i.id === m.id)?.menu_code === item.parent_menu_code,
       );
       if (parent && childrenMap.has(parent.id)) {
         childrenMap.get(parent.id)!.push(menuItem);
@@ -91,8 +107,25 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
  * 특정 권한의 화면 권한 목록 조회
  */
 export const fetchScreenPermissions = async (permissionId: number): Promise<ScreenPermission[]> => {
-  // Mock 데이터에서 해당 권한의 화면 권한 필터링
-  return mockScreenPermissions.filter((sp) => sp.permission_id === permissionId);
+  const response = await getApi<Record<string, ScreenPermission>>(
+    `${screenPermissionBasePath}.json`,
+    {
+      baseURL: env.testURL,
+      errorMessage: '화면 권한 목록을 불러오지 못했습니다.',
+    },
+  );
+
+  if (!response.data || typeof response.data !== 'object') {
+    return [];
+  }
+
+  // 해당 권한의 화면 권한만 필터링
+  return Object.entries(response.data)
+    .filter(([_, data]) => data.permission_id === permissionId)
+    .map(([firebaseKey, data]) => ({
+      ...data,
+      id: firebaseKey as any,
+    }));
 };
 
 /**
@@ -102,23 +135,36 @@ export const saveScreenPermissions = async (
   permissionId: number,
   permissions: ScreenPermissionInput[],
 ): Promise<void> => {
-  // Mock 데이터 업데이트: 기존 권한 삭제 후 새로 추가
-  const filtered = mockScreenPermissions.filter((sp) => sp.permission_id !== permissionId);
-  mockScreenPermissions.length = 0;
-  mockScreenPermissions.push(...filtered);
+  // 기존 권한 삭제
+  const existing = await fetchScreenPermissions(permissionId);
 
-  permissions.forEach((p, index) => {
-    mockScreenPermissions.push({
-      id: Date.now() + index,
-      permission_id: permissionId,
-      menu_id: p.menu_id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-  });
+  const deletePromises = existing.map((item) =>
+    deleteApi(`${screenPermissionBasePath}/${item.id}.json`, {
+      baseURL: env.testURL,
+      errorMessage: '',
+    }),
+  );
 
-  // Mock 성공 응답
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await Promise.all(deletePromises);
+
+  // 새 권한 추가
+  const createPromises = permissions.map((p) =>
+    postApi<FirebasePostResponse>(
+      `${screenPermissionBasePath}.json`,
+      {
+        permission_id: permissionId,
+        menu_id: p.menu_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        baseURL: env.testURL,
+        errorMessage: '',
+      },
+    ),
+  );
+
+  await Promise.all(createPromises);
 };
 
 /**
@@ -128,14 +174,13 @@ export const deleteScreenPermission = async (
   permissionId: number,
   menuId: number,
 ): Promise<void> => {
-  // Mock 데이터에서 삭제
-  const index = mockScreenPermissions.findIndex(
-    (sp) => sp.permission_id === permissionId && sp.menu_id === menuId,
-  );
-  if (index !== -1) {
-    mockScreenPermissions.splice(index, 1);
-  }
+  const permissions = await fetchScreenPermissions(permissionId);
+  const target = permissions.find((p) => p.menu_id === menuId);
 
-  // Mock 성공 응답
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  if (target) {
+    await deleteApi(`${screenPermissionBasePath}/${target.id}.json`, {
+      baseURL: env.testURL,
+      errorMessage: '화면 권한 삭제에 실패했습니다.',
+    });
+  }
 };
