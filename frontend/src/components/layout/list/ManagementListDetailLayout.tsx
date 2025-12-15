@@ -46,6 +46,7 @@ const ManagementListDetailLayout: React.FC<ManagementListDetailLayoutProps> = ({
             onClick={onAddNew}
             disabled={disabled}
             sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' } }}
+            subType="c"
           >
             {addButtonText}
           </MediumButton>

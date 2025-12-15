@@ -28,12 +28,12 @@ const DetailNavigationActions: React.FC<DetailNavigationActionsProps> = ({
   return (
     <Stack direction="row" spacing={spacing} sx={{ mb: 2 }}>
       {onBack && (
-        <MediumButton variant="outlined" onClick={onBack}>
+        <MediumButton variant="outlined" onClick={onBack} subType="etc">
           {backLabel}
         </MediumButton>
       )}
       {onEdit && (
-        <MediumButton variant="contained" onClick={onEdit}>
+        <MediumButton variant="contained" onClick={onEdit} subType="u">
           {editLabel}
         </MediumButton>
       )}

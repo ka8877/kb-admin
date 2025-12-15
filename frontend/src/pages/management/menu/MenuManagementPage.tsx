@@ -7,7 +7,6 @@ import { menuColumns } from './components/columns';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { useMenus, useCreateMenu, useUpdateMenu, useDeleteMenu } from './hooks';
 import type { MenuItem, MenuItemDisplay } from './types';
-import type { MenuScreenItem } from './types-old';
 
 // 상수
 const MESSAGES = {
@@ -22,24 +21,9 @@ const MESSAGES = {
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
-// MenuItem을 MenuScreenItem으로 변환 (기존 UI 호환)
-const toMenuScreenItem = (item: MenuItem): MenuScreenItem => ({
-  id: item.firebaseKey || '',
-  screen_id: item.menu_code,
-  screen_name: item.menu_name,
-  path: item.menu_path || '',
-  depth: 0, // 계산 필요
-  order: item.sort_order,
-  parent_screen_id: item.parent_menu_code || undefined,
-  screen_type: '페이지',
-  display_yn: item.is_active === 1 ? 'Y' : 'N',
-  created_at: item.created_at,
-  updated_at: item.updated_at || undefined,
-});
-
 const MenuManagementPage: React.FC = () => {
   const { showAlert } = useAlertDialog();
-  const [selectedMenu, setSelectedMenu] = useState<MenuScreenItem | null>(null);
+  const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [isNewMode, setIsNewMode] = useState(false);
 
   const { data: menus = [], isLoading } = useMenus();
@@ -47,16 +31,18 @@ const MenuManagementPage: React.FC = () => {
   const updateMenuMutation = useUpdateMenu();
   const deleteMenuMutation = useDeleteMenu();
 
-  // MenuItem[]을 RowItem[]로 변환
+  // MenuItem[]을 MenuItemDisplay[]로 변환
   const allMenus = useMemo(() => {
     return menus.map((item, index) => ({
-      ...toMenuScreenItem(item),
+      ...item,
       no: index + 1,
-    }));
+      id: item.firebaseKey,
+    })) as MenuItemDisplay[];
   }, [menus]);
 
   const handleRowClick = useCallback((params: { id: string | number; row: MenuItemDisplay }) => {
-    setSelectedMenu(params.row);
+    const menuItem = params.row as MenuItem;
+    setSelectedMenu(menuItem);
     setIsNewMode(false);
   }, []);
 
@@ -71,16 +57,16 @@ const MenuManagementPage: React.FC = () => {
   }, []);
 
   const handleSave = useCallback(
-    async (menuItem: MenuScreenItem) => {
+    async (menuItem: MenuItem) => {
       try {
         if (isNewMode) {
           await createMenuMutation.mutateAsync({
-            menu_code: menuItem.screen_id,
-            menu_name: menuItem.screen_name,
-            menu_path: menuItem.path || null,
-            parent_menu_code: menuItem.parent_screen_id || null,
-            sort_order: menuItem.order,
-            is_active: menuItem.display_yn === 'Y' ? 1 : 0,
+            menu_code: menuItem.menu_code,
+            menu_name: menuItem.menu_name,
+            menu_path: menuItem.menu_path || null,
+            parent_menu_code: menuItem.parent_menu_code || null,
+            sort_order: menuItem.sort_order || 1,
+            is_active: menuItem.is_active,
             created_by: 1,
           });
           showAlert({
@@ -90,13 +76,13 @@ const MenuManagementPage: React.FC = () => {
           });
         } else {
           await updateMenuMutation.mutateAsync({
-            firebaseKey: String(menuItem.id),
+            firebaseKey: String(menuItem.firebaseKey),
             updates: {
-              menu_name: menuItem.screen_name,
-              menu_path: menuItem.path || null,
-              parent_menu_code: menuItem.parent_screen_id || null,
-              sort_order: menuItem.order,
-              is_active: menuItem.display_yn === 'Y' ? 1 : 0,
+              menu_name: menuItem.menu_name,
+              menu_path: menuItem.menu_path || null,
+              parent_menu_code: menuItem.parent_menu_code || null,
+              sort_order: menuItem.sort_order || 1,
+              is_active: menuItem.is_active,
             },
           });
           showAlert({
@@ -157,10 +143,10 @@ const MenuManagementPage: React.FC = () => {
       emptyStateText={MESSAGES.EMPTY_STATE}
       gridRatio={{ left: 8, right: 4 }}
       listNode={
-        <EditableList
+        <EditableList<MenuItemDisplay>
           rows={allMenus}
           columns={menuColumns}
-          rowIdGetter={(r: MenuItemDisplay) => r.id}
+          rowIdGetter={(r: MenuItemDisplay) => r.firebaseKey || r.id || ''}
           defaultPageSize={DEFAULT_PAGE_SIZE}
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           onRowClick={handleRowClick}
@@ -172,7 +158,7 @@ const MenuManagementPage: React.FC = () => {
       detailNode={
         <MenuForm
           menuItem={selectedMenu}
-          allMenuItems={allMenus}
+          allMenuItems={allMenus as MenuItem[]}
           isNew={isNewMode}
           onSave={handleSave}
           onCancel={handleCancel}

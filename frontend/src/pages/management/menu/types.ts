@@ -18,6 +18,7 @@ export interface MenuItem {
 
 export interface MenuItemDisplay extends MenuItem {
   no: number; // 화면 표시용 번호
+  id?: string | number; // EditableList용
 }
 
 // Firebase 저장용 타입
@@ -33,3 +34,21 @@ export interface MenuItemFirebase {
   updated_by: number | null;
   updated_at: string | null;
 }
+
+// 기존 UI 호환용 타입
+export interface MenuScreenItem {
+  id: string | number;
+  screen_id: string;
+  screen_name: string;
+  path: string;
+  depth?: number;
+  order?: number;
+  parent_screen_id?: string;
+  screen_type?: string;
+  display_yn?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// DataGrid용 Row 타입
+export type RowItem = MenuScreenItem;
