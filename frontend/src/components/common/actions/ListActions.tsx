@@ -7,6 +7,7 @@ import MediumButton from '../button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '@/constants/message';
+import { LABELS } from '@/constants/label';
 
 export type ListActionsProps = {
   selectionMode: boolean;
@@ -45,7 +46,7 @@ const ListActions: React.FC<ListActionsProps> = ({
         </MediumButton>
 
         <MediumButton subType="etc" variant="outlined" onClick={onDownloadAll}>
-          전체목록 XLSX 다운로드
+          {LABELS.DOWNLOAD_ALL_XLSX}
         </MediumButton>
       </Stack>
 

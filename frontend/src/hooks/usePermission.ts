@@ -19,20 +19,13 @@ const BUTTON_PERMISSION_MAP: Record<string, Record<string, boolean>> = {
   [ROLE_NONE]: { c: false, d: false, u: false, etc: false },
 };
 
-// 화면 권한 매핑 테이블
-/**
- * 화면 액션 유형
- * c : 등록
- * detail : 상세
- * u:  수정
- * view : 조회
- * manage: 관리 페이지 접근
- */
-const PAGE_PERMISSION_MAP: Record<string, Record<string, boolean>> = {
-  [ROLE_ADMIN]: { c: true, detail: true, u: true, view: true, manage: true },
-  [ROLE_CRUD]: { c: true, detail: true, u: true, view: true, manage: false },
-  [ROLE_VIEWER]: { c: false, detail: true, u: false, view: true, manage: false },
-  [ROLE_NONE]: { c: false, detail: false, u: false, view: false, manage: false },
+// 상세 화면 권한 매핑 테이블
+
+const DETAIL_PAGE_PERMISSION_MAP: Record<string, boolean> = {
+  [ROLE_ADMIN]: true,
+  [ROLE_CRUD]: true,
+  [ROLE_VIEWER]: false,
+  [ROLE_NONE]: false,
 };
 
 /**
@@ -89,12 +82,4 @@ const usePermissionCheck = (
  */
 export const useButtonPermission = (subType: string) => {
   return usePermissionCheck(subType, BUTTON_PERMISSION_MAP, 'button');
-};
-
-/**
- * 페이지 접근 권한 체크 훅
- * @param pageType - 엔드포인트 ('c', 'detail', 'u', 'view', 'manage')
- */
-export const usePagePermission = (pageType: string) => {
-  return usePermissionCheck(pageType, PAGE_PERMISSION_MAP, 'page');
 };

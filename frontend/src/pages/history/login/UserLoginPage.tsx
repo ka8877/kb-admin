@@ -8,6 +8,9 @@ import { resultOptions } from './data';
 import { useUserLogins } from './hooks';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
+import MediumButton from '@/components/common/button/MediumButton';
+import { LABELS } from '@/constants/label';
+import { exportGridToExcel } from '@/utils/excelUtils';
 
 const selectFieldsConfig = {
   result: resultOptions,
@@ -33,10 +36,23 @@ const UserLoginPage: React.FC = () => {
 
   const isDataLoading = isLoading || isFetching;
 
+  const handleExportExcel = async () => {
+    await exportGridToExcel({
+      rows,
+      columns: userLoginColumns,
+      exportFileName: '로그인_이력',
+    });
+  };
+
   return (
     <Box>
       <PageHeader title="로그인 이력" />
       <SimpleList<UserLoginItem>
+        actionsNode={
+          <MediumButton subType="etc" variant="outlined" onClick={handleExportExcel}>
+            {LABELS.DOWNLOAD_ALL_XLSX}
+          </MediumButton>
+        }
         columns={userLoginColumns}
         rows={rows}
         rowIdGetter="no"

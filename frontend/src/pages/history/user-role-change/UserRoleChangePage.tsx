@@ -10,6 +10,9 @@ import { changeTypeOptions } from './data';
 import { useUserRoleChanges } from './hooks';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
+import MediumButton from '@/components/common/button/MediumButton';
+import { LABELS } from '@/constants/label';
+import { exportGridToExcel } from '@/utils/excelUtils';
 
 const selectFieldsConfig = {
   changeType: changeTypeOptions,
@@ -38,6 +41,14 @@ const UserRoleChangePage: React.FC = () => {
 
   const isDataLoading = isLoading || isFetching;
 
+  const handleExportExcel = async () => {
+    await exportGridToExcel({
+      rows,
+      columns: userRoleChangeColumns,
+      exportFileName: '사용자_역할_변경_이력',
+    });
+  };
+
   const handleCellClick: GridEventListener<'cellClick'> = (params) => {
     if (params.field === 'beforeState' || params.field === 'afterState') {
       setPopupTitle(params.colDef.headerName || '상세 정보');
@@ -50,6 +61,11 @@ const UserRoleChangePage: React.FC = () => {
     <Box>
       <PageHeader title="사용자 역할 변경 이력" />
       <SimpleList<UserRoleChangeItem>
+        actionsNode={
+          <MediumButton subType="etc" variant="outlined" onClick={handleExportExcel}>
+            {LABELS.DOWNLOAD_ALL_XLSX}
+          </MediumButton>
+        }
         columns={userRoleChangeColumns}
         rows={rows}
         rowIdGetter="historyId"

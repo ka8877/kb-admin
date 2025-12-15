@@ -11,12 +11,24 @@ import { menuMockDb } from '@/mocks/menuDb';
 import { buildMenuTree } from '@/utils/menuUtils';
 import { useIsCurrentPath } from '@/hooks';
 import { ROUTES } from '@/routes/menu';
+import { useInactivityLogout } from '@/hooks/useInactivityLogout';
+import { handleLoginIpCheck } from '@/utils/keycloak';
 
 const MainLayout = ({ children }: PropsWithChildren) => {
   const user = useAuthStore((s) => s.user);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const { pathname } = useLocation();
   const isLoginPage = useIsCurrentPath(ROUTES.LOGIN);
+
+  // 자동 로그아웃 훅 적용 (60분 미활동 시)
+  useInactivityLogout();
+
+  // 로그인 시 IP 체크 (화면 렌더링 후 실행)
+  useEffect(() => {
+    if (user?.id) {
+      handleLoginIpCheck(user.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const loadMenus = async () => {

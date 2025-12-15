@@ -98,4 +98,8 @@ export const API_ENDPOINTS = {
   AUTH: {
     PERMISSION: (role: string) => `/role/${role}.json`,
   },
+
+  USER: {
+    INFO: (userId: string) => `/user/${userId}.json`,
+  },
 } as const;

@@ -49,7 +49,7 @@ const ScreenPermissionPage = React.lazy(
 // === 이력 ===
 const UserLoginPage = React.lazy(() => import('@pages/history/login/UserLoginPage'));
 const UserRoleChangePage = React.lazy(
-  () => import('@/pages/history/user-role-change/UserRoelChangePage'),
+  () => import('@/pages/history/user-role-change/UserRoleChangePage'),
 );
 
 export type AppRoute = {

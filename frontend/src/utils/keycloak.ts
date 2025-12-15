@@ -1,6 +1,8 @@
 import { keycloak } from '@/config/env';
 import { useAuthStore } from '@/store/auth';
 import { mapRolesToAppRole } from '@/utils/dataUtils';
+import { checkUserLoginIp } from '@/utils/loginCheckUtils';
+import { toast } from 'react-toastify';
 
 /**
  * Keycloak 초기화 및 인증 상태 처리
@@ -56,6 +58,13 @@ export const loginKeycloak = () => {
  * Keycloak 로그아웃 처리
  */
 export const logoutKeycloak = () => {
+  // 로그아웃 시 IP 체크 플래그 초기화 (재로그인 시 다시 체크하기 위함)
+  Object.keys(sessionStorage).forEach((key) => {
+    if (key.startsWith('hasCheckedIp_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+
   keycloak.logout({
     redirectUri: window.location.origin + '/login',
   });
@@ -80,5 +89,35 @@ export const updateToken = async (minValidity = 70): Promise<string | undefined>
     // 갱신 실패 시 로그아웃 처리 (선택 사항)
     logoutKeycloak();
     throw error;
+  }
+};
+
+/**
+ * 로그인 시 IP 체크 및 알림 처리 (세션 당 1회)
+ * @param userId 사용자 ID
+ */
+export const handleLoginIpCheck = async (userId: string) => {
+  const storageKey = `hasCheckedIp_${userId}`;
+
+  // 이미 체크했다면 스킵
+  if (sessionStorage.getItem(storageKey)) {
+    console.log('Login IP check skipped (already checked for this session)');
+    return;
+  }
+
+  try {
+    const ipCheckResult = await checkUserLoginIp(userId);
+    if (ipCheckResult.shouldAlert && ipCheckResult.message) {
+      // 중요 알림이므로 사용자가 확인하기 전까지 닫히지 않도록 설정
+      toast.error(ipCheckResult.message, {
+        toastId: 'login-ip-alert', // 중복 표시 방지
+        autoClose: false,
+        closeOnClick: false,
+      });
+    }
+    // 체크 완료 표시
+    sessionStorage.setItem(storageKey, 'true');
+  } catch (error) {
+    console.error('Login IP check failed:', error);
   }
 };
