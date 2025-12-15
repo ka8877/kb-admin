@@ -19,11 +19,13 @@ export interface MenuTreeItem {
   id: string | number;
   label: string;
   path: string;
+  depth?: number;
+  sort_order?: number;
   children?: MenuTreeItem[];
 }
 
 export interface ScreenPermission {
-  id: number;
+  id: string | number;
   permission_id: number;
   menu_id: string | number;
   created_at: string;

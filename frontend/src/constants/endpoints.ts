@@ -68,10 +68,20 @@ export const API_ENDPOINTS = {
   PERMISSION: {
     BASE: '/management/permission',
     LIST: '/management/permission.json',
-    DETAIL: (id: number) => `/management/permission/${id}.json`,
+    DETAIL: (id: string | number) => `/management/permission/${id}.json`,
     CREATE: '/management/permission.json',
-    UPDATE: (id: number) => `/management/permission/${id}.json`,
-    DELETE: (id: number) => `/management/permission/${id}.json`,
+    UPDATE: (id: string | number) => `/management/permission/${id}.json`,
+    DELETE: (id: string | number) => `/management/permission/${id}.json`,
+  },
+
+  // 관리자 사용자 관리
+  ADMIN_AUTH: {
+    BASE: '/management/admin-auth',
+    LIST: '/management/admin-auth.json',
+    DETAIL: (id: string | number) => `/management/admin-auth/${id}.json`,
+    CREATE: '/management/admin-auth.json',
+    UPDATE: (id: string | number) => `/management/admin-auth/${id}.json`,
+    DELETE: (id: string | number) => `/management/admin-auth/${id}.json`,
   },
 
   // 화면 권한 관리

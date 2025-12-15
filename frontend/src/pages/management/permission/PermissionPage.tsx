@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import EditableList from '@/components/common/list/EditableList';
 import ManagementListDetailLayout from '@/components/layout/list/ManagementListDetailLayout';
 import PermissionForm from './components/PermissionForm';
-import { permissionMockDb } from '@/mocks/permissionDb';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import type { PermissionItem, RowItem } from './types';
 import { listColumns } from './components/columns';
+import { fetchPermissions, createPermission, updatePermission, deletePermission } from './api';
 
 // 상수
 const MESSAGES = {
@@ -32,7 +32,7 @@ const PermissionPage: React.FC = () => {
   const loadAllPermissions = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await permissionMockDb.listAll();
+      const data = await fetchPermissions();
       const permissionData = data.map((item, index) => ({
         ...item,
         no: index + 1,
@@ -78,7 +78,7 @@ const PermissionPage: React.FC = () => {
         }
 
         if (isNewMode) {
-          await permissionMockDb.create({
+          await createPermission({
             permission_id: permission.permission_id,
             permission_name: permission.permission_name,
             status: permission.status,
@@ -89,9 +89,11 @@ const PermissionPage: React.FC = () => {
             severity: 'success',
           });
         } else {
-          await permissionMockDb.update(permission.id, {
+          await updatePermission(permission.id, {
+            permission_id: permission.permission_id,
             permission_name: permission.permission_name,
             status: permission.status,
+            created_at: permission.created_at,
           });
           showAlert({
             title: '완료',
@@ -126,7 +128,7 @@ const PermissionPage: React.FC = () => {
     async (id: string | number) => {
       setLoading(true);
       try {
-        await permissionMockDb.delete(id);
+        await deletePermission(id);
         setSelectedPermission(null);
         setIsNewMode(false);
         showAlert({

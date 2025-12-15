@@ -7,6 +7,7 @@ import PageHeader from '@/components/common/PageHeader';
 import Section from '@/components/layout/Section';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { useAuthStore } from '@/store/auth';
 import { ALERT_TITLES } from '@/constants/message';
 import { MenuTree } from './components/MenuTree';
 import { permissionColumns } from './columns';
@@ -20,6 +21,7 @@ import type { Permission, PermissionDisplay, ScreenPermissionInput } from './typ
 
 export default function ScreenPermissionPage() {
   const { showAlert } = useAlertDialog();
+  const user = useAuthStore((s) => s.user);
 
   const { data: permissions = [], isLoading: isPermissionsLoading } = usePermissions();
   const { data: menuTree = [], isLoading: isMenuTreeLoading } = useMenuTree();
@@ -84,6 +86,15 @@ export default function ScreenPermissionPage() {
       });
 
       setHasChanges(false);
+
+      // 현재 사용자가 변경한 권한이면 메뉴 즉시 리프레시
+      const userRoleUpper = String(user?.role || '').toUpperCase();
+      const permCodeUpper = String(selectedPermission.permission_code || '').toUpperCase();
+
+      if (userRoleUpper === permCodeUpper && (window as any).refreshMenuPermissions) {
+        (window as any).refreshMenuPermissions();
+      }
+
       showAlert({
         title: ALERT_TITLES.SUCCESS,
         message: '화면 권한이 저장되었습니다.',
@@ -97,7 +108,7 @@ export default function ScreenPermissionPage() {
         severity: 'error',
       });
     }
-  }, [selectedPermission, selectedMenuIds, savePermissionsMutation, showAlert]);
+  }, [selectedPermission, selectedMenuIds, savePermissionsMutation, showAlert, user?.role]);
 
   const handleCancel = useCallback(() => {
     if (screenPermissions.length > 0) {
@@ -119,7 +130,7 @@ export default function ScreenPermissionPage() {
           <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
             권한 목록
           </Typography>
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Box sx={{ flex: '0 0 auto', height: 480, overflow: 'hidden' }}>
             <DataGrid
               rows={permissionRows}
               columns={permissionColumns}
@@ -131,6 +142,10 @@ export default function ScreenPermissionPage() {
               initialState={{
                 pagination: { paginationModel: { pageSize: 20 } },
               }}
+              autoHeight={false}
+              rowHeight={40}
+              columnHeaderHeight={44}
+              sx={{ height: '100%' }}
             />
           </Box>
         </Section>

@@ -103,6 +103,8 @@ export const updateMenu = async (
 ): Promise<MenuItem> => {
   const updateData = {
     ...updates,
+    // menu_code는 빈 문자열로 덮어쓰지 않도록, 전달되면 값 사용, 아니면 제거
+    ...(updates.menu_code === undefined ? {} : { menu_code: updates.menu_code }),
     updated_at: new Date().toISOString(),
   };
 

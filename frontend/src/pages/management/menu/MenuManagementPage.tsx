@@ -78,6 +78,7 @@ const MenuManagementPage: React.FC = () => {
           await updateMenuMutation.mutateAsync({
             firebaseKey: String(menuItem.firebaseKey),
             updates: {
+              menu_code: menuItem.menu_code, // 누락 시 빈 값으로 저장되는 것 방지
               menu_name: menuItem.menu_name,
               menu_path: menuItem.menu_path || null,
               parent_menu_code: menuItem.parent_menu_code || null,
