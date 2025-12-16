@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Stack, TextField, MenuItem, Typography, Paper } from '@mui/material';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES, COMMON_CODE_MESSAGES } from '@/constants/message';
 import type { CodeItem, CodeItemDisplay } from '../types';
 import { CodeItemValidator } from '../validation/commonCodeValidation';
 import Section from '@/components/layout/Section';
@@ -11,6 +11,7 @@ type CodeItemFormProps = {
   selectedItem: CodeItemDisplay | null;
   isNew: boolean;
   selectedCodeGroupId: number | null;
+  groupCode?: string; // 코드그룹 코드 (service_nm 등)
   initialSortOrder?: number; // 추가 시 기본 정렬순서
   onSave: (
     item: Omit<
@@ -35,6 +36,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
   selectedItem,
   isNew,
   selectedCodeGroupId,
+  groupCode,
   initialSortOrder = 0,
   onSave,
   onCancel,
@@ -105,7 +107,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
   if (!selectedItem && !isNew) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center', color: 'text.secondary', height: '100%' }}>
-        코드아이템을 선택하거나 추가하세요
+        {COMMON_CODE_MESSAGES.SELECT_OR_ADD_CODE_ITEM}
       </Paper>
     );
   }
@@ -114,7 +116,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
     <Section>
       <Stack spacing={2}>
         <Typography variant="subtitle1" fontWeight="bold">
-          {isNew ? '코드아이템 추가' : '코드아이템 수정'}
+          {isNew ? COMMON_CODE_MESSAGES.ADD_CODE_ITEM : COMMON_CODE_MESSAGES.EDIT_CODE_ITEM}
         </Typography>
 
         <Stack direction="row" spacing={2}>
@@ -122,27 +124,25 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
             <TextField
               fullWidth
               size="small"
-              label="코드 (선택)"
-              value={formData.code || ''}
-              onChange={(e) => handleChange('code', e.target.value)}
+              label={COMMON_CODE_MESSAGES.FIELD_CODE_NAME}
+              value={formData.code_name || ''}
+              onChange={(e) => handleChange('code_name', e.target.value)}
               disabled={disabled}
-              placeholder="비워두면 자동 생성됩니다"
-              error={!!fieldErrors.code}
-              helperText={fieldErrors.code || '입력하지 않으면 자동으로 생성됩니다'}
+              placeholder={COMMON_CODE_MESSAGES.CODE_NAME_PLACEHOLDER}
+              required
+              error={!!fieldErrors.code_name}
+              helperText={fieldErrors.code_name}
             />
           </Box>
           <Box sx={{ flex: 1 }}>
             <TextField
               fullWidth
               size="small"
-              label="코드명"
-              value={formData.code_name || ''}
-              onChange={(e) => handleChange('code_name', e.target.value)}
+              label={COMMON_CODE_MESSAGES.FIELD_SORT_ORDER}
+              type="number"
+              value={formData.sort_order}
+              onChange={(e) => handleChange('sort_order', Number(e.target.value))}
               disabled={disabled}
-              placeholder="코드명 입력"
-              required
-              error={!!fieldErrors.code_name}
-              helperText={fieldErrors.code_name}
             />
           </Box>
         </Stack>
@@ -150,29 +150,45 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
         <Stack direction="row" spacing={2}>
           <Box sx={{ flex: 1 }}>
             <TextField
-              fullWidth
-              size="small"
-              label="정렬순서"
-              type="number"
-              value={formData.sort_order}
-              onChange={(e) => handleChange('sort_order', Number(e.target.value))}
-              disabled={disabled}
-            />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <TextField
               select
               fullWidth
               size="small"
-              label="사용여부"
+              label={COMMON_CODE_MESSAGES.FIELD_IS_ACTIVE}
               value={formData.is_active}
               onChange={(e) => handleChange('is_active', Number(e.target.value))}
               disabled={disabled}
               required
             >
-              <MenuItem value={1}>사용</MenuItem>
-              <MenuItem value={0}>미사용</MenuItem>
+              <MenuItem value={1}>{COMMON_CODE_MESSAGES.ACTIVE}</MenuItem>
+              <MenuItem value={0}>{COMMON_CODE_MESSAGES.INACTIVE}</MenuItem>
             </TextField>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label={
+                groupCode === 'service_nm'
+                  ? COMMON_CODE_MESSAGES.FIELD_SERVICE_CODE
+                  : COMMON_CODE_MESSAGES.FIELD_CODE_OPTIONAL
+              }
+              value={formData.code || ''}
+              onChange={(e) => handleChange('code', e.target.value)}
+              disabled={disabled}
+              placeholder={
+                groupCode === 'service_nm'
+                  ? COMMON_CODE_MESSAGES.SERVICE_CODE_PLACEHOLDER
+                  : COMMON_CODE_MESSAGES.CODE_AUTO_GENERATED
+              }
+              error={!!fieldErrors.code}
+              helperText={
+                fieldErrors.code ||
+                (groupCode === 'service_nm'
+                  ? COMMON_CODE_MESSAGES.SERVICE_CODE_HELP
+                  : COMMON_CODE_MESSAGES.CODE_AUTO_GENERATED_HELP)
+              }
+              required={groupCode === 'service_nm'}
+            />
           </Box>
         </Stack>
 
@@ -185,11 +201,11 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               disabled={disabled}
               subType="d"
             >
-              삭제
+              {COMMON_CODE_MESSAGES.DELETE}
             </MediumButton>
           )}
           <MediumButton variant="outlined" onClick={onCancel} disabled={disabled} subType="etc">
-            취소
+            {COMMON_CODE_MESSAGES.CANCEL}
           </MediumButton>
           <MediumButton
             variant="contained"
@@ -197,7 +213,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
             disabled={disabled}
             subType={isNew ? 'c' : 'u'}
           >
-            저장
+            {COMMON_CODE_MESSAGES.SAVE}
           </MediumButton>
         </Box>
       </Stack>

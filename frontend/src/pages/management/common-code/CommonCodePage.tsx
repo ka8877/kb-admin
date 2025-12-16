@@ -4,7 +4,6 @@ import PageHeader from '@/components/common/PageHeader';
 import type { CodeGroupDisplay } from './types';
 import CodeGroupSection from './components/CodeGroupSection';
 import CodeItemSection from './components/CodeItemSection';
-import ServiceNameSection from './components/ServiceNameSection';
 import QuestionMappingSection from './components/QuestionMappingSection';
 
 export default function CommonCodePage() {
@@ -34,7 +33,6 @@ export default function CommonCodePage() {
 
       <Tabs value={activeTab} onChange={handleTabChange}>
         <Tab label="코드 관리" />
-        <Tab label="서비스명 설정" />
         <Tab label="질문 매핑" />
       </Tabs>
 
@@ -53,15 +51,8 @@ export default function CommonCodePage() {
         </Grid>
       )}
 
-      {/* 탭 1: 서비스명 설정 */}
+      {/* 탭 1: 질문 매핑 */}
       {activeTab === 1 && (
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          <ServiceNameSection />
-        </Box>
-      )}
-
-      {/* 탭 2: 질문 매핑 */}
-      {activeTab === 2 && (
         <Box sx={{ flex: 1, minHeight: 0 }}>
           <QuestionMappingSection />
         </Box>
