@@ -9,17 +9,15 @@ import SelectInput from '@/components/common/input/SelectInput';
 import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
 import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
-import {
-  loadServiceOptions,
-  loadAgeGroupOptions,
-} from '@/pages/data-reg/recommended-questions/data';
+import { loadAgeGroupOptions } from '@/pages/data-reg/recommended-questions/data';
 import { yesNoOptions } from '@/constants/options';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
 import { createRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
 import {
-  useFilteredQuestionCategories,
+  useQuestionCategoriesByService,
   useCreateRecommendedQuestion,
+  useServiceCodeOptions,
 } from '@/pages/data-reg/recommended-questions/hooks';
 import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
 import { toast } from 'react-toastify';
@@ -47,9 +45,9 @@ const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
   const createMutation = useCreateRecommendedQuestion();
+  const { data: serviceOptions = [] } = useServiceCodeOptions();
 
   // 동적 옵션 상태
-  const [serviceOptions, setServiceOptions] = useState<{ label: string; value: string }[]>([]);
   const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
 
   // validation 모드 상태 관리
@@ -58,11 +56,7 @@ const ApprovalManualForm: React.FC = () => {
   // 서비스명 및 연령대 옵션 로드
   useEffect(() => {
     const loadOptions = async () => {
-      const [services, ageGroups] = await Promise.all([
-        loadServiceOptions(),
-        loadAgeGroupOptions(),
-      ]);
-      setServiceOptions(services);
+      const ageGroups = await loadAgeGroupOptions();
       setAgeGroupOptions(ageGroups);
     };
     loadOptions();
@@ -104,8 +98,8 @@ const ApprovalManualForm: React.FC = () => {
     name: 'serviceNm',
   });
 
-  // 선택된 서비스에 따라 필터링된 질문 카테고리 옵션 생성 (커스텀 훅 사용)
-  const filteredQuestionCategoryOptions = useFilteredQuestionCategories(watchedServiceNm);
+  // 선택된 서비스에 따라 필터링된 질문 카테고리 옵션 생성 (API 기반 동적 매핑)
+  const questionCategoryOptions = useQuestionCategoriesByService(watchedServiceNm);
 
   // mid 또는 story인 경우 부모 ID 필수
   const isParentIdRequired =
@@ -119,6 +113,7 @@ const ApprovalManualForm: React.FC = () => {
 
   // serviceNm 변경 시 qstCtgr 초기화 및 validation 재실행
   React.useEffect(() => {
+    console.log('Changed serviceNm:', watchedServiceNm);
     // 실제로 서비스명이 변경된 경우에만 질문 카테고리 초기화
     if (prevServiceNmRef.current && prevServiceNmRef.current !== watchedServiceNm) {
       setValue('qstCtgr', '');
@@ -134,6 +129,7 @@ const ApprovalManualForm: React.FC = () => {
 
   // qstCtgr 변경 시 부모 ID 관련 필드 validation 재실행
   React.useEffect(() => {
+    console.log('Changed qstCtgr:', watchedQstCtgr);
     if (hasTriedSubmit) {
       trigger(['parentId', 'parentIdName']);
     }
@@ -259,10 +255,10 @@ const ApprovalManualForm: React.FC = () => {
               name="qstCtgr"
               control={control}
               render={({ field }) => (
-                <GroupedSelectInput
+                <SelectInput
                   label="질문 카테고리"
                   value={field.value}
-                  optionGroups={filteredQuestionCategoryOptions}
+                  options={questionCategoryOptions}
                   onChange={field.onChange}
                   required
                   disabled={!watchedServiceNm}

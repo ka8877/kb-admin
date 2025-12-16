@@ -14,6 +14,10 @@ import {
   fetchRecommendedQuestions,
   fetchRecommendedQuestion,
   fetchApprovalDetailQuestions,
+  fetchServiceCodeOptions,
+  fetchCodeItems,
+  fetchServiceMappings,
+  fetchQuestionMappings,
   createRecommendedQuestion,
   createRecommendedQuestionsBatch,
   updateRecommendedQuestion,
@@ -251,4 +255,98 @@ export const useDeleteRecommendedQuestions = () => {
       });
     },
   });
+};
+
+/**
+ * 서비스 옵션 목록 조회 훅
+ * code_group_id: 1765259941522 인 공통 코드를 조회
+ */
+export const useServiceCodeOptions = () => {
+  return useQuery({
+    queryKey: ['serviceCodeOptions', 1765259941522],
+    queryFn: fetchServiceCodeOptions,
+    staleTime: 1000 * 60 * 5, // 5분간 캐시 유지
+    placeholderData: [],
+  });
+};
+
+const SERVICE_NM_GROUP_ID = 1765259941522;
+const SERVICE_CD_GROUP_ID = 1765260502337;
+
+/**
+ * 서비스명에 따라 동적으로 질문 카테고리 목록을 반환하는 훅
+ * (DB 매핑 구조 기반: service_nm -> service_cd -> qst_ctgr)
+ */
+export const useQuestionCategoriesByService = (serviceInput: string | undefined) => {
+  // 1. 모든 코드 아이템 조회
+  const { data: codeItems = [] } = useQuery({
+    queryKey: ['codeItems'],
+    queryFn: fetchCodeItems,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // 2. 서비스 매핑 조회 (service_nm ↔ service_cd)
+  const { data: serviceMappings = [] } = useQuery({
+    queryKey: ['serviceMappings'],
+    queryFn: fetchServiceMappings,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // 3. 질문 매핑 조회 (service_cd ↔ qst_ctgr)
+  const { data: questionMappings = [] } = useQuery({
+    queryKey: ['questionMappings'],
+    queryFn: fetchQuestionMappings,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return useMemo(() => {
+    if (!serviceInput || !codeItems.length) return [];
+
+    let serviceCodeItem: any;
+
+    // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
+    serviceCodeItem = codeItems.find(
+      (item) =>
+        item.code_group_id === SERVICE_CD_GROUP_ID &&
+        (item.code === serviceInput || item.code_name === serviceInput),
+    );
+
+    // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
+    if (!serviceCodeItem) {
+      const serviceNameItem = codeItems.find(
+        (item) =>
+          item.code_group_id === SERVICE_NM_GROUP_ID &&
+          (item.code === serviceInput || item.code_name === serviceInput),
+      );
+
+      if (serviceNameItem) {
+        const serviceMapping = serviceMappings.find(
+          (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
+        );
+        if (serviceMapping) {
+          serviceCodeItem = codeItems.find(
+            (item) => item.firebaseKey === serviceMapping.child_code_item_id,
+          );
+        }
+      }
+    }
+
+    if (!serviceCodeItem) return [];
+
+    // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
+    const relatedQuestionMappings = questionMappings.filter(
+      (m) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
+    );
+
+    const questionCategoryIds = new Set(relatedQuestionMappings.map((m) => m.child_code_item_id));
+
+    // 4. qst_ctgr 아이템 정보 반환
+    return codeItems
+      .filter((item) => questionCategoryIds.has(item.firebaseKey))
+      .map((item) => ({
+        label: item.code_name,
+        value: item.code,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [serviceInput, codeItems, serviceMappings, questionMappings]);
 };

@@ -31,6 +31,33 @@ import {
 import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
 
 /**
+ * 코드 아이템 타입 정의
+ */
+export interface CodeItem {
+  firebaseKey: string;
+  code_item_id: number;
+  code_group_id: number;
+  group_code?: string;
+  code: string;
+  code_name: string;
+  sort_order: number;
+  is_active: number;
+  description: string | null;
+}
+
+/**
+ * 코드 매핑 타입 정의
+ */
+export interface CodeMapping {
+  firebaseKey: string;
+  mapping_type: 'SERVICE' | 'QUESTION';
+  parent_code_item_id: string;
+  child_code_item_id: string;
+  sort_order: number;
+  is_active: number;
+}
+
+/**
  * Firebase 응답 데이터를 RecommendedQuestionItem으로 변환하는 헬퍼 함수
  */
 const transformItem = (
@@ -681,4 +708,96 @@ export const deleteRecommendedQuestions = async (
   } finally {
     useLoadingStore.getState().stop();
   }
+};
+
+/**
+ * 서비스 옵션 코드 그룹 ID (고정값)
+ */
+const SERVICE_CODE_GROUP_ID = 1765259941522;
+
+/**
+ * 서비스 옵션 목록 조회 (공통 코드에서 조회)
+ * code_group_id: 1765259941522 인 항목들을 조회하여 label/value 형태로 반환
+ */
+export const fetchServiceCodeOptions = async (): Promise<{ label: string; value: string }[]> => {
+  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
+    errorMessage: '서비스 옵션 목록을 불러오지 못했습니다.',
+  });
+
+  let items: any[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data;
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    items = Object.values(response.data);
+  }
+
+  return items
+    .filter((item: any) => item && Number(item.code_group_id) === SERVICE_CODE_GROUP_ID)
+    .map((item: any) => ({
+      label: item.code_name || '',
+      value: item.code || '',
+    }))
+    .filter((item) => item.label && item.value)
+    .sort((a, b) => a.label.localeCompare(b.label));
+};
+
+/**
+ * 모든 코드 아이템 조회
+ */
+export const fetchCodeItems = async (): Promise<CodeItem[]> => {
+  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
+    errorMessage: '코드 아이템 목록을 불러오는데 실패했습니다.',
+  });
+
+  let items: CodeItem[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data;
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    // Firebase 객체 형태를 배열로 변환하면서 key를 firebaseKey로 주입
+    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+      ...value,
+      firebaseKey: key,
+    }));
+  }
+  return items;
+};
+
+/**
+ * 서비스 매핑 목록 조회
+ */
+export const fetchServiceMappings = async (): Promise<CodeMapping[]> => {
+  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
+    errorMessage: '서비스 매핑 정보를 불러오는데 실패했습니다.',
+  });
+
+  let items: CodeMapping[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data;
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+      ...value,
+      firebaseKey: key,
+    }));
+  }
+  return items.filter((item) => item.mapping_type === 'SERVICE');
+};
+
+/**
+ * 질문 매핑 목록 조회
+ */
+export const fetchQuestionMappings = async (): Promise<CodeMapping[]> => {
+  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
+    errorMessage: '질문 매핑 정보를 불러오는데 실패했습니다.',
+  });
+
+  let items: CodeMapping[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data;
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+      ...value,
+      firebaseKey: key,
+    }));
+  }
+  return items.filter((item) => item.mapping_type === 'QUESTION');
 };
