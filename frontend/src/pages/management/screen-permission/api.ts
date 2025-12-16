@@ -62,11 +62,14 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
     MENU_DEPTH?: number | string;
     menu_depth?: number | string;
     sort_order?: number | string;
+    is_active?: number;
   };
 
   const allEntries = Object.entries(response.data) as Array<[string, RawMenu]>;
-  // 홈('/') 항목은 화면 목록/권한 대상에서 제외
-  const rawEntries = allEntries.filter(([, d]) => d.menu_path !== '/');
+  // 홈('/') 항목과 비활성화된 메뉴(is_active=0)는 화면 목록/권한 대상에서 제외
+  const rawEntries = allEntries.filter(
+    ([, d]) => d.menu_path !== '/' && (d.is_active === undefined || d.is_active === 1),
+  );
 
   const getDepth = (d: RawMenu): number => {
     const v = (d.MENU_DEPTH ?? d.menu_depth) as any;
@@ -136,10 +139,12 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
       value.children = kids.sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   });
 
-  return roots
+  const result = roots
     .map((rid) => byId.get(rid)!)
     .filter(Boolean)
     .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)) as MenuTreeItem[];
+
+  return result;
 };
 
 /**

@@ -48,65 +48,7 @@ export const ROUTES = {
   USER_ROLE_CHANGE: '/history/user-role-change',
 } as const;
 
-export const frontMenus: MenuItem[] = [
-  {
-    label: '데이터 등록/노출',
-    path: ROUTES.DATA_REG,
-    children: [
-      {
-        label: '데이터 등록',
-        path: ROUTES.DATA_REG,
-        children: [
-          {
-            label: '추천 질문',
-            path: ROUTES.RECOMMENDED_QUESTIONS,
-          },
-          {
-            label: '앱스킴',
-            path: ROUTES.APP_SCHEME,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: '관리',
-    path: ROUTES.MANAGEMENT,
-    children: [
-      {
-        label: '공통 코드 관리',
-        path: ROUTES.COMMON_CODE,
-      },
-      {
-        label: '사용자 관리',
-        path: ROUTES.ADMIN_AUTH,
-      },
-      {
-        label: '메뉴 관리',
-        path: ROUTES.MENU_MANAGEMENT,
-      },
-      {
-        label: '권한 관리',
-        path: ROUTES.PERMISSION_MANAGEMENT,
-      },
-      {
-        label: '화면 권한 관리',
-        path: ROUTES.SCREEN_PERMISSION,
-      },
-    ],
-  },
-  {
-    label: '이력',
-    path: ROUTES.HISTORY,
-    children: [
-      {
-        label: '로그인 이력',
-        path: ROUTES.USER_LOGIN,
-      },
-      {
-        label: '사용자 역할 변경 이력',
-        path: ROUTES.USER_ROLE_CHANGE,
-      },
-    ],
-  },
-];
+// Firebase management/menu.json에서 동적으로 로드
+// useMenuPermissions 훅에서 fetchMenuTree API를 통해 메뉴 데이터를 가져옵니다.
+// 하드코딩된 메뉴는 사용하지 않습니다.
+export const frontMenus: MenuItem[] = [];

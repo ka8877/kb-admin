@@ -56,9 +56,8 @@ export default function QuestionMappingSection() {
 
       return {
         firebaseKey: item.firebaseKey || '',
-        code: item.code,
-        code_name: item.code_name,
-        service_name: serviceNameItem?.code_name || item.code_name,
+        service_code: item.code_name, // service_cd의 code_name이 서비스코드
+        service_name: serviceNameItem?.code_name || item.code_name, // service_nm의 code_name이 서비스명
         is_active: item.is_active,
       };
     });
@@ -216,7 +215,7 @@ export default function QuestionMappingSection() {
                     {service.service_name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {service.code}
+                    {service.service_code}
                   </Typography>
                 </Box>
               </MediumButton>

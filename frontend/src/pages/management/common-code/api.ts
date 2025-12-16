@@ -156,25 +156,11 @@ const transformCodeItems = (raw: unknown): CodeItem[] => {
   // 객체 형태 응답
   if (typeof raw === 'object' && raw !== null) {
     const entries = Object.entries(raw as Record<string, any>);
-    console.log('🔍 Firebase 원본 데이터 변환:', entries.length, '개');
 
     const transformed = entries
       .map(([firebaseKey, value], index) => {
         const v = value as Partial<CodeItem> & Record<string, any>;
-        const result = transformCodeItemItem(
-          { ...v, firebaseKey },
-          { index, fallbackId: firebaseKey },
-        );
-
-        if (result && (result.code_item_id === 0 || isNaN(result.code_item_id))) {
-          console.warn(`⚠️ Invalid code_item_id for firebaseKey=${firebaseKey}:`, {
-            original_code_item_id: v.code_item_id,
-            result_code_item_id: result.code_item_id,
-            code: result.code,
-          });
-        }
-
-        return result;
+        return transformCodeItemItem({ ...v, firebaseKey }, { index, fallbackId: firebaseKey });
       })
       .filter((item): item is CodeItem => item !== null);
 
@@ -294,8 +280,6 @@ export interface FetchCodeItemsParams {
 export const fetchCodeItems = async (params?: FetchCodeItemsParams): Promise<CodeItemDisplay[]> => {
   const { codeGroupId, isActive } = params || {};
 
-  console.log('🔍 코드아이템 목록 조회 파라미터:', { codeGroupId, isActive });
-
   // 코드아이템 조회
   const response = await getApi<CodeItem[]>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
     baseURL: env.testURL,
@@ -310,20 +294,10 @@ export const fetchCodeItems = async (params?: FetchCodeItemsParams): Promise<Cod
     errorMessage: '코드그룹 데이터를 불러오지 못했습니다.',
   });
 
-  console.log('📦 Firebase에서 받은 전체 코드아이템:', response.data);
-  console.log('📦 Firebase에서 받은 전체 코드그룹:', groupsResponse.data);
-
-  // 클라이언트 사이드 필터링 (Firebase의 경우)
+  // 클라이언트 사이드 필터링
   let filteredData = response.data;
   if (codeGroupId !== undefined) {
-    console.log('🔍 code_group_id로 필터링 시작. 찾는 ID:', codeGroupId);
-    filteredData = filteredData.filter((item) => {
-      console.log(
-        `   - item.code_group_id: ${item.code_group_id} (타입: ${typeof item.code_group_id}), 비교 대상: ${codeGroupId} (타입: ${typeof codeGroupId}), 일치: ${item.code_group_id === codeGroupId}`,
-      );
-      return item.code_group_id === codeGroupId;
-    });
-    console.log('✅ 필터링 후 결과:', filteredData);
+    filteredData = filteredData.filter((item) => item.code_group_id === codeGroupId);
   }
   if (isActive !== undefined) {
     filteredData = filteredData.filter((item) => item.is_active === isActive);
@@ -412,8 +386,6 @@ export const updateCodeItem = async (
   // Firebase 키가 있으면 해당 키로 업데이트, 없으면 code_item_id 사용
   const endpointKey = firebaseKey || codeItemId;
 
-  console.log('🔧 코드아이템 수정 요청:', { codeItemId, firebaseKey, endpointKey, updateData });
-
   const response = await putApi<CodeItem>(
     API_ENDPOINTS.COMMON_CODE.CODE_ITEM_UPDATE(endpointKey),
     updateData,
@@ -423,7 +395,6 @@ export const updateCodeItem = async (
     },
   );
 
-  console.log('✅ 코드아이템 수정 완료:', response.data);
   return response.data;
 };
 
@@ -490,19 +461,12 @@ export const createCodeItem = async (
  * 코드아이템 삭제
  */
 export const deleteCodeItem = async (codeItemId: number, firebaseKey?: string): Promise<void> => {
-  // Firebase 키가 있으면 해당 키로 삭제, 없으면 code_item_id 사용
   const endpointKey = firebaseKey || codeItemId;
-  console.log('삭제 요청:', { codeItemId, firebaseKey, endpointKey });
 
-  await deleteApi(
-    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DELETE(
-      typeof endpointKey === 'number' ? endpointKey : Number(endpointKey),
-    ),
-    {
-      baseURL: env.testURL,
-      errorMessage: '코드아이템 삭제에 실패했습니다.',
-    },
-  );
+  await deleteApi(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DELETE(endpointKey), {
+    baseURL: env.testURL,
+    errorMessage: '코드아이템 삭제에 실패했습니다.',
+  });
 };
 
 /**
@@ -542,164 +506,7 @@ export const deleteCodeItems = async (
   if (!response.ok) {
     throw new Error(`코드아이템 일괄 삭제에 실패했습니다. (${response.status})`);
   }
-
-  console.log(`코드아이템 ${items.length}개 항목이 삭제되었습니다.`);
 };
-
-// ======================
-// 코드 매핑 (cm_code_mapping) API
-// ======================
-// TODO: ServiceMapping, QuestionMapping으로 교체 예정
-/*
-const transformCodeMappingItem = (
-  v: Partial<any> & Record<string, any>,
-  options: { index: number; fallbackId?: string | number },
-): any | null => {
-  const { fallbackId } = options;
-
-  if (!v.parent_code_item_id || !v.child_code_item_id) {
-    return null;
-  }
-
-  return {
-    code_mapping_id: v.code_mapping_id || (fallbackId ? Number(fallbackId) : 0),
-    mapping_type: v.mapping_type || 'DEFAULT',
-    parent_code_item_id: v.parent_code_item_id,
-    child_code_item_id: v.child_code_item_id,
-    sort_order: v.sort_order ?? 0,
-    is_active: v.is_active ?? 1,
-    created_by: v.created_by || 0,
-    created_at: v.created_at || new Date().toISOString(),
-    updated_by: v.updated_by || null,
-    updated_at: v.updated_at || null,
-  };
-};
-
-const transformCodeMappings = (raw: unknown): any[] => {
-  if (!raw) return [];
-
-  if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, any>);
-    return entries
-      .map(([firebaseKey, value], index) => {
-        const v = value as Partial<any> & Record<string, any>;
-        return transformCodeMappingItem(v, { index, fallbackId: firebaseKey });
-      })
-      .filter((item): item is any => item !== null);
-  }
-
-  return [];
-};
-
-export const fetchCodeMappings = async (params?: {
-  parentCodeItemId?: number;
-  childCodeItemId?: number;
-}): Promise<any[]> => {
-  const response = await getApi<any[]>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
-    baseURL: env.testURL,
-    transform: transformCodeMappings,
-    errorMessage: '코드 매핑 데이터를 불러오지 못했습니다.',
-  });
-
-  let filteredData = response.data;
-
-  if (params?.parentCodeItemId) {
-    filteredData = filteredData.filter(
-      (item) => item.parent_code_item_id === params.parentCodeItemId,
-    );
-  }
-  if (params?.childCodeItemId) {
-    filteredData = filteredData.filter(
-      (item) => item.child_code_item_id === params.childCodeItemId,
-    );
-  }
-
-  return filteredData;
-};
-
-export const createCodeMapping = async (
-  data: any,
-): Promise<any> => {
-  const timestamp = Date.now();
-  const code_mapping_id = timestamp;
-
-  const newData = {
-    ...data,
-    code_mapping_id,
-    created_by: 1,
-    created_at: new Date().toISOString(),
-  };
-
-  const response = await postApi<any>(
-    API_ENDPOINTS.COMMON_CODE.CODE_MAPPING_CREATE,
-    newData,
-    {
-      baseURL: env.testURL,
-      errorMessage: '코드 매핑 생성에 실패했습니다.',
-    },
-  );
-
-  return response.data;
-};
-
-export const updateCodeMapping = async (
-  codeMappingId: number,
-  data: any,
-): Promise<any> => {
-  const updateData = {
-    ...data,
-    updated_by: 1,
-    updated_at: new Date().toISOString(),
-  };
-
-  const response = await putApi<any>(
-    API_ENDPOINTS.COMMON_CODE.CODE_MAPPING_UPDATE(codeMappingId),
-    updateData,
-    {
-      baseURL: env.testURL,
-      errorMessage: '코드 매핑 수정에 실패했습니다.',
-    },
-  );
-
-  return response.data;
-};
-
-export const deleteCodeMapping = async (codeMappingId: number): Promise<void> => {
-  await deleteApi(API_ENDPOINTS.COMMON_CODE.CODE_MAPPING_DELETE(codeMappingId), {
-    baseURL: env.testURL,
-    errorMessage: '코드 매핑 삭제에 실패했습니다.',
-  });
-};
-
-export const deleteCodeMappingsByParent = async (parentCodeItemId: number): Promise<void> => {
-  const mappings = await fetchCodeMappings({ parentCodeItemId });
-
-  if (mappings.length === 0) {
-    return;
-  }
-
-  const updates: { [key: string]: null } = {};
-  mappings.forEach((mapping) => {
-    const path = `${codeMappingsBasePath}/${mapping.code_mapping_id}`;
-    updates[path] = null;
-  });
-
-  const databaseUrl = env.testURL.replace(/\/$/, '');
-  const updatesUrl = `${databaseUrl}/.json`;
-
-  const response = await fetch(updatesUrl, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(updates),
-  });
-
-  if (!response.ok) {
-    throw new Error(`코드 매핑 일괄 삭제에 실패했습니다. (${response.status})`);
-  }
-};
-*/
 
 // ======================
 // ServiceMapping (서비스코드 ↔ 서비스명) API

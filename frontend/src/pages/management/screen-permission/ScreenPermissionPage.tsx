@@ -53,7 +53,7 @@ export default function ScreenPermissionPage() {
       setSelectedMenuIds(new Set());
       setHasChanges(false);
     }
-  }, [screenPermissions, selectedPermission]);
+  }, [screenPermissions, selectedPermission?.permission_id]);
 
   const handlePermissionSelect = useCallback((params: { row: PermissionDisplay }) => {
     setSelectedPermission(params.row);

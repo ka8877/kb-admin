@@ -11,6 +11,7 @@ type CodeItemFormProps = {
   selectedItem: CodeItemDisplay | null;
   isNew: boolean;
   selectedCodeGroupId: number | null;
+  groupCode?: string; // 코드그룹 코드 (service_nm 등)
   initialSortOrder?: number; // 추가 시 기본 정렬순서
   onSave: (
     item: Omit<
@@ -35,6 +36,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
   selectedItem,
   isNew,
   selectedCodeGroupId,
+  groupCode,
   initialSortOrder = 0,
   onSave,
   onCancel,
@@ -122,19 +124,6 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
             <TextField
               fullWidth
               size="small"
-              label="코드 (선택)"
-              value={formData.code || ''}
-              onChange={(e) => handleChange('code', e.target.value)}
-              disabled={disabled}
-              placeholder="비워두면 자동 생성됩니다"
-              error={!!fieldErrors.code}
-              helperText={fieldErrors.code || '입력하지 않으면 자동으로 생성됩니다'}
-            />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <TextField
-              fullWidth
-              size="small"
               label="코드명"
               value={formData.code_name || ''}
               onChange={(e) => handleChange('code_name', e.target.value)}
@@ -145,9 +134,6 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               helperText={fieldErrors.code_name}
             />
           </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={2}>
           <Box sx={{ flex: 1 }}>
             <TextField
               fullWidth
@@ -159,6 +145,9 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               disabled={disabled}
             />
           </Box>
+        </Stack>
+
+        <Stack direction="row" spacing={2}>
           <Box sx={{ flex: 1 }}>
             <TextField
               select
@@ -173,6 +162,27 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               <MenuItem value={1}>사용</MenuItem>
               <MenuItem value={0}>미사용</MenuItem>
             </TextField>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label={groupCode === 'service_nm' ? '서비스코드' : '코드 (선택)'}
+              value={formData.code || ''}
+              onChange={(e) => handleChange('code', e.target.value)}
+              disabled={disabled}
+              placeholder={
+                groupCode === 'service_nm' ? '서비스코드 입력' : '비워두면 자동 생성됩니다'
+              }
+              error={!!fieldErrors.code}
+              helperText={
+                fieldErrors.code ||
+                (groupCode === 'service_nm'
+                  ? '서비스코드 값을 입력하세요 (예: service_01)'
+                  : '입력하지 않으면 자동으로 생성됩니다')
+              }
+              required={groupCode === 'service_nm'}
+            />
           </Box>
         </Stack>
 

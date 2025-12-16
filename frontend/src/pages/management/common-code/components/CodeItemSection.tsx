@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Stack, Box } from '@mui/material';
 import SortableList from '@/components/common/list/SortableList';
 import MediumButton from '@/components/common/button/MediumButton';
@@ -17,10 +17,12 @@ import {
 import type { CodeItem, CodeItemDisplay, CodeGroupDisplay } from '../types';
 import {
   useCodeItems,
+  useCodeGroups,
   useCreateCodeItem,
   useUpdateCodeItem,
   useDeleteCodeItem,
   useDeleteCodeItems,
+  useUpsertServiceMapping,
 } from '../hooks';
 
 interface CodeItemSectionProps {
@@ -37,10 +39,12 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
     refetch: refetchCodeItems,
   } = useCodeItems(selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined);
 
+  const { data: codeGroups = [] } = useCodeGroups();
   const createItemMutation = useCreateCodeItem();
   const updateItemMutation = useUpdateCodeItem();
   const deleteItemMutation = useDeleteCodeItem();
   const deleteItemsMutation = useDeleteCodeItems();
+  const upsertServiceMappingMutation = useUpsertServiceMapping();
 
   const [selectedItem, setSelectedItem] = useState<CodeItemDisplay | null>(null);
   const [isItemFormOpen, setIsItemFormOpen] = useState(false);
@@ -50,6 +54,63 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
   const [tempSortedItems, setTempSortedItems] = useState<CodeItemDisplay[]>([]); // 임시 순서 변경 데이터
   const [isSortChanged, setIsSortChanged] = useState(false); // 순서 변경 여부
   const [selectedItemIds, setSelectedItemIds] = useState<(string | number)[]>([]); // 선택된 아이템 ID
+
+  // 동적 컴럼 생성
+  const dynamicColumns = useMemo(() => {
+    if (selectedGroup?.group_code === 'service_nm') {
+      // service_nm: 정렬순서, 서비스코드(code), 서비스명(code_name), 사용여부
+      return [
+        {
+          field: 'sort_order',
+          headerName: '정렬순서',
+          width: 100,
+          align: 'center' as const,
+          headerAlign: 'center' as const,
+        },
+        {
+          field: 'code',
+          headerName: '서비스코드',
+          width: 150,
+        },
+        {
+          field: 'code_name',
+          headerName: '서비스명',
+          flex: 1,
+        },
+        {
+          field: 'is_active',
+          headerName: '사용여부',
+          width: 100,
+          align: 'center' as const,
+          headerAlign: 'center' as const,
+          renderCell: (params: any) => (params.value === 0 ? '미사용' : '사용'),
+        },
+      ];
+    }
+    // 다른 그룹: 정렬순서, 코드명(code_name), 사용여부 (코드는 숨김)
+    return [
+      {
+        field: 'sort_order',
+        headerName: '정렬순서',
+        width: 100,
+        align: 'center' as const,
+        headerAlign: 'center' as const,
+      },
+      {
+        field: 'code_name',
+        headerName: '코드명',
+        flex: 1,
+      },
+      {
+        field: 'is_active',
+        headerName: '사용여부',
+        width: 100,
+        align: 'center' as const,
+        headerAlign: 'center' as const,
+        renderCell: (params: any) => (params.value === 0 ? '미사용' : '사용'),
+      },
+    ];
+  }, [selectedGroup]);
 
   // selectedGroup이 변경될 때 코드아이템 자동 리프레시 및 상태 초기화
   useEffect(() => {
@@ -161,7 +222,38 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
           }
 
           console.log('Creating new item...');
-          await createItemMutation.mutateAsync(data);
+
+          // service_nm 그룹인 경우: service_cd 그룹에도 아이템 생성하고 매핑
+          if (selectedGroup?.group_code === 'service_nm') {
+            const serviceCdGroup = codeGroups.find((g) => g.group_code === 'service_cd');
+            if (serviceCdGroup) {
+              // 1. service_cd 그룹에 코드아이템 생성
+              // code = 자동생성, code_name = 입력한 서비스코드
+              const serviceCdData = {
+                code_group_id: serviceCdGroup.code_group_id,
+                code: '', // 자동 생성
+                code_name: data.code, // 서비스코드를 code_name으로
+                sort_order: data.sort_order,
+                is_active: data.is_active,
+              };
+              const serviceCdResult = await createItemMutation.mutateAsync(serviceCdData);
+
+              // 2. service_nm 그룹에 코드아이템 생성
+              const serviceNmResult = await createItemMutation.mutateAsync(data);
+
+              // 3. ServiceMapping 생성 (service_nm ↔ service_cd 연결)
+              await upsertServiceMappingMutation.mutateAsync({
+                mapping_type: 'SERVICE' as const,
+                parent_code_item_id: serviceNmResult.firebaseKey || serviceNmResult.code_item_id,
+                child_code_item_id: serviceCdResult.firebaseKey || serviceCdResult.code_item_id,
+                sort_order: 0,
+                is_active: 1,
+              });
+            }
+          } else {
+            // 일반 코드아이템 생성
+            await createItemMutation.mutateAsync(data);
+          }
 
           showAlert({
             title: ALERT_TITLES.SUCCESS,
@@ -223,10 +315,13 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
     [
       isNewItem,
       selectedItem,
+      selectedGroup,
+      codeGroups,
       checkItemCodeDuplicate,
       checkItemNameDuplicate,
       createItemMutation,
       updateItemMutation,
+      upsertServiceMappingMutation,
       showAlert,
     ],
   );
@@ -460,7 +555,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         <Box sx={{ flex: 1, minHeight: 0 }}>
           {selectedGroup ? (
             <SortableList
-              columns={codeItemColumns}
+              columns={dynamicColumns}
               rows={isItemSortMode && tempSortedItems.length > 0 ? tempSortedItems : codeItems}
               isLoading={isItemLoading}
               onRowClick={isItemSortMode || isItemSelectionMode ? undefined : handleItemRowClick}
@@ -493,6 +588,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
             selectedItem={isNewItem ? null : selectedItem}
             isNew={isNewItem}
             selectedCodeGroupId={selectedGroup.code_group_id}
+            groupCode={selectedGroup.group_code}
             initialSortOrder={
               isNewItem && codeItems.length > 0
                 ? Math.max(...codeItems.map((item) => item.sort_order)) + 1
