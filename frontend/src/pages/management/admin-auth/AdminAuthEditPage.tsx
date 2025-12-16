@@ -15,9 +15,9 @@ import CategoryList from '@/components/common/list/CategoryList';
 import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
-import { adminAuthMockDb } from '@/mocks/adminAuthDb';
-import { permissionMockDb } from '@/mocks/permissionDb';
 import { ALERT_MESSAGES } from '@/constants/message';
+import { fetchAdminAuthList, createAdminAuth, updateAdminAuth, deleteAdminAuth } from './api';
+import { fetchPermissions as fetchPermissionList } from '../permission/api';
 
 type LocalRow = RowItem & { isNew?: boolean };
 
@@ -31,15 +31,35 @@ const AdminAuthEditPage: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
   const [permissionOptions, setPermissionOptions] = useState<string[]>([]);
+  const [permissionNameByCode, setPermissionNameByCode] = useState<Record<string, string>>({});
+  const [allowedPermissionCodes, setAllowedPermissionCodes] = useState<Set<string>>(new Set());
+  const [permissionCodeByName, setPermissionCodeByName] = useState<Record<string, string>>({});
 
   const modifiedRef = useRef<Set<number>>(new Set());
   const hasFocusedRef = useRef(false);
 
   // Load permission options
   useEffect(() => {
-    permissionMockDb.listAll().then((permissions) => {
-      const options = permissions.filter((p) => p.status === '활성').map((p) => p.permission_id);
+    fetchPermissionList().then((permissions) => {
+      const active = permissions.filter((p) => p.status === '활성');
+      const options = active.map((p) => p.permission_id);
+      const nameMap: Record<string, string> = {};
+      const reverseNameToCode: Record<string, string> = {};
+      active.forEach((p) => {
+        nameMap[p.permission_id] = p.permission_name;
+        reverseNameToCode[String(p.permission_name).toUpperCase()] = String(
+          p.permission_id,
+        ).toUpperCase();
+      });
       setPermissionOptions(options);
+      setPermissionNameByCode(nameMap);
+      const codeSet = new Set<string>();
+      active.forEach((p) => {
+        const up = String(p.permission_id).toUpperCase();
+        codeSet.add(up);
+      });
+      setAllowedPermissionCodes(codeSet);
+      setPermissionCodeByName(reverseNameToCode);
     });
   }, []);
 
@@ -102,6 +122,8 @@ const AdminAuthEditPage: React.FC = () => {
         editable: true,
         type: 'singleSelect',
         valueOptions: permissionOptions,
+        valueFormatter: (params) =>
+          permissionNameByCode[String(params.value)] ?? String(params.value),
       },
       {
         field: 'approval_permission',
@@ -128,7 +150,7 @@ const AdminAuthEditPage: React.FC = () => {
     let mounted = true;
     setLoading(true);
 
-    adminAuthMockDb.listAll().then((data) => {
+    fetchAdminAuthList().then((data) => {
       if (!mounted) return;
       setRows(data as LocalRow[]);
       setLoading(false);
@@ -212,12 +234,21 @@ const AdminAuthEditPage: React.FC = () => {
         const rowsToValidate = rows.filter((r) => ids.includes(r.no));
 
         rowsToValidate.forEach((row) => {
+          // 이용권한은 권한관리 목록을 기준으로 체크
+          const up = String(row.use_permission || '').toUpperCase();
+          const normalized = permissionCodeByName[up] ?? up;
+          if (!allowedPermissionCodes.has(normalized)) {
+            validationErrors.push(
+              `${row.no}번 행: 올바른 이용권한을 선택해주세요 (${permissionOptions.join(', ')})`,
+            );
+          }
+
           const validationResult = AdminAuthValidator.validateAll({
             user_name: row.user_name,
             position: row.position,
             team_1st: row.team_1st,
             team_2nd: row.team_2nd,
-            use_permission: row.use_permission,
+            use_permission: normalized,
             approval_permission: row.approval_permission,
             status: row.status,
           });
@@ -260,18 +291,26 @@ const AdminAuthEditPage: React.FC = () => {
             const row = rows.find((r) => r.no === id);
             if (!row) return null;
 
+            // 권한 코드 정규화 (소문자/별칭 입력 방지)
+            const normalizePermission = (code: string): string => {
+              const upper = (code || '').toUpperCase();
+              return permissionCodeByName[upper] ?? upper;
+            };
+
+            const normalizedUsePerm = normalizePermission(row.use_permission as string);
+
             if (row.isNew) {
-              await adminAuthMockDb.create({
+              await createAdminAuth({
                 user_name: row.user_name,
                 position: row.position,
                 team_1st: row.team_1st,
                 team_2nd: row.team_2nd,
-                use_permission: row.use_permission,
+                use_permission: normalizedUsePerm,
                 approval_permission: row.approval_permission,
                 status: row.status,
               });
             } else {
-              await adminAuthMockDb.update(row.id, row);
+              await updateAdminAuth(row.id, { ...row, use_permission: normalizedUsePerm });
             }
           }),
         );
@@ -311,7 +350,7 @@ const AdminAuthEditPage: React.FC = () => {
         if (row.isNew) {
           setRows((prev) => prev.filter((r) => r.no !== row.no));
         } else {
-          await adminAuthMockDb.delete(row.id);
+          await deleteAdminAuth(row.id);
           setRows((prev) => prev.filter((r) => r.id !== row.id));
         }
       }

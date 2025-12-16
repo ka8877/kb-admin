@@ -7,6 +7,7 @@ import {
   fetchScreenPermissions,
   saveScreenPermissions,
   deleteScreenPermission,
+  updateMenuSortOrder,
 } from './api';
 import type { ScreenPermissionInput } from './types';
 
@@ -16,6 +17,7 @@ const screenPermissionKeys = {
   menuTree: () => [...screenPermissionKeys.all, 'menuTree'] as const,
   screenPermissions: (permissionId: number) =>
     [...screenPermissionKeys.all, 'screenPermissions', permissionId] as const,
+  menuSort: () => [...screenPermissionKeys.all, 'menuSort'] as const,
 };
 
 /**
@@ -85,6 +87,21 @@ export const useDeleteScreenPermission = () => {
       queryClient.invalidateQueries({
         queryKey: screenPermissionKeys.screenPermissions(variables.permissionId),
       });
+    },
+  });
+};
+
+/**
+ * 메뉴 정렬 순서 업데이트 훅
+ */
+export const useUpdateMenuSortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ menuId, sortOrder }: { menuId: string | number; sortOrder: number }) =>
+      updateMenuSortOrder(menuId, sortOrder),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: screenPermissionKeys.menuTree() });
     },
   });
 };

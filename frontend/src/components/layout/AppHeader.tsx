@@ -1,12 +1,9 @@
 import type React from 'react';
 import { AppBar, Box, Toolbar, Typography, Button, IconButton, Tooltip } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { APP_TITLE } from '@/constants';
 import type { MenuItem } from '@/routes/menu';
-import { useEffect, useState } from 'react';
-import { menuMockDb } from '@/mocks/menuDb';
-import { buildMenuTree } from '@/utils/menuUtils';
 import { logoutKeycloak } from '@/utils/keycloak';
 
 // Global application top bar (앱 전역 헤더)
@@ -15,6 +12,7 @@ export type AppHeaderProps = {
   title?: string;
   drawerWidth?: number;
   right?: React.ReactNode;
+  menus?: MenuItem[];
 };
 
 const isPathUnderMenu = (menu: MenuItem, pathname: string): boolean => {
@@ -32,23 +30,17 @@ const isPathUnderMenu = (menu: MenuItem, pathname: string): boolean => {
   return false;
 };
 
-const AppHeader: React.FC<AppHeaderProps> = ({ title = APP_TITLE, drawerWidth = 0, right }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  title = APP_TITLE,
+  drawerWidth = 0,
+  right,
+  menus = [],
+}) => {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const [menus, setMenus] = useState<MenuItem[]>([]);
 
   const handleLogout = () => {
     logoutKeycloak();
   };
-
-  useEffect(() => {
-    const loadMenus = async () => {
-      const menuItems = await menuMockDb.listAll();
-      const tree = buildMenuTree(menuItems);
-      setMenus(tree);
-    };
-    loadMenus();
-  }, []);
 
   return (
     <AppBar

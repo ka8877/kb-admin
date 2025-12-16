@@ -8,16 +8,16 @@ import EditableList from '@/components/common/list/EditableList';
 import MediumButton from '@/components/common/button/MediumButton';
 import Section from '@/components/layout/Section';
 import { ROUTES } from '@/routes/menu';
-import { adminAuthMockDb } from '@/mocks/adminAuthDb';
 import { listColumns } from './components/columns';
 import type { RowItem } from './types';
+import { fetchAdminAuthList } from './api';
 
 const AdminAuthPage: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<RowItem[]>([]);
 
   useEffect(() => {
-    adminAuthMockDb.listAll().then((rows) => setData(rows));
+    fetchAdminAuthList().then((rows) => setData(rows));
   }, []);
 
   const handleEdit = useCallback(() => {
@@ -133,7 +133,7 @@ const AdminAuthPage: React.FC = () => {
         </Box>
         <EditableList
           columns={listColumns}
-          fetcher={async () => await adminAuthMockDb.listAll()}
+          fetcher={async () => await fetchAdminAuthList()}
           rowIdGetter={(r: RowItem) => r.id}
           defaultPageSize={25}
           pageSizeOptions={[10, 25, 50, 100]}

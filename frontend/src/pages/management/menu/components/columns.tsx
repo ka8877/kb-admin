@@ -1,8 +1,8 @@
 // frontend/src/pages/management/menu/components/columns.tsx
 import type { GridColDef } from '@mui/x-data-grid';
-import type { RowItem } from '../types';
+import type { MenuItemDisplay } from '../types';
 
-export const menuColumns: GridColDef<RowItem>[] = [
+export const menuColumns: GridColDef<MenuItemDisplay>[] = [
   {
     field: 'no',
     headerName: 'No',
@@ -12,54 +12,40 @@ export const menuColumns: GridColDef<RowItem>[] = [
     headerAlign: 'center',
   },
   {
-    field: 'screen_id',
-    headerName: '화면 ID',
+    field: 'menu_code',
+    headerName: '메뉴 코드',
     width: 180,
   },
   {
-    field: 'screen_name',
-    headerName: '화면명',
+    field: 'menu_name',
+    headerName: '메뉴명',
     width: 200,
   },
   {
-    field: 'path',
-    headerName: 'PATH',
+    field: 'menu_path',
+    headerName: '라우트 경로',
     width: 250,
     flex: 1,
   },
   {
-    field: 'depth',
-    headerName: 'DEPTH',
+    field: 'sort_order',
+    headerName: '정렬 순서',
     width: 80,
     align: 'center',
     headerAlign: 'center',
   },
   {
-    field: 'order',
-    headerName: '순서',
-    width: 80,
-    align: 'center',
-    headerAlign: 'center',
-  },
-  {
-    field: 'parent_screen_id',
-    headerName: '상위화면 ID',
+    field: 'parent_menu_code',
+    headerName: '상위메뉴 코드',
     width: 150,
-    valueGetter: (params) => params.row?.parent_screen_id || '-',
+    valueGetter: (params) => params.row?.parent_menu_code || '-',
   },
   {
-    field: 'screen_type',
-    headerName: '화면타입',
-    width: 100,
-    align: 'center',
-    headerAlign: 'center',
-  },
-  {
-    field: 'display_yn',
+    field: 'is_active',
     headerName: '표시여부',
     width: 100,
     align: 'center',
     headerAlign: 'center',
-    renderCell: (params) => (params.value === 'Y' ? '표시' : '숨김'),
+    renderCell: (params) => (params.value === 1 ? '표시' : '숨김'),
   },
 ];

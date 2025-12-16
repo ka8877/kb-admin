@@ -51,12 +51,12 @@ const ExcelEditActions: React.FC<ExcelEditActionsProps> = ({
         </Typography>
         <Stack direction="row" spacing={1}>
           {onAddRow && (
-            <MediumButton variant="contained" color="primary" onClick={onAddRow}>
+            <MediumButton variant="contained" color="primary" onClick={onAddRow} subType="c">
               행 추가
             </MediumButton>
           )}
           {selectedCount > 0 && onDelete && (
-            <MediumButton variant="outlined" color="error" onClick={handleDeleteClick}>
+            <MediumButton variant="outlined" color="error" onClick={handleDeleteClick} subType="d">
               삭제 ({selectedCount})
             </MediumButton>
           )}

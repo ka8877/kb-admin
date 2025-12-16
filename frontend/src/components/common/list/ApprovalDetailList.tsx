@@ -100,7 +100,12 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
       {/* 최종 결재 버튼 (그리드 오른쪽 하단) */}
       {shouldShowButton && (
         <Box display="flex" justifyContent="flex-end">
-          <MediumButton variant="contained" onClick={handleFinalApprovalClick} size="medium">
+          <MediumButton
+            variant="contained"
+            onClick={handleFinalApprovalClick}
+            size="medium"
+            subType="u"
+          >
             {finalApprovalButtonLabel}
           </MediumButton>
         </Box>

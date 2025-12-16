@@ -21,7 +21,7 @@ export interface AdminAuthData {
   position?: string;
   team_1st?: string;
   team_2nd?: string;
-  use_permission?: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  use_permission?: string; // 동적 권한 코드 지원
   approval_permission?: '요청자' | '결재자';
   status?: '활성' | '비활성';
 }
@@ -129,15 +129,7 @@ export class AdminAuthValidator {
     if (!value || String(value).trim() === '') {
       return { isValid: false, message: '이용권한은 필수입니다' };
     }
-
-    const validPermissions = ['ADMIN', 'OPERATOR', 'VIEWER'];
-    if (!validPermissions.includes(String(value))) {
-      return {
-        isValid: false,
-        message: '올바른 이용권한을 선택해주세요 (ADMIN, OPERATOR, VIEWER)',
-      };
-    }
-
+    // 코드 유효성은 화면에서 권한관리 데이터(allowedPermissionCodes)로 별도 검증
     return { isValid: true };
   }
 

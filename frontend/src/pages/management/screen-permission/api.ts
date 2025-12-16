@@ -1,9 +1,8 @@
 // 화면 권한 관리 API
 
-import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
+import { getApi, postApi, putApi, deleteApi, patchApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
-import { permissionMockDb } from '@/mocks/permissionDb';
 import type { Permission, MenuTreeItem, ScreenPermission, ScreenPermissionInput } from './types';
 
 // Firebase POST 응답 타입
@@ -12,23 +11,28 @@ interface FirebasePostResponse {
 }
 
 const screenPermissionBasePath = 'management/screen-permission';
+const menuBasePath = 'management/menu';
 
 /**
  * 권한 목록 조회
  */
 export const fetchPermissions = async (): Promise<Permission[]> => {
-  // Mock 데이터 사용 (권한은 별도 관리)
-  const permissions = await permissionMockDb.listAll();
+  const res = await getApi<Record<string, any>>(API_ENDPOINTS.PERMISSION.LIST, {
+    baseURL: env.testURL,
+    errorMessage: '권한 목록을 불러오지 못했습니다.',
+  });
 
-  // PermissionItem을 Permission으로 변환
-  return permissions.map((item) => ({
-    permission_id: typeof item.id === 'number' ? item.id : parseInt(String(item.id)),
-    permission_code: item.permission_id,
+  if (!res.data || typeof res.data !== 'object') return [];
+
+  return Object.entries(res.data).map(([firebaseKey, item], idx) => ({
+    permission_id: idx + 1,
+    permission_code: item.permission_id ?? firebaseKey,
     permission_name: item.permission_name,
-    description: undefined,
-    is_active: item.status === '활성' ? 1 : 0,
+    description: item.description,
+    is_active: item.status === '비활성' ? 0 : (item.is_active ?? 1),
     created_at: item.created_at || '',
     updated_at: item.updated_at || null,
+    firebaseKey,
   }));
 };
 
@@ -45,62 +49,97 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
     return [];
   }
 
-  // display_yn = 'Y'이고 홈이 아닌 항목만 필터링
-  const visibleItems = Object.entries(response.data)
-    .map(([firebaseKey, data]: [string, any]) => ({
-      id: firebaseKey,
-      menu_code: data.menu_code,
-      menu_name: data.menu_name,
-      menu_path: data.menu_path,
-      parent_menu_code: data.parent_menu_code,
-      sort_order: data.sort_order,
-      is_active: data.is_active,
-    }))
-    .filter((item) => item.is_active === 1 && item.menu_path !== '/');
+  // Firebase menu 데이터를 MenuTreeItem[] 형식으로 변환 (코드/부모코드/깊이 지원)
+  type RawMenu = {
+    menu_name: string;
+    menu_path: string;
+    menu_code?: string;
+    parent_menu_code?: string;
+    MENU_CODE?: string;
+    PARENT_MENU_CODE?: string;
+    parent_menu_id?: string;
+    parent_screen_id?: string;
+    MENU_DEPTH?: number | string;
+    menu_depth?: number | string;
+    sort_order?: number | string;
+  };
 
-  // ID로 빠른 조회를 위한 맵
-  const itemMap = new Map<string | number, MenuTreeItem>();
-  const childrenMap = new Map<string | number, MenuTreeItem[]>();
+  const allEntries = Object.entries(response.data) as Array<[string, RawMenu]>;
+  // 홈('/') 항목은 화면 목록/권한 대상에서 제외
+  const rawEntries = allEntries.filter(([, d]) => d.menu_path !== '/');
 
-  // 각 항목을 MenuTreeItem 형식으로 변환
-  visibleItems.forEach((item) => {
-    const menuItem: MenuTreeItem = {
-      id: item.id,
-      label: item.menu_name,
-      path: item.menu_path,
+  const getDepth = (d: RawMenu): number => {
+    const v = (d.MENU_DEPTH ?? d.menu_depth) as any;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
+    // fallback: 부모코드/부모ID의 존재 여부로 추론
+    return d.parent_menu_code || d.PARENT_MENU_CODE || d.parent_screen_id || d.parent_menu_id
+      ? 1
+      : 0;
+  };
+
+  const getCode = (d: RawMenu): string | undefined => d.menu_code || d.MENU_CODE;
+  const getParentCode = (d: RawMenu): string | undefined =>
+    d.parent_menu_code || d.PARENT_MENU_CODE;
+  const getSortOrder = (d: RawMenu): number => {
+    const v = d.sort_order;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
+    return 9999; // 기본 크게 설정해 뒤로 정렬
+  };
+
+  // 1) 기본 맵 구성
+  const byId = new Map<string, MenuTreeItem>();
+  const byCode = new Map<string, string>(); // code -> id(firebaseKey)
+
+  rawEntries.forEach(([id, data]) => {
+    const item: MenuTreeItem = {
+      id,
+      label: data.menu_name,
+      path: data.menu_path,
+      depth: getDepth(data),
+      sort_order: getSortOrder(data),
     };
-    itemMap.set(item.id, menuItem);
-    childrenMap.set(item.id, []);
+    byId.set(id, item);
+    const code = getCode(data);
+    if (code) byCode.set(code, id);
   });
 
-  // 부모-자식 관계 구성
-  const tree: MenuTreeItem[] = [];
-  visibleItems.forEach((item) => {
-    const menuItem = itemMap.get(item.id)!;
+  // 2) 트리 구성: parent_menu_code 우선, 없으면 parent_screen_id, 그다음 parent_menu_id, 마지막으로 depth 기반
+  const childrenMap = new Map<string, MenuTreeItem[]>();
+  rawEntries.forEach(([id]) => childrenMap.set(id, []));
 
-    if (!item.parent_menu_code) {
-      // 최상위 메뉴
-      tree.push(menuItem);
+  const roots: string[] = [];
+
+  rawEntries.forEach(([id, data]) => {
+    const parentCode = getParentCode(data);
+    const parentIdByCode = parentCode ? byCode.get(parentCode) : undefined;
+    const parentId =
+      parentIdByCode ??
+      (data.parent_screen_id ? String(data.parent_screen_id) : undefined) ??
+      (data.parent_menu_id ? String(data.parent_menu_id) : undefined);
+
+    if (parentId && byId.has(parentId)) {
+      childrenMap.get(parentId)!.push(byId.get(id)!);
+    } else if ((byId.get(id)?.depth ?? 0) === 0) {
+      roots.push(id);
     } else {
-      // 하위 메뉴 - parent_menu_code로 부모 찾기
-      const parent = Array.from(itemMap.values()).find(
-        (m) => visibleItems.find((i) => i.id === m.id)?.menu_code === item.parent_menu_code,
-      );
-      if (parent && childrenMap.has(parent.id)) {
-        childrenMap.get(parent.id)!.push(menuItem);
-      }
+      // depth>0인데 부모 못 찾으면 루트로 승격
+      roots.push(id);
     }
   });
 
-  // 자식 항목을 부모에 연결
-  itemMap.forEach((menuItem, id) => {
-    const children = childrenMap.get(id);
-    if (children && children.length > 0) {
-      menuItem.children = children;
-    }
+  // 3) 자식 연결 및 트리 반환
+  byId.forEach((value, id) => {
+    const kids = childrenMap.get(id);
+    if (kids && kids.length)
+      value.children = kids.sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   });
 
-  return tree;
+  return roots
+    .map((rid) => byId.get(rid)!)
+    .filter(Boolean)
+    .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)) as MenuTreeItem[];
 };
 
 /**
@@ -124,7 +163,7 @@ export const fetchScreenPermissions = async (permissionId: number): Promise<Scre
     .filter(([_, data]) => data.permission_id === permissionId)
     .map(([firebaseKey, data]) => ({
       ...data,
-      id: firebaseKey as any,
+      id: firebaseKey as string,
     }));
 };
 
@@ -142,6 +181,7 @@ export const saveScreenPermissions = async (
     deleteApi(`${screenPermissionBasePath}/${item.id}.json`, {
       baseURL: env.testURL,
       errorMessage: '',
+      successMessage: '',
     }),
   );
 
@@ -160,11 +200,33 @@ export const saveScreenPermissions = async (
       {
         baseURL: env.testURL,
         errorMessage: '',
+        successMessage: '',
       },
     ),
   );
 
   await Promise.all(createPromises);
+};
+
+/**
+ * 메뉴 정렬 순서 업데이트 (부분 업데이트)
+ */
+export const updateMenuSortOrder = async (
+  menuId: string | number,
+  sortOrder: number,
+): Promise<void> => {
+  await patchApi(
+    `${menuBasePath}/${menuId}.json`,
+    {
+      sort_order: sortOrder,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      baseURL: env.testURL,
+      errorMessage: '화면 순서 저장에 실패했습니다.',
+      successMessage: '화면 순서가 저장되었습니다.',
+    },
+  );
 };
 
 /**
