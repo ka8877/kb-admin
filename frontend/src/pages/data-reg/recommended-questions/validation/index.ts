@@ -6,11 +6,11 @@
  */
 
 // 공통 validation
-export { RecommendedQuestionValidator } from './recommendedQuestionValidation';
+export { useRecommendedQuestionValidator } from './recommendedQuestionValidation';
 export type { RecommendedQuestionData } from './recommendedQuestionValidation';
 
 // 어댑터들
-export { createRecommendedQuestionYupSchema } from './adapters/yupAdapter';
+export { useRecommendedQuestionYupSchema } from './adapters/yupAdapter';
 export { createExcelValidationRules, validateExcelDuplicates } from './adapters/excelAdapter';
 export type { ValidationFunction } from './adapters/excelAdapter';
 

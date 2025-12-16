@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Stack } from '@mui/material';
 import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
@@ -6,61 +6,66 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs, { Dayjs } from 'dayjs';
 import CreateDataActions from '@/components/common/actions/CreateDataActions';
 import SelectInput from '@/components/common/input/SelectInput';
-import GroupedSelectInput from '@/components/common/input/GroupedSelectInput';
 import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
-import { loadAgeGroupOptions } from '@/pages/data-reg/recommended-questions/data';
-import { yesNoOptions } from '@/constants/options';
+import { yesNoOptions, CODE_GROUP_ID_AGE, CODE_GRUOP_ID_SERVICE_NM } from '@/constants/options';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
-import { createRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
+import { useRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
 import {
   useQuestionCategoriesByService,
   useCreateRecommendedQuestion,
-  useServiceCodeOptions,
+  useServiceDataConverter,
 } from '@/pages/data-reg/recommended-questions/hooks';
+import { useCommonCodeOptions } from '@/hooks';
 import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
-import { toast } from 'react-toastify';
 import { ROUTES } from '@/routes/menu';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
+import { COMMON_CODE } from '@/constants/commonCode';
+import {
+  SERVICE_NM,
+  QST_CTGR,
+  DISPLAY_CTNT,
+  PROMPT_CTNT,
+  QST_STYLE,
+  PARENT_ID,
+  PARENT_NM,
+  AGE_GRP,
+  SHOW_U17,
+  IMP_START_DATE,
+  IMP_END_DATE,
+} from '@/pages/data-reg/recommended-questions/data';
 
-// 공통 validation을 사용한 폼 검증 스키마
-const schema = createRecommendedQuestionYupSchema();
+// 공통 validation을 사용한 폼 검증 스키마 (Hook으로 이동됨)
 
 type FormData = {
-  serviceNm: string;
-  qstCtgr: string;
-  displayCtnt: string;
-  promptCtnt?: string;
-  qstStyle?: string;
-  parentId?: string;
-  parentIdName?: string;
-  ageGrp?: string;
-  showU17: string;
-  impStartDate: Dayjs | null;
-  impEndDate: Dayjs | null;
+  [SERVICE_NM]: string;
+  [QST_CTGR]: string;
+  [DISPLAY_CTNT]: string;
+  [PROMPT_CTNT]?: string;
+  [QST_STYLE]?: string;
+  [PARENT_ID]?: string;
+  [PARENT_NM]?: string;
+  [AGE_GRP]?: string;
+  [SHOW_U17]: string;
+  [IMP_START_DATE]: Dayjs | null;
+  [IMP_END_DATE]: Dayjs | null;
 };
 
 const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
   const createMutation = useCreateRecommendedQuestion();
-  const { data: serviceOptions = [] } = useServiceCodeOptions();
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM, true);
+  const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
 
-  // 동적 옵션 상태
-  const [ageGroupOptions, setAgeGroupOptions] = useState<{ label: string; value: string }[]>([]);
+  const { getServiceData } = useServiceDataConverter();
+
+  // 공통 validation을 사용한 폼 검증 스키마
+  const schema = useRecommendedQuestionYupSchema();
 
   // validation 모드 상태 관리
   const [hasTriedSubmit, setHasTriedSubmit] = React.useState(false);
-
-  // 서비스명 및 연령대 옵션 로드
-  useEffect(() => {
-    const loadOptions = async () => {
-      const ageGroups = await loadAgeGroupOptions();
-      setAgeGroupOptions(ageGroups);
-    };
-    loadOptions();
-  }, []);
 
   const {
     control,
@@ -72,30 +77,30 @@ const ApprovalManualForm: React.FC = () => {
     resolver: yupResolver(schema) as Resolver<FormData>,
     mode: 'onChange', // 항상 실시간 validation 활성화
     defaultValues: {
-      serviceNm: '',
-      qstCtgr: '',
-      displayCtnt: '',
-      promptCtnt: '',
-      qstStyle: '',
-      parentId: '',
-      parentIdName: '',
-      ageGrp: '',
-      showU17: '',
-      impStartDate: dayjs().add(30, 'minute'), // 현재 일시 + 30분
-      impEndDate: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
+      [SERVICE_NM]: '',
+      [QST_CTGR]: '',
+      [DISPLAY_CTNT]: '',
+      [PROMPT_CTNT]: '',
+      [QST_STYLE]: '',
+      [PARENT_ID]: '',
+      [PARENT_NM]: '',
+      [AGE_GRP]: '',
+      [SHOW_U17]: '',
+      [IMP_START_DATE]: dayjs().add(30, 'minute'), // 현재 일시 + 30분
+      [IMP_END_DATE]: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
   });
 
   // qstCtgr 값을 감시하여 부모 ID 필수 여부 결정
   const watchedQstCtgr = useWatch({
     control,
-    name: 'qstCtgr',
+    name: QST_CTGR,
   });
 
   // serviceNm 값을 감시하여 연령대 필수 여부 결정
   const watchedServiceNm = useWatch({
     control,
-    name: 'serviceNm',
+    name: SERVICE_NM, // 문자열 값 그대로 사용
   });
 
   // 선택된 서비스에 따라 필터링된 질문 카테고리 옵션 생성 (API 기반 동적 매핑)
@@ -103,10 +108,11 @@ const ApprovalManualForm: React.FC = () => {
 
   // mid 또는 story인 경우 부모 ID 필수
   const isParentIdRequired =
-    watchedQstCtgr === 'ai_search_mid' || watchedQstCtgr === 'ai_search_story';
+    watchedQstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_MID ||
+    watchedQstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_STORY;
 
   // ai_calc인 경우 연령대 필수
-  const isAgeGroupRequired = watchedServiceNm === 'ai_calc';
+  const isAgeGroupRequired = watchedServiceNm === COMMON_CODE.SERVICE_CODE.AI_CALC;
 
   // 이전 서비스명을 추적
   const prevServiceNmRef = React.useRef<string>('');
@@ -116,14 +122,14 @@ const ApprovalManualForm: React.FC = () => {
     console.log('Changed serviceNm:', watchedServiceNm);
     // 실제로 서비스명이 변경된 경우에만 질문 카테고리 초기화
     if (prevServiceNmRef.current && prevServiceNmRef.current !== watchedServiceNm) {
-      setValue('qstCtgr', '');
+      setValue(QST_CTGR, '');
     }
 
     // 이전 값 업데이트
     prevServiceNmRef.current = watchedServiceNm || '';
 
     if (hasTriedSubmit) {
-      trigger(['ageGrp', 'qstCtgr']);
+      trigger([AGE_GRP, QST_CTGR]);
     }
   }, [watchedServiceNm, hasTriedSubmit, trigger, setValue]);
 
@@ -131,26 +137,30 @@ const ApprovalManualForm: React.FC = () => {
   React.useEffect(() => {
     console.log('Changed qstCtgr:', watchedQstCtgr);
     if (hasTriedSubmit) {
-      trigger(['parentId', 'parentIdName']);
+      trigger([PARENT_ID, PARENT_NM]);
     }
   }, [watchedQstCtgr, hasTriedSubmit, trigger]);
 
   const onSubmit = useCallback(
     async (data: FormData) => {
       try {
+        // 서비스 코드와 명칭 분리
+        const { serviceCd, serviceNm } = getServiceData(data[SERVICE_NM]);
+
         // 폼 데이터를 API 형식으로 변환 (공통 함수 사용)
         const apiData = transformToApiFormat({
-          serviceNm: data.serviceNm,
-          displayCtnt: data.displayCtnt,
-          promptCtnt: data.promptCtnt,
-          qstCtgr: data.qstCtgr,
-          qstStyle: data.qstStyle,
-          parentId: data.parentId,
-          parentIdName: data.parentIdName,
-          ageGrp: data.ageGrp,
-          showU17: data.showU17,
-          impStartDate: data.impStartDate,
-          impEndDate: data.impEndDate,
+          serviceCd,
+          serviceNm,
+          [DISPLAY_CTNT]: data[DISPLAY_CTNT],
+          [PROMPT_CTNT]: data[PROMPT_CTNT],
+          [QST_CTGR]: data[QST_CTGR],
+          [QST_STYLE]: data[QST_STYLE],
+          [PARENT_ID]: data[PARENT_ID],
+          [PARENT_NM]: data[PARENT_NM],
+          [AGE_GRP]: data[AGE_GRP],
+          [SHOW_U17]: data[SHOW_U17],
+          [IMP_START_DATE]: data[IMP_START_DATE],
+          [IMP_END_DATE]: data[IMP_END_DATE],
         });
 
         await createMutation.mutateAsync(apiData);
@@ -202,7 +212,7 @@ const ApprovalManualForm: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3}>
             <Controller
-              name="serviceNm"
+              name={SERVICE_NM}
               control={control}
               render={({ field }) => (
                 <SelectInput
@@ -211,15 +221,15 @@ const ApprovalManualForm: React.FC = () => {
                   options={serviceOptions}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.serviceNm}
-                  helperText={hasTriedSubmit ? errors.serviceNm?.message : undefined}
+                  error={hasTriedSubmit && !!errors[SERVICE_NM]}
+                  helperText={hasTriedSubmit ? errors[SERVICE_NM]?.message : undefined}
                   placeholder="선택"
                 />
               )}
             />
 
             <Controller
-              name="displayCtnt"
+              name={DISPLAY_CTNT}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -230,14 +240,14 @@ const ApprovalManualForm: React.FC = () => {
                   rows={4}
                   fullWidth
                   required
-                  error={hasTriedSubmit && !!errors.displayCtnt}
-                  helperText={hasTriedSubmit ? errors.displayCtnt?.message : undefined}
+                  error={hasTriedSubmit && !!errors[DISPLAY_CTNT]}
+                  helperText={hasTriedSubmit ? errors[DISPLAY_CTNT]?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="promptCtnt"
+              name={PROMPT_CTNT}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -245,14 +255,14 @@ const ApprovalManualForm: React.FC = () => {
                   label="AI input 쿼리"
                   placeholder="AI input 쿼리를 입력하세요"
                   fullWidth
-                  error={hasTriedSubmit && !!errors.promptCtnt}
-                  helperText={hasTriedSubmit ? errors.promptCtnt?.message : undefined}
+                  error={hasTriedSubmit && !!errors[PROMPT_CTNT]}
+                  helperText={hasTriedSubmit ? errors[PROMPT_CTNT]?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="qstCtgr"
+              name={QST_CTGR}
               control={control}
               render={({ field }) => (
                 <SelectInput
@@ -262,10 +272,10 @@ const ApprovalManualForm: React.FC = () => {
                   onChange={field.onChange}
                   required
                   disabled={!watchedServiceNm}
-                  error={hasTriedSubmit && !!errors.qstCtgr}
+                  error={hasTriedSubmit && !!errors[QST_CTGR]}
                   helperText={
                     hasTriedSubmit
-                      ? errors.qstCtgr?.message
+                      ? errors[QST_CTGR]?.message
                       : !watchedServiceNm
                         ? '서비스명을 먼저 선택해주세요'
                         : undefined
@@ -276,7 +286,7 @@ const ApprovalManualForm: React.FC = () => {
             />
 
             <Controller
-              name="qstStyle"
+              name={QST_STYLE}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -284,14 +294,14 @@ const ApprovalManualForm: React.FC = () => {
                   label="질문 태그"
                   placeholder="질문 태그를 입력하세요"
                   fullWidth
-                  error={hasTriedSubmit && !!errors.qstStyle}
-                  helperText={hasTriedSubmit ? errors.qstStyle?.message : undefined}
+                  error={hasTriedSubmit && !!errors[QST_STYLE]}
+                  helperText={hasTriedSubmit ? errors[QST_STYLE]?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="parentId"
+              name={PARENT_ID}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -300,14 +310,14 @@ const ApprovalManualForm: React.FC = () => {
                   placeholder="부모 ID를 입력하세요"
                   fullWidth
                   required={isParentIdRequired}
-                  error={hasTriedSubmit && !!errors.parentId}
-                  helperText={hasTriedSubmit ? errors.parentId?.message : undefined}
+                  error={hasTriedSubmit && !!errors[PARENT_ID]}
+                  helperText={hasTriedSubmit ? errors[PARENT_ID]?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="parentIdName"
+              name={PARENT_NM}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -316,14 +326,14 @@ const ApprovalManualForm: React.FC = () => {
                   placeholder="부모 ID명을 입력하세요"
                   fullWidth
                   required={isParentIdRequired}
-                  error={hasTriedSubmit && !!errors.parentIdName}
-                  helperText={hasTriedSubmit ? errors.parentIdName?.message : undefined}
+                  error={hasTriedSubmit && !!errors[PARENT_NM]}
+                  helperText={hasTriedSubmit ? errors[PARENT_NM]?.message : undefined}
                 />
               )}
             />
 
             <Controller
-              name="ageGrp"
+              name={AGE_GRP}
               control={control}
               render={({ field }) => (
                 <SelectInput
@@ -332,15 +342,15 @@ const ApprovalManualForm: React.FC = () => {
                   options={ageGroupOptions}
                   onChange={field.onChange}
                   required={isAgeGroupRequired}
-                  error={hasTriedSubmit && !!errors.ageGrp}
-                  helperText={hasTriedSubmit ? errors.ageGrp?.message : undefined}
+                  error={hasTriedSubmit && !!errors[AGE_GRP]}
+                  helperText={hasTriedSubmit ? errors[AGE_GRP]?.message : undefined}
                   placeholder="선택"
                 />
               )}
             />
 
             <Controller
-              name="impStartDate"
+              name={IMP_START_DATE}
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -348,15 +358,15 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.impStartDate}
-                  helperText={hasTriedSubmit ? errors.impStartDate?.message : undefined}
+                  error={hasTriedSubmit && !!errors[IMP_START_DATE]}
+                  helperText={hasTriedSubmit ? errors[IMP_START_DATE]?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
             />
 
             <Controller
-              name="impEndDate"
+              name={IMP_END_DATE}
               control={control}
               render={({ field }) => (
                 <DateInput
@@ -364,15 +374,15 @@ const ApprovalManualForm: React.FC = () => {
                   value={field.value}
                   onChange={field.onChange}
                   required
-                  error={hasTriedSubmit && !!errors.impEndDate}
-                  helperText={hasTriedSubmit ? errors.impEndDate?.message : undefined}
+                  error={hasTriedSubmit && !!errors[IMP_END_DATE]}
+                  helperText={hasTriedSubmit ? errors[IMP_END_DATE]?.message : undefined}
                   format="YYYY-MM-DD HH:mm"
                 />
               )}
             />
 
             <Controller
-              name="showU17"
+              name={SHOW_U17}
               control={control}
               render={({ field }) => (
                 <RadioInput
@@ -382,8 +392,8 @@ const ApprovalManualForm: React.FC = () => {
                   onChange={field.onChange}
                   required
                   row
-                  error={hasTriedSubmit && !!errors.showU17}
-                  helperText={hasTriedSubmit ? errors.showU17?.message : undefined}
+                  error={hasTriedSubmit && !!errors[SHOW_U17]}
+                  helperText={hasTriedSubmit ? errors[SHOW_U17]?.message : undefined}
                 />
               )}
             />

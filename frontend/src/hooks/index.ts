@@ -5,3 +5,4 @@
 export { useDisclosure } from './useDisclosure';
 export type { UseDisclosureOptions, UseDisclosureReturn } from './useDisclosure';
 export { useIsCurrentPath } from './useIsCurrentPath';
+export { useCommonCodeOptions } from './useCommonCodeOptions';

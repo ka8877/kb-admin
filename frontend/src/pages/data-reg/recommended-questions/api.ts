@@ -27,6 +27,7 @@ import {
   DATA_MODIFICATION,
   DATA_DELETION,
   TARGET_TYPE_RECOMMEND,
+  OUT_OF_SERVICE,
 } from '@/constants/options';
 import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
 
@@ -69,6 +70,7 @@ const transformItem = (
   return {
     no: v.no ?? index + 1,
     qstId: String(v.qstId ?? v.qst_id ?? fallbackId ?? index + 1),
+    serviceCd: v.serviceCd ?? v.service_cd ?? '',
     serviceNm: v.serviceNm ?? v.service_nm ?? '',
     displayCtnt: v.displayCtnt ?? v.display_ctnt ?? '',
     promptCtnt: v.promptCtnt ?? v.prompt_ctnt ?? null,
@@ -82,7 +84,7 @@ const transformItem = (
     impEndDate: v.impEndDate ?? (v.imp_end_date ? String(v.imp_end_date) : ''),
     updatedAt: v.updatedAt ? String(v.updatedAt) : '',
     createdAt: v.createdAt ?? (v.createdAt ? String(v.createdAt) : ''),
-    status: (v.status as RecommendedQuestionItem['status']) ?? 'in_service',
+    status: (v.status as RecommendedQuestionItem['status']) ?? OUT_OF_SERVICE,
   };
 };
 
@@ -154,6 +156,7 @@ export const transformToApiFormat = (inputData: {
   // 폼에서 올 수 있는 필드 (parentId, parentIdName)
   parentId?: string | null;
   parentIdName?: string | null;
+  parentNm?: string | null;
   // 공통 필드
   displayCtnt?: string | null;
   display_ctnt?: string | null; // Legacy support
@@ -176,6 +179,9 @@ export const transformToApiFormat = (inputData: {
   imp_end_date?: string | Date | Dayjs | null; // Legacy support
   status?: string | null;
 }): Partial<RecommendedQuestionItem> => {
+  // serviceCd 결정
+  const serviceCd = inputData.serviceCd || inputData.service_cd || '';
+
   // serviceNm 결정: serviceNm이 있으면 사용, 없으면 service_nm, 없으면 serviceCd, 없으면 service_cd 사용
   const serviceNm =
     inputData.serviceNm ||
@@ -187,8 +193,8 @@ export const transformToApiFormat = (inputData: {
   // parentId 결정: parentId가 있으면 사용, 없으면 parent_id 사용
   const parentId = inputData.parentId || inputData.parent_id || null;
 
-  // parentNm 결정: parentIdName이 있으면 사용, 없으면 parent_nm 사용
-  const parentNm = inputData.parentIdName || inputData.parent_nm || null;
+  // parentNm 결정: parentNm이 있으면 사용, 없으면 parentIdName, 없으면 parent_nm 사용
+  const parentNm = inputData.parentNm || inputData.parentIdName || inputData.parent_nm || null;
 
   // 날짜 변환
   let impStartDate = '';
@@ -215,14 +221,15 @@ export const transformToApiFormat = (inputData: {
     }
   }
 
-  // ageGrp를 문자열로 변환
+  // ageGrp를 문자열로 변환 (포매팅 없이 그대로 저장)
   let ageGrp: string | null = null;
   const inputAgeGrp = inputData.ageGrp ?? inputData.age_grp;
   if (inputAgeGrp !== null && inputAgeGrp !== undefined && String(inputAgeGrp).trim() !== '') {
-    ageGrp = String(Number(inputAgeGrp));
+    ageGrp = String(inputAgeGrp);
   }
 
   return {
+    serviceCd: serviceCd,
     serviceNm: serviceNm,
     displayCtnt:
       inputData.displayCtnt || inputData.display_ctnt
@@ -249,7 +256,7 @@ export const transformToApiFormat = (inputData: {
         : 'N',
     impStartDate: impStartDate,
     impEndDate: impEndDate,
-    status: (inputData.status as RecommendedQuestionItem['status']) || 'in_service',
+    status: (inputData.status as RecommendedQuestionItem['status']) || OUT_OF_SERVICE,
   };
 };
 
@@ -636,9 +643,10 @@ export const updateRecommendedQuestion = async (
 
   // 승인 요청 전송
   await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
+  toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
 
   // 결재 요청 성공 후 실제 데이터 수정
-  await updateApprovedQuestions([updatedItem]);
+  // await updateApprovedQuestions([updatedItem]);
 
   return updatedItem;
 };
@@ -661,9 +669,10 @@ export const deleteRecommendedQuestion = async (id: string | number): Promise<vo
     // 승인 요청 전송
     if (deletedItem) {
       await sendApprovalRequest(DATA_DELETION, [deletedItem]);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
 
       // 결재 요청 성공 후 실제 데이터 삭제
-      await deleteApprovedQuestions([deletedItem]);
+      //await deleteApprovedQuestions([deletedItem]);
     } else {
       throw new Error('삭제할 데이터를 찾을 수 없습니다.');
     }
@@ -699,46 +708,16 @@ export const deleteRecommendedQuestions = async (
     // 승인 요청 전송
     if (deletedItems.length > 0) {
       await sendApprovalRequest(DATA_DELETION, deletedItems);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
 
       // 결재 요청 성공 후 실제 데이터 삭제
-      await deleteApprovedQuestions(deletedItems);
+      // await deleteApprovedQuestions(deletedItems);
     } else {
       throw new Error('삭제할 데이터를 찾을 수 없습니다.');
     }
   } finally {
     useLoadingStore.getState().stop();
   }
-};
-
-/**
- * 서비스 옵션 코드 그룹 ID (고정값)
- */
-const SERVICE_CODE_GROUP_ID = 1765259941522;
-
-/**
- * 서비스 옵션 목록 조회 (공통 코드에서 조회)
- * code_group_id: 1765259941522 인 항목들을 조회하여 label/value 형태로 반환
- */
-export const fetchServiceCodeOptions = async (): Promise<{ label: string; value: string }[]> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
-    errorMessage: '서비스 옵션 목록을 불러오지 못했습니다.',
-  });
-
-  let items: any[] = [];
-  if (Array.isArray(response.data)) {
-    items = response.data;
-  } else if (typeof response.data === 'object' && response.data !== null) {
-    items = Object.values(response.data);
-  }
-
-  return items
-    .filter((item: any) => item && Number(item.code_group_id) === SERVICE_CODE_GROUP_ID)
-    .map((item: any) => ({
-      label: item.code_name || '',
-      value: item.code || '',
-    }))
-    .filter((item) => item.label && item.value)
-    .sort((a, b) => a.label.localeCompare(b.label));
 };
 
 /**

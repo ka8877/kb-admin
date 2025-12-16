@@ -1,8 +1,15 @@
 // frontend/src/pages/data-reg/recommended-questions/validation/adapters/excelAdapter.ts
 
 import {
-  RecommendedQuestionValidator,
   RecommendedQuestionData,
+  validateQuestionContent,
+  validatePromptContent,
+  validateQuestionStyle,
+  validateParentId,
+  validateParentIdName,
+  validateShowU17,
+  validateImpStartDateForCreate,
+  validateImpEndDate,
 } from '../recommendedQuestionValidation';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
@@ -32,7 +39,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // displayCtnt: 공통과 같음
     displayCtnt: (value, row) => {
       const stringValue = value != null ? String(value) : null;
-      const result = RecommendedQuestionValidator.validateQuestionContent(stringValue);
+      const result = validateQuestionContent(stringValue);
       return {
         isValid: result.isValid,
         message: result.message,
@@ -42,7 +49,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // promptCtnt: 공통과 같음 (필수 아님, 글자 수 제한만)
     promptCtnt: (value, row) => {
       const stringValue = value != null ? String(value) : null;
-      const result = RecommendedQuestionValidator.validatePromptContent(stringValue);
+      const result = validatePromptContent(stringValue);
       return {
         isValid: result.isValid,
         message: result.message,
@@ -63,7 +70,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // qstStyle: 공통과 같음
     qstStyle: (value, row) => {
       const stringValue = value != null ? String(value) : null;
-      const result = RecommendedQuestionValidator.validateQuestionStyle(stringValue);
+      const result = validateQuestionStyle(stringValue);
       return {
         isValid: result.isValid,
         message: result.message,
@@ -73,7 +80,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // parentId: 공통과 같음
     parentId: (value, row) => {
       const stringValue = value != null ? String(value) : null;
-      const result = RecommendedQuestionValidator.validateParentId(stringValue, row);
+      const result = validateParentId(stringValue, row);
       return {
         isValid: result.isValid,
         message: result.message,
@@ -83,7 +90,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     // parentNm: 공통과 같음
     parentNm: (value, row) => {
       const stringValue = value != null ? String(value) : null;
-      const result = RecommendedQuestionValidator.validateParentIdName(stringValue, row);
+      const result = validateParentIdName(stringValue, row);
       return {
         isValid: result.isValid,
         message: result.message,

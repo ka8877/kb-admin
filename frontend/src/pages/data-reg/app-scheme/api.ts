@@ -9,6 +9,7 @@ import {
   deleteItems,
   sendApprovalRequest as sendApprovalRequestCommon,
 } from '@/utils/apiUtils';
+import { toast } from 'react-toastify';
 import { useLoadingStore } from '@/store/loading';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
@@ -516,9 +517,10 @@ export const updateAppScheme = async (
 
   // 승인 요청 전송
   await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
+  toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
 
   // 결재 요청 성공 후 실제 데이터 수정
-  await updateApprovedAppSchemes([updatedItem]);
+  // await updateApprovedAppSchemes([updatedItem]);
 
   return updatedItem;
 };
@@ -541,9 +543,10 @@ export const deleteAppScheme = async (id: string | number): Promise<void> => {
     // 승인 요청 전송
     if (deletedItem) {
       await sendApprovalRequest(DATA_DELETION, [deletedItem]);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
 
       // 결재 요청 성공 후 실제 데이터 삭제
-      await deleteApprovedAppSchemes([deletedItem]);
+      // await deleteApprovedAppSchemes([deletedItem]);
     } else {
       throw new Error('삭제할 데이터를 찾을 수 없습니다.');
     }
@@ -577,9 +580,10 @@ export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Pr
     // 승인 요청 전송
     if (deletedItems.length > 0) {
       await sendApprovalRequest(DATA_DELETION, deletedItems);
+      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
 
       // 결재 요청 성공 후 실제 데이터 삭제
-      await deleteApprovedAppSchemes(deletedItems);
+      // await deleteApprovedAppSchemes(deletedItems);
     } else {
       throw new Error('삭제할 데이터를 찾을 수 없습니다.');
     }

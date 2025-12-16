@@ -5,10 +5,19 @@
  * 폼 validation과 엑셀 validation에서 공통으로 사용
  */
 
-import { serviceOptions, ageGroupOptions, questionCategoryOptions } from '../data';
-import { yesNoOptions } from '@/constants/options';
+import { useCommonCodeOptions } from '@/hooks';
+import { useCallback } from 'react';
+import {
+  CODE_GROUP_ID_QST_CTGR,
+  CODE_GRUOP_ID_SERVICE_NM,
+  CODE_GROUP_ID_AGE,
+  CODE_GROUP_ID_SERVICE_CD,
+  yesNoOptions,
+} from '@/constants/options';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
+import { COMMON_CODE } from '@/constants/commonCode';
+import { useQuestionMappingData } from '@/pages/data-reg/recommended-questions/hooks';
 // 공통 validation 규칙 인터페이스
 export interface RecommendedQuestionData {
   serviceNm?: string | null;
@@ -26,295 +35,360 @@ export interface RecommendedQuestionData {
 }
 
 /**
- * 공통 Validation 규칙 클래스
+ * 공통 Validation 규칙 클래스 (Deprecated: Use useRecommendedQuestionValidator hook instead)
+ * This class is kept for backward compatibility but will be removed.
+ * Please migrate to useRecommendedQuestionValidator.
  */
-export class RecommendedQuestionValidator {
-  // 서비스명 validation
-  static validateServiceName(value: string | null | undefined): ValidationResult {
-    if (!value || value.trim() === '') {
-      return { isValid: false, message: '서비스명은 필수입니다' };
-    }
-
-    const validServices = serviceOptions.map((option) => option.value);
-    if (!validServices.includes(value)) {
-      return { isValid: false, message: '없는 서비스명입니다' };
-    }
-
-    if (value.length > 50) {
-      return { isValid: false, message: '서비스명은 50자를 초과할 수 없습니다' };
-    }
-
-    return { isValid: true };
+// Helper functions
+export const validateQuestionContent = (value: string | null | undefined): ValidationResult => {
+  if (!value || value.trim() === '') {
+    return { isValid: false, message: '질문 내용은 필수입니다' };
   }
 
-  // 질문 카테고리 validation
-  static validateQuestionCategory(value: string | null | undefined): ValidationResult {
-    if (!value || value.trim() === '') {
-      return { isValid: false, message: '질문 카테고리는 필수입니다' };
-    }
-
-    // 유효한 카테고리인지 확인 (questionCategoryOptions는 이미 평탄화된 배열)
-    const validCategories = questionCategoryOptions.map((option) => option.value);
-
-    if (!validCategories.includes(value)) {
-      return { isValid: false, message: '없는 질문 카테고리입니다' };
-    }
-
-    if (value.length > 100) {
-      return { isValid: false, message: '질문 카테고리는 100자를 초과할 수 없습니다' };
-    }
-
-    return { isValid: true };
+  const content = value.trim();
+  if (content.length < 5) {
+    return { isValid: false, message: '질문 내용은 최소 5자 이상 입력해주세요' };
   }
 
-  // 질문 내용 validation
-  static validateQuestionContent(value: string | null | undefined): ValidationResult {
-    if (!value || value.trim() === '') {
-      return { isValid: false, message: '질문 내용은 필수입니다' };
-    }
-
-    const content = value.trim();
-    if (content.length < 5) {
-      return { isValid: false, message: '질문 내용은 최소 5자 이상 입력해주세요' };
-    }
-
-    if (content.length > 500) {
-      return { isValid: false, message: '질문 내용은 500자를 초과할 수 없습니다' };
-    }
-
-    return { isValid: true };
+  if (content.length > 500) {
+    return { isValid: false, message: '질문 내용은 500자를 초과할 수 없습니다' };
   }
 
-  // AI input 쿼리 validation (필수 아님, 글자 수 제한만)
-  static validatePromptContent(value: string | null | undefined): ValidationResult {
-    if (value && value.length > 1000) {
-      return { isValid: false, message: 'AI input 쿼리는 1000자를 초과할 수 없습니다' };
-    }
+  return { isValid: true };
+};
 
-    return { isValid: true };
+export const validatePromptContent = (value: string | null | undefined): ValidationResult => {
+  if (value && value.length > 1000) {
+    return { isValid: false, message: 'AI input 쿼리는 1000자를 초과할 수 없습니다' };
   }
 
-  // 질문 태그 validation
-  static validateQuestionStyle(value: string | null | undefined): ValidationResult {
-    if (value && value.length > 200) {
-      return { isValid: false, message: '질문 태그는 200자를 초과할 수 없습니다' };
-    }
+  return { isValid: true };
+};
 
-    return { isValid: true };
+export const validateQuestionStyle = (value: string | null | undefined): ValidationResult => {
+  if (value && value.length > 200) {
+    return { isValid: false, message: '질문 태그는 200자를 초과할 수 없습니다' };
   }
 
-  // 부모 ID validation
-  static validateParentId(
-    value: string | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    const qstCtgr = data?.qstCtgr;
-    const isRequired = qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story';
+  return { isValid: true };
+};
 
-    if (isRequired && (!value || value.trim() === '')) {
-      return { isValid: false, message: '부모 ID는 필수입니다' };
-    }
+export const validateParentId = (
+  value: string | null | undefined,
+  data?: RecommendedQuestionData,
+): ValidationResult => {
+  const qstCtgr = data?.qstCtgr;
+  const isRequired =
+    qstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_MID ||
+    qstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_STORY;
 
-    if (value && value.length > 20) {
-      return { isValid: false, message: '부모 ID는 20자를 초과할 수 없습니다' };
-    }
-
-    return { isValid: true };
+  if (isRequired && (!value || value.trim() === '')) {
+    return { isValid: false, message: '부모 ID는 필수입니다' };
   }
 
-  // 부모 ID명 validation
-  static validateParentIdName(
-    value: string | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    const qstCtgr = data?.qstCtgr;
-    const isRequired = qstCtgr === 'ai_search_mid' || qstCtgr === 'ai_search_story';
-
-    if (isRequired && (!value || value.trim() === '')) {
-      return { isValid: false, message: '부모 ID명은 필수입니다' };
-    }
-
-    if (value && value.length > 100) {
-      return { isValid: false, message: '부모 ID명은 100자를 초과할 수 없습니다' };
-    }
-
-    return { isValid: true };
+  if (value && value.length > 20) {
+    return { isValid: false, message: '부모 ID는 20자를 초과할 수 없습니다' };
   }
 
-  // 연령대 validation
-  static validateAgeGroup(
-    value: string | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    const serviceNm = data?.serviceNm;
-    const isRequired = serviceNm === 'ai_calc';
+  return { isValid: true };
+};
 
-    if (isRequired && (!value || value.trim() === '')) {
-      return { isValid: false, message: '연령대는 필수입니다' };
-    }
+export const validateParentIdName = (
+  value: string | null | undefined,
+  data?: RecommendedQuestionData,
+): ValidationResult => {
+  const qstCtgr = data?.qstCtgr;
+  const isRequired =
+    qstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_MID ||
+    qstCtgr === COMMON_CODE.QST_CTGR.AI_SEARCH_STORY;
 
-    if (value) {
-      const validAgeGroups = ageGroupOptions.map((option) => option.value);
-      if (!validAgeGroups.includes(value)) {
-        return { isValid: false, message: '없는 연령대입니다' };
-      }
-    }
-
-    return { isValid: true };
+  if (isRequired && (!value || value.trim() === '')) {
+    return { isValid: false, message: '부모 ID명은 필수입니다' };
   }
 
-  // 17세 미만 노출 여부 validation
-  static validateShowU17(value: string | null | undefined): ValidationResult {
-    if (!value || value.trim() === '') {
-      return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
-    }
-
-    const validOptions = yesNoOptions.map((option) => option.value);
-    if (!validOptions.includes(value)) {
-      return { isValid: false, message: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
-    }
-
-    return { isValid: true };
+  if (value && value.length > 100) {
+    return { isValid: false, message: '부모 ID명은 100자를 초과할 수 없습니다' };
   }
 
-  // 날짜 validation (공통)
-  static validateDate(
-    value: string | Date | null | undefined,
-    fieldName: string,
-  ): ValidationResult {
-    // 값이 비어있는 경우는 개별 메서드에서 처리하므로 여기서는 형식만 검증
-    if (!isValidDate(value as string | Date | null)) {
+  return { isValid: true };
+};
+
+export const validateShowU17 = (value: string | null | undefined): ValidationResult => {
+  if (!value || value.trim() === '') {
+    return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
+  }
+
+  const validOptions = yesNoOptions.map((option) => option.value);
+  if (!validOptions.includes(value)) {
+    return { isValid: false, message: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
+  }
+
+  return { isValid: true };
+};
+
+export const validateDate = (
+  value: string | Date | null | undefined,
+  fieldName: string,
+): ValidationResult => {
+  if (!isValidDate(value as string | Date | null)) {
+    return {
+      isValid: false,
+      message: `${fieldName} 형식이 올바르지 않습니다. (예: 2025-12-12 15:00:00 또는 20251212150000)`,
+    };
+  }
+
+  return { isValid: true };
+};
+
+export const validateImpStartDate = (
+  value: string | Date | null | undefined,
+  data?: RecommendedQuestionData,
+): ValidationResult => {
+  if (!value || value === null || value === undefined) {
+    return { isValid: false, message: '노출 시작일시는 필수입니다' };
+  }
+
+  const dateValidation = validateDate(value, '노출 시작일시');
+  if (!dateValidation.isValid) {
+    return dateValidation;
+  }
+
+  return { isValid: true };
+};
+
+export const validateImpStartDateForCreate = (
+  value: string | Date | null | undefined,
+  data?: RecommendedQuestionData,
+): ValidationResult => {
+  if (!value || value === null || value === undefined) {
+    return { isValid: false, message: '노출 시작일시는 필수입니다' };
+  }
+
+  const dateValidation = validateDate(value, '노출 시작일시');
+  if (!dateValidation.isValid) {
+    return dateValidation;
+  }
+
+  const startDate = toISOString(value as string | Date | null);
+  if (startDate) {
+    const now = new Date();
+    const startDateTime = new Date(startDate);
+
+    if (startDateTime < now) {
       return {
         isValid: false,
-        message: `${fieldName} 형식이 올바르지 않습니다. (예: 2025-12-12 15:00:00 또는 20251212150000)`,
+        message: '노출 시작일시는 현재 일시 이후여야 합니다',
       };
     }
-
-    return { isValid: true };
   }
 
-  // 노출 시작일시 validation (수정용 - 현재 일시 체크 없음)
-  static validateImpStartDate(
-    value: string | Date | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 시작일시는 필수입니다' };
-    }
+  return { isValid: true };
+};
 
-    const dateValidation = this.validateDate(value, '노출 시작일시');
-    if (!dateValidation.isValid) {
-      return dateValidation;
-    }
-
-    return { isValid: true };
+export const validateImpEndDate = (
+  value: string | Date | null | undefined,
+  data?: RecommendedQuestionData,
+): ValidationResult => {
+  if (!value || value === null || value === undefined) {
+    return { isValid: false, message: '노출 종료일시는 필수입니다' };
   }
 
-  // 노출 시작일시 validation (등록용 - 현재 일시 체크 포함)
-  static validateImpStartDateForCreate(
-    value: string | Date | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 시작일시는 필수입니다' };
-    }
+  const dateValidation = validateDate(value, '노출 종료일시');
+  if (!dateValidation.isValid) {
+    return dateValidation;
+  }
 
-    const dateValidation = this.validateDate(value, '노출 시작일시');
-    if (!dateValidation.isValid) {
-      return dateValidation;
-    }
+  if (data?.impStartDate) {
+    const startDate = toISOString(data.impStartDate as string | Date | null);
+    const endDate = toISOString(value as string | Date | null);
 
-    // 현재 일자 <= 노출 시작일시 체크 (등록 시에만)
-    const startDate = toISOString(value as string | Date | null);
-    if (startDate) {
-      const now = new Date();
+    if (startDate && endDate) {
       const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
 
-      if (startDateTime < now) {
+      if (endDateTime <= startDateTime) {
         return {
           isValid: false,
-          message: '노출 시작일시는 현재 일시 이후여야 합니다',
+          message: '노출 종료일시는 노출 시작일시보다 커야 합니다',
         };
       }
     }
-
-    return { isValid: true };
   }
 
-  // 노출 종료일시 validation
-  static validateImpEndDate(
-    value: string | Date | null | undefined,
-    data?: RecommendedQuestionData,
-  ): ValidationResult {
-    if (!value || value === null || value === undefined) {
-      return { isValid: false, message: '노출 종료일시는 필수입니다' };
-    }
+  return { isValid: true };
+};
 
-    const dateValidation = this.validateDate(value, '노출 종료일시');
-    if (!dateValidation.isValid) {
-      return dateValidation;
-    }
+export const validateStatus = (value: string | null | undefined): ValidationResult => {
+  if (value && !['in_service', 'out_of_service'].includes(value)) {
+    return {
+      isValid: false,
+      message: 'status는 in_service 또는 out_of_service만 입력 가능합니다',
+    };
+  }
 
-    // 노출 시작일시 < 노출 종료일시 체크
-    if (data?.impStartDate) {
-      const startDate = toISOString(data.impStartDate as string | Date | null);
-      const endDate = toISOString(value as string | Date | null);
+  return { isValid: true };
+};
 
-      if (startDate && endDate) {
-        const startDateTime = new Date(startDate);
-        const endDateTime = new Date(endDate);
+/**
+ * 추천질문 Validation Hook
+ */
+export const useRecommendedQuestionValidator = () => {
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
+  const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
+  const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
+  const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
 
-        if (endDateTime <= startDateTime) {
-          return {
-            isValid: false,
-            message: '노출 종료일시는 노출 시작일시보다 커야 합니다',
-          };
+  const validateServiceName = useCallback(
+    (value: string | null | undefined): ValidationResult => {
+      if (!value || value.trim() === '') {
+        return { isValid: false, message: '서비스명은 필수입니다' };
+      }
+
+      /*
+      const validServices = serviceOptions.map((option) => option.value);
+      if (!validServices.includes(value)) {
+        return { isValid: false, message: '없는 서비스명입니다' };
+      }
+         */
+
+      if (value.length > 50) {
+        return { isValid: false, message: '서비스명은 50자를 초과할 수 없습니다' };
+      }
+
+      return { isValid: true };
+    },
+    [serviceOptions],
+  );
+
+  const validateQuestionCategory = useCallback(
+    (value: string | null | undefined, data?: RecommendedQuestionData): ValidationResult => {
+      if (!value || value.trim() === '') {
+        return { isValid: false, message: '질문 카테고리는 필수입니다' };
+      }
+
+      // 서비스명이 있는 경우 동적으로 카테고리 검증
+      if (data?.serviceNm && codeItems.length > 0) {
+        const serviceInput = data.serviceNm;
+        let serviceCodeItem: any;
+
+        // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
+        serviceCodeItem = codeItems.find(
+          (item) =>
+            item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
+            (item.code === serviceInput || item.code_name === serviceInput),
+        );
+
+        // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
+        if (!serviceCodeItem) {
+          const serviceNameItem = codeItems.find(
+            (item) =>
+              item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
+              (item.code === serviceInput || item.code_name === serviceInput),
+          );
+
+          if (serviceNameItem) {
+            const serviceMapping = serviceMappings.find(
+              (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
+            );
+            if (serviceMapping) {
+              serviceCodeItem = codeItems.find(
+                (item) => item.firebaseKey === serviceMapping.child_code_item_id,
+              );
+            }
+          }
+        }
+
+        if (serviceCodeItem) {
+          // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
+          const relatedQuestionMappings = questionMappings.filter(
+            (m) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
+          );
+
+          const questionCategoryIds = new Set(
+            relatedQuestionMappings.map((m) => m.child_code_item_id),
+          );
+
+          // 4. 유효한 카테고리 목록 추출
+          const validCategories = codeItems
+            .filter((item) => questionCategoryIds.has(item.firebaseKey))
+            .map((item) => item.code_name); // value는 code_name을 사용한다고 가정 (hooks.ts 참고)
+
+          if (!validCategories.includes(value)) {
+            return { isValid: false, message: '해당 서비스에 존재하지 않는 질문 카테고리입니다' };
+          }
+
+          return { isValid: true };
         }
       }
-    }
 
-    return { isValid: true };
-  }
+      // 서비스명이 없거나 매핑 데이터가 아직 로드되지 않은 경우 기존 방식대로 전체 목록에서 검증
+      // 또는 서비스명이 없으면 검증을 스킵할 수도 있지만, 여기서는 전체 목록 체크 유지
+      const validCategories = questionCategoryOptions.map((option) => option.value);
 
-  // 상태 validation
-  static validateStatus(value: string | null | undefined): ValidationResult {
-    if (value && !['in_service', 'out_of_service'].includes(value)) {
-      return {
-        isValid: false,
-        message: 'status는 in_service 또는 out_of_service만 입력 가능합니다',
-      };
-    }
+      if (!validCategories.includes(value)) {
+        return { isValid: false, message: '없는 질문 카테고리입니다' };
+      }
 
-    return { isValid: true };
-  }
+      if (value.length > 100) {
+        return { isValid: false, message: '질문 카테고리는 100자를 초과할 수 없습니다' };
+      }
 
-  // 전체 데이터 validation
-  static validateAll(data: RecommendedQuestionData): Record<string, ValidationResult> {
-    const results: Record<string, ValidationResult> = {};
+      return { isValid: true };
+    },
+    [questionCategoryOptions, codeItems, serviceMappings, questionMappings],
+  );
 
-    results.serviceNm = this.validateServiceName(data.serviceNm);
-    results.qstCtgr = this.validateQuestionCategory(data.qstCtgr);
-    results.displayCtnt = this.validateQuestionContent(data.displayCtnt);
-    results.promptCtnt = this.validatePromptContent(data.promptCtnt);
-    results.qstStyle = this.validateQuestionStyle(data.qstStyle);
+  const validateAgeGroup = useCallback(
+    (value: string | null | undefined, data?: RecommendedQuestionData): ValidationResult => {
+      const serviceNm = data?.serviceNm;
+      const isRequired = serviceNm === 'ai_calc';
 
-    // 부모 ID (폼과 엑셀 필드명 통합)
-    const parentId = data.parentId;
-    const parentNm = data.parentNm;
-    results.parentId = this.validateParentId(parentId, data);
-    results.parentNm = this.validateParentIdName(parentNm, data);
+      if (isRequired && (!value || value.trim() === '')) {
+        return { isValid: false, message: '연령대는 필수입니다' };
+      }
 
-    results.ageGrp = this.validateAgeGroup(data.ageGrp, data);
-    results.showU17 = this.validateShowU17(data.showU17);
-    results.impStartDate = this.validateImpStartDate(data.impStartDate, data);
-    results.impEndDate = this.validateImpEndDate(data.impEndDate, data);
-    results.status = this.validateStatus(data.status);
+      if (value) {
+        const validAgeGroups = ageGroupOptions.map((option) => option.value);
+        if (!validAgeGroups.includes(value)) {
+          return { isValid: false, message: '없는 연령대입니다' };
+        }
+      }
 
-    return results;
-  }
+      return { isValid: true };
+    },
+    [ageGroupOptions],
+  );
 
-  // 유효성 검사 통과 여부 확인
-  static isValid(results: Record<string, ValidationResult>): boolean {
-    return Object.values(results).every((result) => result.isValid);
-  }
-}
+  const validateAll = useCallback(
+    (data: RecommendedQuestionData): Record<string, ValidationResult> => {
+      const results: Record<string, ValidationResult> = {};
+
+      results.serviceNm = validateServiceName(data.serviceNm);
+      results.qstCtgr = validateQuestionCategory(data.qstCtgr, data);
+      results.displayCtnt = validateQuestionContent(data.displayCtnt);
+      results.promptCtnt = validatePromptContent(data.promptCtnt);
+      results.qstStyle = validateQuestionStyle(data.qstStyle);
+
+      const parentId = data.parentId;
+      const parentNm = data.parentNm;
+      results.parentId = validateParentId(parentId, data);
+      results.parentNm = validateParentIdName(parentNm, data);
+
+      results.ageGrp = validateAgeGroup(data.ageGrp, data);
+      results.showU17 = validateShowU17(data.showU17);
+      results.impStartDate = validateImpStartDate(data.impStartDate, data);
+      results.impEndDate = validateImpEndDate(data.impEndDate, data);
+      results.status = validateStatus(data.status);
+
+      return results;
+    },
+    [validateServiceName, validateQuestionCategory, validateAgeGroup],
+  );
+
+  return {
+    validateAll,
+    validateServiceName,
+    validateQuestionCategory,
+    validateAgeGroup,
+  };
+};

@@ -97,6 +97,9 @@ export const statusOptions = [
   { label: '서비스 종료', value: 'out_of_service' },
 ];
 
+export const IN_SERVICE = 'in_service' as const;
+export const OUT_OF_SERVICE = 'out_of_service' as const;
+
 // 예 아니오 옵션 데이터
 export const yesNoOptions = [
   { label: '예', value: 'Y' },
@@ -108,3 +111,9 @@ export const ROLE_ADMIN = 'admin' as const;
 export const ROLE_CRUD = 'crud' as const;
 export const ROLE_VIEWER = 'viewer' as const;
 export const ROLE_NONE = 'none' as const;
+
+// code_group_id (파이어 베이스 임시용)
+export const CODE_GRUOP_ID_SERVICE_NM = 1765259941522;
+export const CODE_GROUP_ID_SERVICE_CD = 1765260502337;
+export const CODE_GROUP_ID_QST_CTGR = 1765416760082;
+export const CODE_GROUP_ID_AGE = 1765432508332;

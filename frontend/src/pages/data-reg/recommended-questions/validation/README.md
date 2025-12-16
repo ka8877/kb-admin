@@ -34,10 +34,10 @@ pages/data-reg/recommended-questions/
 
 ```typescript
 // 페이지에서 간단하게 import
-import { createRecommendedQuestionYupSchema, createExcelValidationRules } from './validation';
+import { useRecommendedQuestionYupSchema, createExcelValidationRules } from './validation';
 
-// 폼 validation
-const schema = createRecommendedQuestionYupSchema();
+// 폼 validation (Hook)
+const schema = useRecommendedQuestionYupSchema();
 
 // 엑셀 validation
 const validationRules = createExcelValidationRules();
@@ -46,9 +46,10 @@ const validationRules = createExcelValidationRules();
 ### 개별 validation 사용
 
 ```typescript
-import { RecommendedQuestionValidator } from './validation';
+import { useRecommendedQuestionValidator } from './validation';
 
-const result = RecommendedQuestionValidator.validateServiceName('AI 검색');
+const { validateServiceName } = useRecommendedQuestionValidator();
+const result = validateServiceName('AI 검색');
 ```
 
 ## 🔄 새 필드 추가하기

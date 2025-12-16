@@ -1,6 +1,7 @@
 export type RecommendedQuestionItem = {
   no: number;
   qstId: string;
+  serviceCd: string;
   serviceNm: string;
   displayCtnt: string;
   promptCtnt: string | null;

@@ -15,6 +15,7 @@ export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
   placeholder?: string;
   size?: 'small' | 'medium' | 'large';
   initialValues?: Record<string, string | number>;
+  onFieldChange?: (field: string, value: string | number) => void;
 };
 
 const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
@@ -24,6 +25,7 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   placeholder = '검색어를 입력하세요',
   size = 'small',
   initialValues = {},
+  onFieldChange,
 }: ListSearchProps<T>): JSX.Element => {
   const {
     fieldValues,
@@ -32,6 +34,15 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
     updateTextGroupField,
     buildSearchPayload,
   } = useSearchFieldValues(searchFields, initialValues);
+
+  // 필드 변경 핸들러 (상위 컴포넌트로 전파)
+  const handleFieldValueChange = useCallback(
+    (field: string, value: string | number) => {
+      updateFieldValue(field, value);
+      onFieldChange?.(field, value);
+    },
+    [updateFieldValue, onFieldChange],
+  );
 
   // textGroup 필드 분리
   const textGroupFields = useMemo(
@@ -98,7 +109,7 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
         <AdvancedFilters
           searchFields={searchFields ?? []}
           fieldValues={fieldValues}
-          onFieldChange={updateFieldValue}
+          onFieldChange={handleFieldValueChange}
           size={size}
           inputStyles={inputStyles}
         />

@@ -1,6 +1,27 @@
 import type { SearchField } from '@/types/types';
 import { categoryMockDb } from '@/mocks/commonCodeDb';
 import { statusOptions, yesNoOptions } from '@/constants/options';
+import { TABLE_LABELS } from '@/constants/label';
+import { COMMON_CODE } from '@/constants/commonCode';
+
+export const {
+  QST_ID,
+  SERVICE_CD,
+  SERVICE_NM,
+  QST_CTGR,
+  DISPLAY_CTNT,
+  PROMPT_CTNT,
+  QST_STYLE,
+  PARENT_ID,
+  PARENT_NM,
+  AGE_GRP,
+  SHOW_U17,
+  IMP_START_DATE,
+  IMP_END_DATE,
+  STATUS,
+  CREATED_AT,
+  UPDATED_AT,
+} = TABLE_LABELS.RECOMMENDED_QUESTION;
 
 // **************공통 코드 옵션 데이터 **************
 // 서비스 옵션 데이터 (Mock DB에서 동적으로 로드 가능하도록 함수로 변경)
@@ -66,8 +87,8 @@ export const questionCategoryGroupedOptions = [
     groupLabel: 'AI 검색',
     groupValue: 'ai_search',
     options: [
-      { label: 'mid (엔어드민아이디)', value: 'ai_search_mid' },
-      { label: 'story (돈이뭔놈이야기)', value: 'ai_search_story' },
+      { label: 'mid (엔어드민아이디)', value: COMMON_CODE.QST_CTGR.AI_SEARCH_MID },
+      { label: 'story (돈이뭔놈이야기)', value: COMMON_CODE.QST_CTGR.AI_SEARCH_STORY },
       { label: 'child (아동보호)', value: 'ai_search_child' },
       { label: 'promo (프로모션)', value: 'ai_search_promo' },
       { label: 'signature (시그니처)', value: 'ai_search_signature' },
@@ -115,11 +136,11 @@ export const questionCategoryOptions = questionCategoryGroupedOptions.flatMap(
 // **************상세 페이지**************
 // 공통 코드 셀렉트 필드 설정
 export const selectFieldsConfig = {
-  serviceNm: serviceOptions,
-  ageGrp: ageGroupOptions,
-  showU17: yesNoOptions,
-  status: statusOptions,
-  qstCtgr: questionCategoryOptions,
+  [SERVICE_NM]: serviceOptions,
+  [AGE_GRP]: ageGroupOptions,
+  [SHOW_U17]: yesNoOptions,
+  [STATUS]: statusOptions,
+  [QST_CTGR]: questionCategoryOptions,
 };
 
 // 동적으로 로드된 옵션으로 셀렉트 필드 설정 생성
@@ -127,46 +148,46 @@ export const createSelectFieldsConfig = (options: {
   serviceOptions: Array<{ label: string; value: string }>;
   ageGroupOptions: Array<{ label: string; value: string }>;
 }) => ({
-  serviceNm: options.serviceOptions,
-  ageGrp: options.ageGroupOptions,
-  showU17: yesNoOptions,
-  status: statusOptions,
-  qstCtgr: questionCategoryOptions,
+  [SERVICE_NM]: options.serviceOptions,
+  [AGE_GRP]: options.ageGroupOptions,
+  [SHOW_U17]: yesNoOptions,
+  [STATUS]: statusOptions,
+  [QST_CTGR]: questionCategoryOptions,
 });
 
 // 날짜 필드 설정
-export const dateFieldsConfig = ['impStartDate', 'impEndDate', 'updatedAt', 'createdAt'];
+export const dateFieldsConfig = [IMP_START_DATE, IMP_END_DATE, UPDATED_AT, CREATED_AT];
 
 // 읽기 전용 필드 설정
-export const readOnlyFieldsConfig = ['no', 'qstId', 'updatedAt', 'createdAt'];
+export const readOnlyFieldsConfig = ['no', QST_ID, UPDATED_AT, CREATED_AT];
 
 // 변경 체크에서 제외할 필드 설정
-export const excludeFieldsFromChangeCheckConfig = ['updatedAt', 'createdAt', 'no', 'qstId'];
+export const excludeFieldsFromChangeCheckConfig = [UPDATED_AT, CREATED_AT, 'no', QST_ID];
 
 // 데이터등록반영상태 제외 필드 설정
-export const excludeFields = ['no', 'qstId', 'updatedAt', 'createdAt', 'status'];
+export const excludeFields = ['no', QST_ID, UPDATED_AT, CREATED_AT, STATUS];
 
 // 기본 필수 필드 설정
 export const baseRequiredFieldsConfig = [
-  'serviceNm',
-  'qstCtgr',
-  'displayCtnt',
-  'showU17',
-  'impStartDate',
-  'impEndDate',
+  SERVICE_NM,
+  QST_CTGR,
+  DISPLAY_CTNT,
+  SHOW_U17,
+  IMP_START_DATE,
+  IMP_END_DATE,
 ];
 
 // 조건적 필수 필드 관련 상수
 export const CONDITIONAL_REQUIRED_FIELDS = {
   // 질문 카테고리 값
-  QST_CTGR_AI_SEARCH_MID: 'ai_search_mid',
-  QST_CTGR_AI_SEARCH_STORY: 'ai_search_story',
+  QST_CTGR_AI_SEARCH_MID: COMMON_CODE.QST_CTGR.AI_SEARCH_MID,
+  QST_CTGR_AI_SEARCH_STORY: COMMON_CODE.QST_CTGR.AI_SEARCH_STORY,
   // 서비스명 값
-  SERVICE_AI_CALC: 'ai_calc',
+  SERVICE_AI_CALC: COMMON_CODE.SERVICE_CODE.AI_CALC,
   // 필드명
-  PARENT_ID: 'parentId',
-  PARENT_NM: 'parentNm',
-  AGE_GRP: 'ageGrp',
+  PARENT_ID: PARENT_ID,
+  PARENT_NM: PARENT_NM,
+  AGE_GRP: AGE_GRP,
 } as const;
 
 // 조건부 필수 필드 설정
@@ -180,75 +201,48 @@ export const conditionalRequiredFieldsForQuestionCategory = [
 export const conditionalRequiredFieldsForService = [CONDITIONAL_REQUIRED_FIELDS.AGE_GRP];
 
 // **************검색 페이지**************
-export const searchFields: SearchField[] = [
-  {
-    type: 'textGroup',
-    fields: [
-      { field: 'displayCtnt', label: '질문 내용' },
-      { field: 'qstStyle', label: '질문 스타일' },
-    ],
-  },
-  { field: 'serviceNm', label: '서비스명', type: 'select', options: serviceOptions },
-
-  { field: 'qstCtgr', label: '질문 카테고리', type: 'select', options: questionCategoryOptions },
-  { field: 'status', label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
-  { field: 'ageGrp', label: '연령대', type: 'select', options: ageGroupOptions },
-  { field: 'showU17', label: '17세 미만 여부', type: 'radio', options: yesNoOptions },
-  {
-    field: 'imp_start',
-    dataField: 'impStartDate',
-    label: '노출 시작일시',
-    type: 'dateRange',
-    position: 'start',
-  },
-  {
-    field: 'imp_end',
-    dataField: 'impEndDate',
-    label: '노출 종료일시',
-    type: 'dateRange',
-    position: 'end',
-  },
-];
+// searchFields는 hooks/useSearchFields로 이동됨
 
 // **************엑셀 업로드/다운로드 페이지**************/
 // 필드별 가이드 메시지 (필요한 필드만)
 export const fieldGuides: Record<string, string> = {
-  serviceCd: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
-  displayCtnt: '필수 | 5-500자',
-  promptCtnt: '선택 | 1000자 이하',
-  qstCtgr: '필수 | 참조 데이터 확인',
-  qstStyle: '선택 | 질문 관련 태그나 스타일',
-  parentId: '조건부 필수 | AI 검색 mid/story인 경우 필수 (예: M020011)',
-  parentNm: '조건부 필수 | AI 검색 mid/story인 경우 필수',
-  ageGrp: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
-  showU17: '필수 | Y 또는 N',
-  impStartDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
-  impEndDate: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출 시작일시 이후여야 함)',
+  [SERVICE_CD]: '필수 | 참조 데이터 확인 (ai_search, ai_calc, ai_transfer, ai_shared_account)',
+  [DISPLAY_CTNT]: '필수 | 5-500자',
+  [PROMPT_CTNT]: '선택 | 1000자 이하',
+  [QST_CTGR]: '필수 | 참조 데이터 확인',
+  [QST_STYLE]: '선택 | 질문 관련 태그나 스타일',
+  [PARENT_ID]: '조건부 필수 | AI 검색 mid/story인 경우 필수 (예: M020011)',
+  [PARENT_NM]: '조건부 필수 | AI 검색 mid/story인 경우 필수',
+  [AGE_GRP]: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
+  [SHOW_U17]: '필수 | Y 또는 N',
+  [IMP_START_DATE]: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
+  [IMP_END_DATE]:
+    '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출 시작일시 이후여야 함)',
 };
 
 // 예시 데이터 (자동 생성 필드 제외)
 export const exampleData = [
   {
-    serviceCd: 'ai_search',
-    displayCtnt: '하루만 맡겨도 연 2% 받을 수 있어?',
-    promptCtnt: '적금 상품의 금리 정보를 알려주세요',
-    qstCtgr: 'ai_search_mid',
-    qstStyle: '적금, 금리',
-    parentId: 'M020011',
-    parentNm: '26주 적금',
-    ageGrp: 10,
-    showU17: 'N',
-    impStartDate: '20251125000000',
-    impEndDate: '99991231000000',
+    [SERVICE_CD]: 'ai_search',
+    [DISPLAY_CTNT]: '하루만 맡겨도 연 2% 받을 수 있어?',
+    [PROMPT_CTNT]: '적금 상품의 금리 정보를 알려주세요',
+    [QST_CTGR]: COMMON_CODE.QST_CTGR.AI_SEARCH_MID,
+    [QST_STYLE]: '적금, 금리',
+    [PARENT_ID]: 'M020011',
+    [PARENT_NM]: '26주 적금',
+    [AGE_GRP]: 10,
+    [SHOW_U17]: 'N',
+    [IMP_START_DATE]: '20251125000000',
+    [IMP_END_DATE]: '99991231000000',
   },
 ];
 
 // 날짜 필드 설정
-export const excelDateFieldsConfig = ['impStartDate', 'impEndDate'];
+export const excelDateFieldsConfig = [IMP_START_DATE, IMP_END_DATE];
 
-export const excelExcludeFields = ['qstId', 'updatedAt', 'createdAt', 'status'];
+export const excelExcludeFields = [QST_ID, UPDATED_AT, CREATED_AT, STATUS];
 
-// 엑셀 참조 데이터
+// 엑셀 참조 데이터 (deprecated: useExcelReferenceData hook instead)
 export const excelReferenceData = {
   서비스코드: serviceOptions,
   연령대: ageGroupOptions,
