@@ -84,35 +84,21 @@ export const useMenuPermissions = (
         // 메뉴 트리와 권한 목록 병렬 조회
         const [menuTree, permissions] = await Promise.all([fetchMenuTree(), fetchPermissions()]);
 
-        // 디버그 로그
-        console.log('[Menu Permission Debug]', {
-          userRole,
-          roleCode,
-          availablePermissions: permissions.map((p) => ({
-            permission_id: p.permission_id,
-            permission_code: p.permission_code,
-          })),
-        });
-
         // 사용자 역할 코드에 해당하는 permission 찾기
         const matchedPermission = permissions.find(
           (p) => String(p.permission_code || '').toUpperCase() === roleCode,
         );
 
-        console.log('[Menu Permission Match]', { matched: !!matchedPermission, matchedPermission });
-
         let filteredMenus: MenuNode[];
         if (!matchedPermission) {
           // 권한 정보 없으면 전체 메뉴 노출
-          console.warn('[Menu Permission] No matched permission, showing all menus');
+
           filteredMenus = menuTree as MenuNode[];
         } else {
           // 화면 권한 데이터로 메뉴 필터링
           const screenPerms = await fetchScreenPermissions(matchedPermission.permission_id);
-          console.log('[Menu Permission Screen Perms]', { screenPerms });
           // 화면 권한이 없으면 전체 메뉴 노출, 있으면 필터링
           if (screenPerms.length === 0) {
-            console.warn('[Menu Permission] No screen permissions, showing all menus');
             filteredMenus = menuTree as MenuNode[];
           } else {
             const allowedIds = new Set<string>(screenPerms.map((p) => String(p.menu_id)));

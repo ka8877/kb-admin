@@ -113,11 +113,10 @@ const MainLayout = ({ children }: PropsWithChildren) => {
     [activeTop, menus],
   );
 
-  // AppHeader 최상위 메뉴는 3개로 제한하되, 하위 메뉴가 하나도 없으면 숨김
+  // AppHeader 최상위 메뉴: Firebase에서 로드한 depth 0 메뉴들을 표시 (하위 메뉴가 있는 경우만)
   const headerMenus = useMemo<MenuItem[]>(() => {
-    const topSet = new Set<string>([ROUTES.DATA_REG, ROUTES.MANAGEMENT, ROUTES.HISTORY]);
+    // 하위 메뉴가 있는 최상위 메뉴만 헤더에 표시
     return menus
-      .filter((m) => topSet.has(m.path))
       .filter((m) => (m.children?.length ?? 0) > 0)
       .map((m) => ({ label: m.label, path: m.path, children: m.children }));
   }, [menus]);
