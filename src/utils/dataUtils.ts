@@ -12,11 +12,11 @@ import { UserRole } from '@/types/types';
  * @param excludeFields - 비교에서 제외할 필드 목록 (예: updatedAt, createdAt 등)
  * @returns 변경사항이 있으면 true, 없으면 false
  */
-export function hasDataChanges<T extends Record<string, any>>(
+export const hasDataChanges = <T extends Record<string, unknown>>(
   originalData: T | undefined,
   editedData: T | undefined,
   excludeFields: string[] = ['updatedAt', 'createdAt', 'no'],
-): boolean {
+): boolean => {
   // 둘 다 undefined이면 변경사항 없음
   if (!originalData && !editedData) {
     return false;
@@ -56,7 +56,7 @@ export function hasDataChanges<T extends Record<string, any>>(
   }
 
   return false;
-}
+};
 
 /**
  * Keycloak 역할을 앱 내부 역할로 매핑

@@ -3,10 +3,9 @@
 
 import {
   getApi,
-  postApi,
   putApi,
   patchApi,
-  deleteItems,
+  fetchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
 } from '@/utils/apiUtils';
 import { toast } from 'react-toastify';
@@ -15,47 +14,43 @@ import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
 import { TOAST_MESSAGES } from '@/constants/message';
 import type { AppSchemeItem } from './types';
-import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
+import { toCompactFormat } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
 import {
-  APPROVAL_STATUS_OPTIONS,
-  CREATE_REQUESTED,
-  UPDATE_REQUESTED,
-  DELETE_REQUESTED,
-  IN_REVIEW,
-  DONE_REVIEW,
   DATA_REGISTRATION,
   DATA_MODIFICATION,
   DATA_DELETION,
   TARGET_TYPE_APP,
+  OUT_OF_SERVICE,
 } from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
+import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
 
 const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
 /**
  * Firebase 응답 데이터를 AppSchemeItem으로 변환하는 헬퍼 함수
  */
 const transformItem = (
-  v: Partial<AppSchemeItem> & Record<string, any>,
+  v: Partial<AppSchemeItem> & Record<string, unknown>,
   options: { index: number; fallbackId?: string | number },
 ): AppSchemeItem => {
   const { index, fallbackId } = options;
 
   return {
-    no: v.no ?? index + 1,
+    no: (v.no as number) ?? index + 1,
     appSchemeId: String(v.id ?? fallbackId ?? index + 1),
-    productMenuName: v.product_menu_name ?? v.productMenuName ?? '',
-    description: v.description ?? '',
-    appSchemeLink: v.app_scheme_link ?? v.appSchemeLink ?? '',
-    oneLink: v.one_link ?? v.oneLink ?? '',
-    goodsNameList: v.goods_name_list ?? v.goodsNameList ?? null,
-    parentId: v.parent_id ?? v.parentId ?? null,
-    parentTitle: v.parent_title ?? v.parentTitle ?? null,
+    productMenuName: (v.product_menu_name as string) ?? (v.productMenuName as string) ?? '',
+    description: (v.description as string) ?? '',
+    appSchemeLink: (v.app_scheme_link as string) ?? (v.appSchemeLink as string) ?? '',
+    oneLink: (v.one_link as string) ?? (v.oneLink as string) ?? '',
+    goodsNameList: (v.goods_name_list as string) ?? (v.goodsNameList as string) ?? null,
+    parentId: (v.parent_id as string) ?? (v.parentId as string) ?? null,
+    parentTitle: (v.parent_title as string) ?? (v.parentTitle as string) ?? null,
     startDate: v.start_date ? String(v.start_date) : v.startDate ? String(v.startDate) : '',
     endDate: v.end_date ? String(v.end_date) : v.endDate ? String(v.endDate) : '',
     updatedAt: v.updatedAt ? String(v.updatedAt) : '',
     createdAt: v.createdAt ? String(v.createdAt) : '',
-    status: (v.status as AppSchemeItem['status']) ?? 'in_service',
+    status: (v.status as AppSchemeItem['status']) ?? OUT_OF_SERVICE,
+    locked: (v.locked as boolean) ?? false,
   };
 };
 
@@ -70,7 +65,7 @@ const transformAppSchemes = (raw: unknown): AppSchemeItem[] => {
     return raw
       .map((item, index) => {
         if (!item) return null;
-        const v = item as Partial<AppSchemeItem> & Record<string, any>;
+        const v = item as Partial<AppSchemeItem> & Record<string, unknown>;
         return transformItem(v, { index });
       })
       .filter((item): item is AppSchemeItem => item !== null);
@@ -78,10 +73,10 @@ const transformAppSchemes = (raw: unknown): AppSchemeItem[] => {
 
   // 객체 형태 응답도 지원 (기존 방식)
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, unknown>) as [string, any][];
+    const entries = Object.entries(raw as Record<string, unknown>);
 
     return entries.map(([key, value], index) => {
-      const v = value as Partial<AppSchemeItem> & Record<string, any>;
+      const v = value as Partial<AppSchemeItem> & Record<string, unknown>;
       return transformItem(v, { index, fallbackId: key });
     });
   }
@@ -140,7 +135,7 @@ export const fetchAppSchemes = async (params?: FetchAppSchemesParams): Promise<A
  * 앱스킴 상세 조회
  */
 export const fetchAppScheme = async (id: string | number): Promise<AppSchemeItem> => {
-  const response = await getApi<Partial<AppSchemeItem> & Record<string, any>>(
+  const response = await getApi<Partial<AppSchemeItem> & Record<string, unknown>>(
     API_ENDPOINTS.APP_SCHEME.DETAIL(id),
     {
       errorMessage: TOAST_MESSAGES.LOAD_DETAIL_FAILED,
@@ -225,7 +220,7 @@ export const transformToApiFormat = (inputData: {
     parentTitle: inputData.parentTitle ? String(inputData.parentTitle) : null,
     startDate,
     endDate,
-    status: (inputData.status as AppSchemeItem['status']) || 'in_service',
+    status: (inputData.status as AppSchemeItem['status']) || OUT_OF_SERVICE,
   };
 };
 
@@ -278,7 +273,7 @@ export const createAppScheme = async (data: Partial<AppSchemeItem>): Promise<App
 
   // AppSchemeItem 형식으로 변환
   const item = transformItem(
-    { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, any>,
+    { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, unknown>,
     { index: 0, fallbackId: tempId },
   );
 
@@ -299,10 +294,13 @@ export const createAppSchemesBatch = async (items: Partial<AppSchemeItem>[]): Pr
   // 각 아이템에 대해 임시 ID 생성 및 변환
   const transformedItems = items.map((data, index) => {
     const tempId = `temp_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-    return transformItem({ ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, any>, {
-      index,
-      fallbackId: tempId,
-    });
+    return transformItem(
+      { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, unknown>,
+      {
+        index,
+        fallbackId: tempId,
+      },
+    );
   });
 
   // 승인 요청 전송 (일괄)
@@ -319,27 +317,27 @@ export const fetchApprovalRequest = async (
   approvalId: string | number,
 ): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
-  const response = await getApi<any>(endpoint, {
+  const response = await getApi<Record<string, unknown>>(endpoint, {
     errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_INFO_FAILED,
   });
 
   const v = response.data;
   return {
-    no: v.no ?? 0,
+    no: (v.no as number) ?? 0,
     approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
-    targetType: v.targetType ?? '',
-    targetId: v.targetId ?? '',
-    itsvcNo: v.itsvcNo ?? null,
-    requestKind: v.requestKind ?? v.approval_form ?? '',
-    approvalStatus: v.approvalStatus ?? v.status ?? 'request',
-    title: v.title ?? null,
-    content: v.content ?? null,
-    createdBy: v.createdBy ?? v.requester ?? '',
-    department: v.department ?? '',
-    updatedBy: v.updatedBy ?? null,
-    createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
-    updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
-    isRetracted: v.isRetracted ?? 0,
+    targetType: (v.targetType as string) ?? '',
+    targetId: (v.targetId as string) ?? '',
+    itsvcNo: (v.itsvcNo as string) ?? null,
+    requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
+    approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
+    title: (v.title as string) ?? null,
+    content: (v.content as string) ?? null,
+    createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
+    department: (v.department as string) ?? '',
+    updatedBy: (v.updatedBy as string) ?? null,
+    createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
+    updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
+    isRetracted: (v.isRetracted as number) ?? 0,
   };
 };
 
@@ -383,6 +381,61 @@ export const updateApprovalRequestStatus = async (
   });
 
   console.log('🔍 updateApprovalRequestStatus API 완료');
+};
+
+/**
+ * 결재 요청 삭제
+ */
+export const deleteApprovalRequest = async (approvalId: string | number): Promise<void> => {
+  const endpoint = API_ENDPOINTS.APP_SCHEME.APPROVAL_DETAIL(approvalId);
+  await fetchApi({
+    method: 'DELETE',
+    endpoint,
+    errorMessage: '결재 요청 삭제에 실패했습니다.',
+  });
+};
+
+/**
+ * 앱스킴 잠금 해제 (locked: false)
+ */
+export const unlockAppScheme = async (id: string | number): Promise<void> => {
+  const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
+  const endpoint = `${basePath}/${id}/locked.json`;
+  await putApi(endpoint, false, {
+    errorMessage: '데이터 잠금 해제에 실패했습니다.',
+  });
+};
+
+/**
+ * 앱스킴 잠금 (locked: true)
+ */
+export const lockAppScheme = async (id: string | number): Promise<void> => {
+  const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
+  const endpoint = `${basePath}/${id}/locked.json`;
+  await putApi(endpoint, true, {
+    errorMessage: '데이터 잠금에 실패했습니다.',
+  });
+};
+
+/**
+ * 앱스킴 일괄 잠금 (locked: true)
+ */
+export const lockAppSchemes = async (ids: (string | number)[]): Promise<void> => {
+  if (ids.length === 0) return;
+
+  const updates: { [key: string]: boolean } = {};
+  const basePath = API_ENDPOINTS.APP_SCHEME.BASE.replace(/^\//, '');
+
+  ids.forEach((id) => {
+    const path = `${basePath}/${id}/locked`;
+    updates[path] = true;
+  });
+
+  const databaseUrl = env.testURL.replace(/\/$/, '');
+  await patchApi('/.json', updates, {
+    baseURL: databaseUrl,
+    errorMessage: '데이터 일괄 잠금에 실패했습니다.',
+  });
 };
 
 /**
@@ -511,13 +564,16 @@ export const updateAppScheme = async (
   data: Partial<AppSchemeItem>,
 ): Promise<AppSchemeItem> => {
   const updatedItem = transformItem(
-    { ...data, id: String(id) } as Partial<AppSchemeItem> & Record<string, any>,
+    { ...data, id: String(id) } as Partial<AppSchemeItem> & Record<string, unknown>,
     { index: 0, fallbackId: id },
   );
 
   // 승인 요청 전송
   await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
   toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
+
+  // 데이터 잠금
+  await lockAppScheme(id);
 
   // 결재 요청 성공 후 실제 데이터 수정
   // await updateApprovedAppSchemes([updatedItem]);
@@ -544,6 +600,9 @@ export const deleteAppScheme = async (id: string | number): Promise<void> => {
     if (deletedItem) {
       await sendApprovalRequest(DATA_DELETION, [deletedItem]);
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+
+      // 데이터 잠금
+      await lockAppScheme(id);
 
       // 결재 요청 성공 후 실제 데이터 삭제
       // await deleteApprovedAppSchemes([deletedItem]);
@@ -581,6 +640,9 @@ export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Pr
     if (deletedItems.length > 0) {
       await sendApprovalRequest(DATA_DELETION, deletedItems);
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+
+      // 데이터 일괄 잠금
+      await lockAppSchemes(itemIdsToDelete);
 
       // 결재 요청 성공 후 실제 데이터 삭제
       // await deleteApprovedAppSchemes(deletedItems);

@@ -13,6 +13,12 @@ import { useInactivityLogout } from '@/hooks/useInactivityLogout';
 import { handleLoginIpCheck } from '@/utils/keycloak';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 
+declare global {
+  interface Window {
+    refreshMenuPermissions?: () => void;
+  }
+}
+
 const findBreadcrumb = (menus: MenuItem[], target: string): string[] => {
   const dfs = (list: MenuItem[], acc: string[]): string[] | null => {
     for (const m of list) {
@@ -68,11 +74,11 @@ const MainLayout = ({ children }: PropsWithChildren) => {
 
   // 메뉴 강제 리프레시 핸들러를 window 객체에 등록
   useEffect(() => {
-    (window as any).refreshMenuPermissions = () => {
+    window.refreshMenuPermissions = () => {
       setMenuRefreshTrigger((prev) => prev + 1);
     };
     return () => {
-      delete (window as any).refreshMenuPermissions;
+      window.refreshMenuPermissions = undefined;
     };
   }, []);
 

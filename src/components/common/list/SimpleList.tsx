@@ -133,9 +133,13 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   const [localSearchField, setLocalSearchField] = useState<string | undefined>(undefined);
   const [localSearchQuery, setLocalSearchQuery] = useState<string>('');
 
-  const paginationModel = enableStatePreservation
-    ? { page: listState.page, pageSize: listState.pageSize }
-    : localPaginationModel;
+  const paginationModel = useMemo(
+    () =>
+      enableStatePreservation
+        ? { page: listState.page, pageSize: listState.pageSize }
+        : localPaginationModel,
+    [enableStatePreservation, listState.page, listState.pageSize, localPaginationModel],
+  );
   const searchField = enableStatePreservation ? listState.searchField : localSearchField;
   const searchQuery = enableStatePreservation ? listState.searchQuery || '' : localSearchQuery;
 
@@ -291,7 +295,9 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
   if (enableStatePreservation && listState.searchFieldsState) {
     try {
       initialValues = JSON.parse(listState.searchFieldsState);
-    } catch {}
+    } catch {
+      // ignore
+    }
   }
 
   // 컬럼에 셀렉트 필드와 날짜 필드 적용 (DataGrid 표시용)
@@ -309,7 +315,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       if (col.field === 'no') {
         return {
           ...col,
-          valueGetter: (params: { value: any; row: T }) => {
+          valueGetter: (params: { row: T }) => {
             const { row } = params;
 
             // row가 없으면 기본값 반환

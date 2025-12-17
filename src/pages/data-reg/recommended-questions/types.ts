@@ -1,3 +1,5 @@
+import { IN_SERVICE, OUT_OF_SERVICE } from '@/constants/options';
+
 export type RecommendedQuestionItem = {
   no: number;
   qstId: string;
@@ -15,5 +17,6 @@ export type RecommendedQuestionItem = {
   impEndDate: string;
   updatedAt: string;
   createdAt: string;
-  status: 'in_service' | 'out_of_service';
+  status: typeof IN_SERVICE | typeof OUT_OF_SERVICE;
+  locked: boolean;
 };

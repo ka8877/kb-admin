@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React from 'react';
 import type { GridRenderEditCellParams } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
@@ -20,7 +21,7 @@ const DateEditCell = React.memo<DateEditCellProps>(({ params, dateFormat }) => {
   );
   const latestValueRef = React.useRef<dayjs.Dayjs | null>(tempValue); // 최신 값 추적용 ref
   const hasAcceptedRef = React.useRef(false); // 확인 버튼을 눌렀는지 추적
-  const [view, setView] = React.useState<DateView | TimeView | 'meridiem'>('day'); // 현재 뷰 상태
+  const [view, setView] = React.useState<DateView | TimeView>('day'); // 현재 뷰 상태
 
   // 셀에 포커스가 오면 달력 자동 열기 (처음 한 번만)
   React.useEffect(() => {
@@ -162,9 +163,13 @@ const DateEditCell = React.memo<DateEditCellProps>(({ params, dateFormat }) => {
         }}
         onClose={handleClose}
         format="YYYY-MM-DD hh:mm a"
-        views={['year', 'day', 'hours', 'minutes', 'meridiem'] as any}
+        views={['year', 'day', 'hours', 'minutes']}
         view={view}
-        onViewChange={(newView) => setView(newView as DateView | TimeView | 'meridiem')}
+        onViewChange={(newView) => {
+          if (newView !== 'meridiem') {
+            setView(newView);
+          }
+        }}
         slotProps={{
           textField: {
             size: 'small',
@@ -195,14 +200,6 @@ const DateEditCell = React.memo<DateEditCellProps>(({ params, dateFormat }) => {
             onKeyDown: (e: React.KeyboardEvent) => {
               if (e.key === 'Enter') {
                 e.stopPropagation(); // DataGrid로 전파 방지
-
-                // 마지막 단계(오전/오후 선택)인 경우에만 저장 및 닫기
-                if (view === 'meridiem') {
-                  // MUI 내부 상태 업데이트(onChange 호출)를 기다리기 위해 지연 실행
-                  setTimeout(() => {
-                    handleAccept(latestValueRef.current);
-                  }, 0);
-                }
                 // 그 외의 경우(날짜, 시간 선택 등)는 MUI 기본 동작(다음 단계로 이동)을 따름
               }
             },
@@ -212,5 +209,7 @@ const DateEditCell = React.memo<DateEditCellProps>(({ params, dateFormat }) => {
     </LocalizationProvider>
   );
 });
+
+DateEditCell.displayName = 'DateEditCell';
 
 export default DateEditCell;

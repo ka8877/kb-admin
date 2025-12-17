@@ -3,6 +3,7 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
+import type { CodeItem } from '@/pages/data-reg/recommended-questions/api';
 import DataDetail from '@/components/common/detail/DataDetail';
 import PageHeader from '@/components/common/PageHeader';
 import { toast } from 'react-toastify';
@@ -145,11 +146,11 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         const serviceInput = editedData?.serviceNm;
         if (!serviceInput || !codeItems.length) return [];
 
-        let serviceCodeItem: any;
+        let serviceCodeItem: CodeItem | undefined;
 
         // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
         serviceCodeItem = codeItems.find(
-          (item: any) =>
+          (item) =>
             item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
             (item.code === serviceInput || item.code_name === serviceInput),
         );
@@ -157,18 +158,18 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
         if (!serviceCodeItem) {
           const serviceNameItem = codeItems.find(
-            (item: any) =>
+            (item) =>
               item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
               (item.code === serviceInput || item.code_name === serviceInput),
           );
 
           if (serviceNameItem) {
             const serviceMapping = serviceMappings.find(
-              (m: any) => m.parent_code_item_id === serviceNameItem.firebaseKey,
+              (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
             );
             if (serviceMapping) {
               serviceCodeItem = codeItems.find(
-                (item: any) => item.firebaseKey === serviceMapping.child_code_item_id,
+                (item) => item.firebaseKey === serviceMapping.child_code_item_id,
               );
             }
           }
@@ -178,21 +179,21 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
         // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
         const relatedQuestionMappings = questionMappings.filter(
-          (m: any) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
+          (m) => m.parent_code_item_id === serviceCodeItem!.firebaseKey,
         );
 
         const questionCategoryIds = new Set(
-          relatedQuestionMappings.map((m: any) => m.child_code_item_id),
+          relatedQuestionMappings.map((m) => m.child_code_item_id),
         );
 
         // 4. qst_ctgr 아이템 정보 반환
         return codeItems
-          .filter((item: any) => questionCategoryIds.has(item.firebaseKey))
-          .map((item: any) => ({
+          .filter((item) => questionCategoryIds.has(item.firebaseKey))
+          .map((item) => ({
             label: item.code_name,
             value: item.code_name,
           }))
-          .sort((a: any, b: any) => a.label.localeCompare(b.label));
+          .sort((a, b) => a.label.localeCompare(b.label));
       },
     }),
     [codeItems, serviceMappings, questionMappings],

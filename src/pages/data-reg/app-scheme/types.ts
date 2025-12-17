@@ -15,6 +15,7 @@ export type AppSchemeItem = {
   updatedAt: string;
   createdAt: string;
   status: 'in_service' | 'out_of_service';
+  locked: boolean;
 };
 
 export type FormData = {

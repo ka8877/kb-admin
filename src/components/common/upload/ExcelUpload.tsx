@@ -1,17 +1,11 @@
 // frontend/src/components/common/upload/ExcelUpload.tsx
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Box, Button, Card, CardContent, Typography, Stack } from '@mui/material';
+import { Box, Button, Typography, Stack } from '@mui/material';
 import CreateDataActions from '../actions/CreateDataActions';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { loadWorkbookFromFile } from './utils/excelUtils';
-import { validateWorksheetData } from './utils/validationUtils';
-import {
-  generateCSVTemplate,
-  generateExcelTemplate,
-  downloadCSV,
-  downloadWorkbook,
-} from './utils/templateGenerators';
+import { generateCSVTemplate, downloadCSV } from './utils/templateGenerators';
 import {
   ALERT_MESSAGES,
   CONFIRM_TITLES,
@@ -35,10 +29,8 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
   templateFileName = '업로드_템플릿',
   exampleData,
   fieldGuides,
-  validationRules,
   referenceData,
   acceptedFormats = ['.xlsx', '.csv'],
-  title = '엑셀 파일로 일괄 등록',
   description = GUIDE_MESSAGES.EXCEL_UPLOAD_DESCRIPTION,
   templateLabel = '엑셀 양식 다운로드',
   onTemplateDownload,
@@ -296,7 +288,7 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
       console.log('🔍 validation 시작');
       for (let rowIndex = 0; rowIndex < parsedData.length; rowIndex++) {
         const row = parsedData[rowIndex];
-        const validationResults = validator(row as any);
+        const validationResults = validator(row as T);
 
         // 컴럼 순서대로 validation 체크
         if (displayColumns) {
@@ -350,8 +342,8 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
           try {
             console.log('🔍 저장 확인 - onSave에 전달할 데이터:', parsedData);
             // ExcelListPreview에서 편집된 데이터를 전달
-            await onSave(parsedData as any);
-          } catch (error) {
+            await onSave(parsedData as T[]);
+          } catch {
             showAlert({
               title: ALERT_MESSAGES.UPLOAD_FAILED,
               message: ALERT_MESSAGES.UPLOAD_ERROR_RETRY,
@@ -362,7 +354,16 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
         executeSave();
       },
     });
-  }, [selectedFile, parsedData, showAlert, showConfirm, onSave, validator, displayColumns]);
+  }, [
+    selectedFile,
+    parsedData,
+    showAlert,
+    showConfirm,
+    onSave,
+    validator,
+    displayColumns,
+    preSaveCheck,
+  ]);
 
   const handleTemplateDownloadCSV = useCallback(() => {
     if (!columns || columns.length === 0) {
@@ -386,47 +387,6 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
       });
     }
   }, [columns, fieldGuides, exampleData, referenceData, templateFileName, showAlert]);
-
-  const handleTemplateDownload = useCallback(async () => {
-    if (onTemplateDownload) {
-      onTemplateDownload();
-      return;
-    }
-
-    if (!columns || columns.length === 0) {
-      showAlert({
-        title: ALERT_MESSAGES.TEMPLATE_GENERATION_ERROR,
-        message: ALERT_MESSAGES.TEMPLATE_GENERATION_FAILED,
-        severity: 'error',
-      });
-      return;
-    }
-
-    try {
-      const workbook = await generateExcelTemplate(
-        columns,
-        fieldGuides,
-        exampleData,
-        referenceData,
-      );
-      await downloadWorkbook(workbook, templateFileName, 'xlsx');
-    } catch (error) {
-      console.error('템플릿 다운로드 실패:', error);
-      showAlert({
-        title: ALERT_MESSAGES.DOWNLOAD_FAILED,
-        message: ALERT_MESSAGES.TEMPLATE_DOWNLOAD_ERROR,
-        severity: 'error',
-      });
-    }
-  }, [
-    onTemplateDownload,
-    columns,
-    fieldGuides,
-    exampleData,
-    referenceData,
-    templateFileName,
-    showAlert,
-  ]);
 
   const acceptString = useMemo(() => acceptedFormats.join(','), [acceptedFormats]);
   const formatDisplayText = useMemo(
@@ -507,18 +467,18 @@ const ExcelUpload = <T extends GridValidRowModel = GridValidRowModel>({
         <ExcelPreviewList
           ref={excelPreviewListRef}
           key={uploadKey}
-          data={parsedData as any}
-          columns={displayColumns as any}
-          rowIdGetter={rowIdGetter as any}
+          data={parsedData as T[]}
+          columns={displayColumns!}
+          rowIdGetter={rowIdGetter}
           readOnlyFields={readOnlyFields}
           selectFields={selectFields}
           dateFields={dateFields}
           dateFormat={dateFormat}
-          validator={validator as any}
-          getDynamicSelectOptions={getDynamicSelectOptions as any}
+          validator={validator}
+          getDynamicSelectOptions={getDynamicSelectOptions}
           dynamicSelectFields={dynamicSelectFields}
-          onProcessRowUpdate={onProcessRowUpdate || (rowSanitizer as any)}
-          getRequiredFields={getRequiredFields as any}
+          onProcessRowUpdate={onProcessRowUpdate || rowSanitizer}
+          getRequiredFields={getRequiredFields}
           onDataChange={handleDataChange}
           onAddRow={handleAddRow}
         />

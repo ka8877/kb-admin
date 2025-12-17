@@ -108,11 +108,9 @@ export const handleLoginIpCheck = async (userId: string) => {
   try {
     const ipCheckResult = await checkUserLoginIp(userId);
     if (ipCheckResult.shouldAlert && ipCheckResult.message) {
-      // 중요 알림이므로 사용자가 확인하기 전까지 닫히지 않도록 설정
+      // 로그인 IP 불일치 알림
       toast.error(ipCheckResult.message, {
         toastId: 'login-ip-alert', // 중복 표시 방지
-        autoClose: false,
-        closeOnClick: false,
       });
     }
     // 체크 완료 표시

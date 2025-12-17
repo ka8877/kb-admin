@@ -1,17 +1,16 @@
-import { getApi } from '@/utils/apiUtils';
-import { API_ENDPOINTS } from '@/constants/endpoints';
+import React from 'react';
 
-interface UserInfoResponse {
-  ip: string;
-  lastLoginIp?: string;
-  lastLoginTime?: string;
-}
+// interface UserInfoResponse {
+//   ip: string;
+//   lastLoginIp?: string;
+//   lastLoginTime?: string;
+// }
 
 /**
  * 로그인 후 사용자 IP 체크 및 알림 로직
  * @param userId 사용자 ID
  */
-export const checkUserLoginIp = async (userId: string) => {
+export const checkUserLoginIp = async (_userId: string) => {
   try {
     // 1. 사용자 정보 조회 (최근 로그인 IP 포함)
     // const response = await getApi<UserInfoResponse>(API_ENDPOINTS.USER.INFO(userId));
@@ -36,7 +35,18 @@ export const checkUserLoginIp = async (userId: string) => {
       // 4. 다를 경우 알림 메시지 구성 및 반환
       return {
         shouldAlert: true,
-        message: `최종 접속 정보와 상이합니다.\n\n최종 접속 IP: ${lastLoginIp}\n최종 접속 시간: ${lastLoginTime || '알 수 없음'}\n현재 접속 IP: ${currentIp}`,
+        message: (
+          <div>
+            최종 접속 정보와 상이합니다.
+            <br />
+            <br />
+            최종 접속 IP: {lastLoginIp}
+            <br />
+            최종 접속 시간: {lastLoginTime || '알 수 없음'}
+            <br />
+            현재 접속 IP: {currentIp}
+          </div>
+        ),
       };
     }
 

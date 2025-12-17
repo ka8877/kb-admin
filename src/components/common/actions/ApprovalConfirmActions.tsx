@@ -12,9 +12,10 @@ export const ApprovalConfirmActions: React.FC<{
   open: boolean;
   selectedIds: (string | number)[];
   onConfirm: (ids: (string | number)[]) => void;
+  onRetract?: (ids: (string | number)[]) => void;
   onCancel?: () => void;
   size?: 'small' | 'medium' | 'large';
-}> = ({ open, selectedIds, onConfirm, onCancel, size = 'small' }) => {
+}> = ({ open, selectedIds, onConfirm, onRetract, onCancel, size = 'small' }) => {
   const { showConfirm } = useConfirmDialog();
   const { showAlert } = useAlertDialog();
 
@@ -36,6 +37,26 @@ export const ApprovalConfirmActions: React.FC<{
     });
   };
 
+  const handleRetractClick = () => {
+    if (!onRetract) return;
+
+    if (!selectedIds || selectedIds.length === 0) {
+      showAlert({
+        title: '회수 확인',
+        message: ALERT_MESSAGES.NO_ITEMS_SELECTED,
+        severity: 'warning',
+      });
+      return;
+    }
+    showConfirm({
+      title: '회수 확인',
+      message: '선택한 항목을 회수하시겠습니까?',
+      onConfirm: () => {
+        onRetract(selectedIds);
+      },
+    });
+  };
+
   if (!open) return null;
   return (
     <Paper elevation={1} sx={{ mt: 1, p: 1 }}>
@@ -51,6 +72,17 @@ export const ApprovalConfirmActions: React.FC<{
           >
             최종 결재 요청
           </MediumButton>
+          {onRetract && (
+            <MediumButton
+              subType="c"
+              variant="contained"
+              color="primary"
+              onClick={handleRetractClick}
+              sx={{ minWidth: '80px' }}
+            >
+              회수하기
+            </MediumButton>
+          )}
           <MediumButton
             subType="etc"
             variant="outlined"

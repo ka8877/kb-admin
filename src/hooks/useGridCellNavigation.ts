@@ -1,5 +1,10 @@
 import { useCallback, useRef } from 'react';
-import type { GridColDef, GridRenderEditCellParams, GridValidRowModel } from '@mui/x-data-grid';
+import type {
+  GridColDef,
+  GridValidRowModel,
+  GridCellParams,
+  GridCellEditStopParams,
+} from '@mui/x-data-grid';
 import { useGridApiRef } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
 
@@ -16,8 +21,8 @@ export type UseGridCellNavigationOptions<T extends GridValidRowModel> = {
 };
 
 export type CellNavigationHandlers = {
-  handleCellKeyDown: (params: any, event: React.KeyboardEvent) => void;
-  handleCellEditStop: (params: any) => void;
+  handleCellKeyDown: (params: GridCellParams, event: React.KeyboardEvent) => void;
+  handleCellEditStop: (params: GridCellEditStopParams) => void;
 };
 
 /**
@@ -108,7 +113,7 @@ export const useGridCellNavigation = <T extends GridValidRowModel = GridValidRow
 
   // 셀 편집 종료 핸들러
   const handleCellEditStop = useCallback(
-    (params: any) => {
+    (params: GridCellEditStopParams) => {
       if (!isEditMode) return;
 
       const currentField = params.field;
@@ -159,7 +164,7 @@ export const useGridCellNavigation = <T extends GridValidRowModel = GridValidRow
 
   // 셀 키보드 이벤트 핸들러
   const handleCellKeyDown = useCallback(
-    (params: any, event: React.KeyboardEvent) => {
+    (params: GridCellParams, event: React.KeyboardEvent) => {
       if (!isEditMode) return;
 
       // Tab 키 처리: 다음 셀로 포커스 이동

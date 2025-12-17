@@ -100,7 +100,7 @@ export const importExcelToJson = async ({
             value: c.value,
             type: c.type,
             numFmt: c.numFmt,
-            model: (c as any).model,
+            model: (c as unknown as { model: unknown }).model,
           };
         }),
       });

@@ -1,8 +1,7 @@
 import { toast } from 'react-toastify';
-import { TOAST_MESSAGES, ALERT_TITLES, ALERT_MESSAGES } from '@/constants/message';
 import { IN_REVIEW, DONE_REVIEW } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -15,11 +14,18 @@ import ApprovalListActions from '@/components/common/actions/ApprovalListActions
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config/env';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import { updateApprovalRequestStatus as updateRecommendedQuestionStatus } from '@/pages/data-reg/recommended-questions/api';
-import { updateApprovalRequestStatus as updateAppSchemeStatus } from '@/pages/data-reg/app-scheme/api';
+import {
+  updateApprovalRequestStatus as updateRecommendedQuestionStatus,
+  deleteApprovalRequest as deleteRecommendedQuestionApprovalRequest,
+  unlockRecommendedQuestion,
+} from '@/pages/data-reg/recommended-questions/api';
+import {
+  updateApprovalRequestStatus as updateAppSchemeStatus,
+  deleteApprovalRequest as deleteAppSchemeApprovalRequest,
+  unlockAppScheme,
+} from '@/pages/data-reg/app-scheme/api';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
@@ -46,23 +52,23 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
     return raw
       .map((item, index) => {
         if (!item) return null;
-        const v = item as Partial<ApprovalRequestItem> & Record<string, any>;
+        const v = item as Partial<ApprovalRequestItem> & Record<string, unknown>;
         return {
-          no: v.no ?? index + 1,
+          no: (v.no as number) ?? index + 1,
           approvalRequestId: String(v.approvalRequestId ?? v.id ?? index + 1),
-          targetType: v.targetType ?? '',
-          targetId: v.targetId ?? '',
-          itsvcNo: v.itsvcNo ?? null,
-          requestKind: v.requestKind ?? v.approval_form ?? '',
-          approvalStatus: v.approvalStatus ?? v.status ?? 'request',
-          title: v.title ?? null,
-          content: v.content ?? null,
-          createdBy: v.createdBy ?? v.requester ?? '',
-          department: v.department ?? '',
-          updatedBy: v.updatedBy ?? null,
-          createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
-          updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
-          isRetracted: v.isRetracted ?? 0,
+          targetType: (v.targetType as string) ?? '',
+          targetId: (v.targetId as string) ?? '',
+          itsvcNo: (v.itsvcNo as string | null) ?? null,
+          requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
+          approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
+          title: (v.title as string | null) ?? null,
+          content: (v.content as string | null) ?? null,
+          createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
+          department: (v.department as string) ?? '',
+          updatedBy: (v.updatedBy as string | null) ?? null,
+          createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
+          updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
+          isRetracted: (v.isRetracted as number) ?? 0,
         };
       })
       .filter((item): item is ApprovalRequestItem => item !== null);
@@ -70,26 +76,26 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
 
   // 객체 형태 응답도 지원 (기존 방식)
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, unknown>) as [string, any][];
+    const entries = Object.entries(raw as Record<string, unknown>);
 
     return entries.map(([key, value], index) => {
-      const v = value as Partial<ApprovalRequestItem> & Record<string, any>;
+      const v = value as Partial<ApprovalRequestItem> & Record<string, unknown>;
       return {
-        no: v.no ?? index + 1,
+        no: (v.no as number) ?? index + 1,
         approvalRequestId: String(v.approvalRequestId ?? v.id ?? key),
-        targetType: v.targetType ?? '',
-        targetId: v.targetId ?? '',
-        itsvcNo: v.itsvcNo ?? null,
-        requestKind: v.requestKind ?? v.approval_form ?? '',
-        approvalStatus: v.approvalStatus ?? v.status ?? 'request',
-        title: v.title ?? null,
-        content: v.content ?? null,
-        createdBy: v.createdBy ?? v.requester ?? '',
-        department: v.department ?? '',
-        updatedBy: v.updatedBy ?? null,
-        createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
-        updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
-        isRetracted: v.isRetracted ?? 0,
+        targetType: (v.targetType as string) ?? '',
+        targetId: (v.targetId as string) ?? '',
+        itsvcNo: (v.itsvcNo as string | null) ?? null,
+        requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
+        approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
+        title: (v.title as string | null) ?? null,
+        content: (v.content as string | null) ?? null,
+        createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
+        department: (v.department as string) ?? '',
+        updatedBy: (v.updatedBy as string | null) ?? null,
+        createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
+        updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
+        isRetracted: (v.isRetracted as number) ?? 0,
       };
     });
   }
@@ -206,10 +212,10 @@ const DataRegApprovalPage: React.FC = () => {
       const currentApprovalUrl = location.pathname + location.search;
       sessionStorage.setItem(APPROVAL_PAGE_STATE, currentApprovalUrl);
 
-      const detailUrl = pageConfig.approvalDetailRoute(params.id);
+      // const detailUrl = pageConfig.approvalDetailRoute(params.id);
       // navigate(detailUrl);
     },
-    [location.pathname, location.search, navigate, pageConfig],
+    [location.pathname, location.search],
   );
 
   // 결재 선택 토글 상태 및 핸들러
@@ -224,42 +230,10 @@ const DataRegApprovalPage: React.FC = () => {
   // 결재 확인 처리
   const handleApproveConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
-      if (selectedIds.length === 0) {
-        showAlert({
-          title: ALERT_TITLES.VALIDATION_CHECK,
-          message: ALERT_MESSAGES.NO_ITEMS_SELECTED,
-          severity: 'warning',
-        });
-        return;
-      }
-
       // 선택된 승인 요청들 필터링
       const selectedRequests = approvalRequests.filter((request) =>
         selectedIds.includes(request.approvalRequestId),
       );
-
-      // done_review 상태인 건은 선택 불가
-      const doneReviewRequests = selectedRequests.filter(
-        (request) => request.approvalStatus === DONE_REVIEW,
-      );
-      if (doneReviewRequests.length > 0) {
-        showAlert({
-          title: ALERT_TITLES.VALIDATION_CHECK,
-          message: ALERT_MESSAGES.APPROVED_ITEMS_CANNOT_SELECT,
-          severity: 'warning',
-        });
-        return;
-      }
-
-      // 선택된 요청이 없으면 return
-      if (selectedRequests.length === 0) {
-        showAlert({
-          title: ALERT_TITLES.VALIDATION_CHECK,
-          message: ALERT_MESSAGES.NO_ITEMS_SELECTED,
-          severity: 'warning',
-        });
-        return;
-      }
 
       // 최종 결재 요청: 모든 선택된 요청의 status를 in_review로 변경
       try {
@@ -276,18 +250,56 @@ const DataRegApprovalPage: React.FC = () => {
             );
           }
         }
-        // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_SUCCESS);
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
         }
         queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
-      } catch (error) {
+      } catch {
         // TODO: 나중에 제거 예정
         toast.error('최종 결재 처리에 실패했습니다.');
       }
     },
-    [approvalRequests, pageType, showAlert, queryClient, handleApproveSelect],
+    [approvalRequests, pageType, queryClient],
+  );
+
+  // 회수 확인 처리
+  const handleRetractConfirm = useCallback(
+    async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
+      // 선택된 승인 요청들 필터링
+      const selectedRequests = approvalRequests.filter((request) =>
+        selectedIds.includes(request.approvalRequestId),
+      );
+
+      try {
+        for (const request of selectedRequests) {
+          if (pageType === 'app-scheme') {
+            // unlock data
+            if (request.targetId) {
+              await unlockAppScheme(request.targetId);
+            }
+            // delete approval request
+            await deleteAppSchemeApprovalRequest(request.approvalRequestId);
+          } else {
+            // unlock data
+            if (request.targetId) {
+              await unlockRecommendedQuestion(request.targetId);
+            }
+            // delete approval request
+            await deleteRecommendedQuestionApprovalRequest(request.approvalRequestId);
+          }
+        }
+        toast.success('선택한 항목이 회수되었습니다.');
+        setApproveSelectionMode(false);
+        if (toggleSelectionMode) {
+          toggleSelectionMode(false);
+        }
+        queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
+      } catch {
+        toast.error('회수 처리에 실패했습니다.');
+      }
+    },
+    [approvalRequests, pageType, queryClient],
   );
 
   // 컬럼 필터링 (No, 결재양식, 제목, 내용, 요청자, 요청부서, 요청일, 처리상태, 처리일만 표시)
@@ -341,6 +353,9 @@ const DataRegApprovalPage: React.FC = () => {
             selectedIds={selectedIds as (string | number)[]}
             onConfirm={(ids: (string | number)[]) => {
               handleApproveConfirm(ids, toggleSelectionMode);
+            }}
+            onRetract={(ids: (string | number)[]) => {
+              handleRetractConfirm(ids, toggleSelectionMode);
             }}
             onCancel={() => {
               handleApproveSelect(false);

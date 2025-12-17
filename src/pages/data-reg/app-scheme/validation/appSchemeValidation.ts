@@ -128,8 +128,8 @@ export const createAppSchemeYupSchema = () => {
           return false;
         }
         try {
-          return isValidDate(value as any);
-        } catch (error) {
+          return isValidDate(value as string | Date | null);
+        } catch {
           return this.createError({
             message: '노출 시작일시를 확인할 수 없습니다',
           });
@@ -146,15 +146,15 @@ export const createAppSchemeYupSchema = () => {
         }
 
         try {
-          if (!isValidDate(value as any)) {
+          if (!isValidDate(value as string | Date | null)) {
             return false;
           }
 
           // 노출 시작일시 < 노출 종료일시 체크
           const formData = this.parent;
           if (formData?.startDate) {
-            const startDate = toISOString(formData.startDate as any);
-            const endDate = toISOString(value as any);
+            const startDate = toISOString(formData.startDate as string | Date | null);
+            const endDate = toISOString(value as string | Date | null);
 
             if (startDate && endDate) {
               const startDateTime = new Date(startDate);
@@ -175,7 +175,7 @@ export const createAppSchemeYupSchema = () => {
           }
 
           return true;
-        } catch (error) {
+        } catch {
           return this.createError({
             message: '노출 종료일시를 확인할 수 없습니다',
           });

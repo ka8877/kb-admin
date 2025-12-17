@@ -33,6 +33,7 @@ import {
   updateRecommendedQuestion,
   deleteRecommendedQuestion,
   deleteRecommendedQuestions,
+  type CodeItem,
 } from '@/pages/data-reg/recommended-questions/api';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { useCommonCodeOptions } from '@/hooks';
@@ -324,7 +325,7 @@ export const useQuestionCategoriesByService = (serviceInput: string | undefined)
   return useMemo(() => {
     if (!serviceInput || !codeItems.length) return [];
 
-    let serviceCodeItem: any;
+    let serviceCodeItem: CodeItem | undefined;
 
     // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
     serviceCodeItem = codeItems.find(

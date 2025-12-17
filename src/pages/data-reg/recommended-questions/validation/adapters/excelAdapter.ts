@@ -7,9 +7,6 @@ import {
   validateQuestionStyle,
   validateParentId,
   validateParentIdName,
-  validateShowU17,
-  validateImpStartDateForCreate,
-  validateImpEndDate,
 } from '../recommendedQuestionValidation';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
@@ -236,7 +233,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
  * 엑셀 데이터 중복 체크
  * 서비스코드, 질문카테고리, 연령대, 17세미만노출여부가 동일한 행이 있는지 검사
  */
-export const validateExcelDuplicates = (data: any[]): string | null => {
+export const validateExcelDuplicates = (data: Record<string, unknown>[]): string | null => {
   const duplicateMap = new Map<string, number[]>();
 
   data.forEach((row, index) => {

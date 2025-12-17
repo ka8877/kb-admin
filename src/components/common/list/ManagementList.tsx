@@ -48,6 +48,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   searchFields?: SearchField[]; // 검색 필드 설정 (textGroup 지원)
   isLoading?: boolean; // 로딩 상태
   onSearchFieldChange?: (field: string, value: string | number) => void; // 검색 필드 변경 핸들러
+  isRowSelectable?: (params: { row: T }) => boolean; // 행 선택 가능 여부
 };
 
 const defaultGetRowId =
@@ -191,6 +192,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   searchFields,
   isLoading = false,
   onSearchFieldChange,
+  isRowSelectable,
 }: ManagementListProps<T>): JSX.Element => {
   // 1. 상태 관리 (URL vs Local)
   const { listState, updateListState } = useListState(defaultPageSize);
@@ -307,7 +309,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
       if (col.field === 'no') {
         return {
           ...col,
-          valueGetter: (params: { value: any; row: T }) => {
+          valueGetter: (params: { value: unknown; row: T }) => {
             const { row } = params;
 
             // row가 없으면 기본값 반환
@@ -386,6 +388,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
           columns={processedColumns}
           getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}
+          isRowSelectable={isRowSelectable}
           rowSelectionModel={selectionModel}
           onRowSelectionModelChange={
             selectionMode ? handleRowSelectionModelChange : setSelectionModel

@@ -60,7 +60,7 @@ const GlobalConfirmDialog: React.FC = () => {
         <Button onClick={cancel} color="inherit" sx={getCancelButtonStyles()}>
           {cancelText}
         </Button>
-        <Button onClick={confirm} color={getConfirmButtonColor()} variant="contained" autoFocus>
+        <Button onClick={confirm} color={getConfirmButtonColor()} variant="contained">
           {confirmText}
         </Button>
       </DialogActions>

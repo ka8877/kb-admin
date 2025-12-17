@@ -99,9 +99,9 @@ const getSuccessMessage = (method: HttpMethod, customMessage?: string): string =
  * @param options - API 호출 옵션
  * @returns Promise<FetchApiResponse<T>>
  */
-export async function fetchApi<T = unknown>(
+export const fetchApi = async <T = unknown>(
   options: FetchApiOptions<T>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   const {
     method = 'GET',
     endpoint,
@@ -149,7 +149,7 @@ export async function fetchApi<T = unknown>(
     headers: requestHeaders,
   };
 
-  if (body && method !== 'GET') {
+  if (body !== undefined && method !== 'GET') {
     fetchOptions.body = JSON.stringify(body);
   }
 
@@ -169,7 +169,7 @@ export async function fetchApi<T = unknown>(
         if (errorData && typeof errorData.message === 'string') {
           serverErrorMessage = errorData.message;
         }
-      } catch (e) {
+      } catch {
         // ignore json parse error
       }
       throw new Error(serverErrorMessage);
@@ -225,83 +225,83 @@ export async function fetchApi<T = unknown>(
       useLoadingStore.getState().stop();
     }
   }
-}
+};
 
 /**
  * GET 요청 편의 함수
  */
-export async function getApi<T = unknown>(
+export const getApi = async <T = unknown>(
   endpoint: string,
   options?: Omit<FetchApiOptions<T>, 'method' | 'endpoint'>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   return fetchApi<T>({
     ...options,
     method: 'GET',
     endpoint,
   });
-}
+};
 
 /**
  * POST 요청 편의 함수
  */
-export async function postApi<T = unknown>(
+export const postApi = async <T = unknown>(
   endpoint: string,
   body?: unknown,
   options?: Omit<FetchApiOptions<T>, 'method' | 'endpoint' | 'body'>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   return fetchApi<T>({
     ...options,
     method: 'POST',
     endpoint,
     body,
   });
-}
+};
 
 /**
  * PUT 요청 편의 함수
  */
-export async function putApi<T = unknown>(
+export const putApi = async <T = unknown>(
   endpoint: string,
   body?: unknown,
   options?: Omit<FetchApiOptions<T>, 'method' | 'endpoint' | 'body'>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   return fetchApi<T>({
     ...options,
     method: 'PUT',
     endpoint,
     body,
   });
-}
+};
 
 /**
  * PATCH 요청 편의 함수
  */
-export async function patchApi<T = unknown>(
+export const patchApi = async <T = unknown>(
   endpoint: string,
   body?: unknown,
   options?: Omit<FetchApiOptions<T>, 'method' | 'endpoint' | 'body'>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   return fetchApi<T>({
     ...options,
     method: 'PATCH',
     endpoint,
     body,
   });
-}
+};
 
 /**
  * DELETE 요청 편의 함수
  */
-export async function deleteApi<T = unknown>(
+export const deleteApi = async <T = unknown>(
   endpoint: string,
   options?: Omit<FetchApiOptions<T>, 'method' | 'endpoint'>,
-): Promise<FetchApiResponse<T>> {
+): Promise<FetchApiResponse<T>> => {
   return fetchApi<T>({
     ...options,
     method: 'DELETE',
     endpoint,
   });
-}
+};
 
 /**
  * JSON 문자열로 저장된 검색 조건을 객체로 변환하는 유틸리티 함수
@@ -312,14 +312,14 @@ export async function deleteApi<T = unknown>(
  * const searchParams = parseSearchParams(listState.searchFieldsState);
  * // { field1: 'value1', field2: 123 }
  */
-export function parseSearchParams(searchFieldsState?: string): Record<string, string | number> {
+export const parseSearchParams = (searchFieldsState?: string): Record<string, string | number> => {
   if (!searchFieldsState) return {};
   try {
     return JSON.parse(searchFieldsState) as Record<string, string | number>;
   } catch {
     return {};
   }
-}
+};
 
 /**
  * 여러 아이템을 한 번에 삭제하는 공통 함수 (Firebase Multi-Path Update)
@@ -336,12 +336,12 @@ export function parseSearchParams(searchFieldsState?: string): Record<string, st
  *   env.testURL
  * );
  */
-export async function deleteItems(
+export const deleteItems = async (
   itemIds: (string | number)[],
   getDeletePath: (id: string | number) => string,
   label: string,
   baseURL: string,
-): Promise<void> {
+): Promise<void> => {
   if (itemIds.length === 0) {
     return;
   }
@@ -386,7 +386,7 @@ export async function deleteItems(
     // 로딩 종료
     useLoadingStore.getState().stop();
   }
-}
+};
 
 export type ApprovalRequestItem = {
   targetType: string; // 대상 타입

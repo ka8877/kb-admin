@@ -269,7 +269,7 @@ export const useRecommendedQuestionValidator = () => {
       // 서비스명이 있는 경우 동적으로 카테고리 검증
       if (data?.serviceNm && codeItems.length > 0) {
         const serviceInput = data.serviceNm;
-        let serviceCodeItem: any;
+        let serviceCodeItem: (typeof codeItems)[0] | undefined;
 
         // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
         serviceCodeItem = codeItems.find(

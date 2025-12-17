@@ -5,7 +5,7 @@ import type { MenuItem } from '@/routes/menu';
 /**
  * Mock DB의 평면 메뉴 데이터를 계층 구조로 변환
  */
-export function buildMenuTree(menuItems: MenuScreenItem[]): MenuItem[] {
+export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
   // display_yn = 'Y'인 항목만 필터링
   const visibleItems = menuItems.filter((item) => item.display_yn === 'Y');
 
@@ -82,11 +82,11 @@ export function buildMenuTree(menuItems: MenuScreenItem[]): MenuItem[] {
   sortByOrder(tree);
 
   return tree;
-}
+};
 
 /**
  * depth 0 메뉴만 반환 (헤더용)
  */
-export function getTopLevelMenus(menuItems: MenuScreenItem[]): MenuItem[] {
+export const getTopLevelMenus = (menuItems: MenuScreenItem[]): MenuItem[] => {
   return buildMenuTree(menuItems);
-}
+};

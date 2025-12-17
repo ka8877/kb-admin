@@ -15,49 +15,50 @@ type TextGroupSearchProps = {
   inputStyles?: Record<string, unknown>;
 };
 
-const TextGroupSearch = memo<TextGroupSearchProps>(({
-  searchFields,
-  allSearchFields,
-  fieldValues,
-  resolvedTextGroupSelectedFields,
-  onFieldChange,
-  onInputChange,
-  onSearch,
-  placeholder = '검색어를 입력하세요',
-  inputStyles,
-}) => {
-  return (
-    <>
-      {searchFields.map((sf) => {
-        const originalIndex = getOriginalIndex(sf, allSearchFields);
-        const selectedField =
-          resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
-        const selectOptions = sf.fields.map((f) => ({ value: f.field, label: f.label }));
+const TextGroupSearch = memo(
+  ({
+    searchFields,
+    allSearchFields,
+    fieldValues,
+    resolvedTextGroupSelectedFields,
+    onFieldChange,
+    onInputChange,
+    onSearch,
+    placeholder = '검색어를 입력하세요',
+    inputStyles,
+  }: TextGroupSearchProps) => {
+    return (
+      <>
+        {searchFields.map((sf) => {
+          const originalIndex = getOriginalIndex(sf, allSearchFields);
+          const selectedField =
+            resolvedTextGroupSelectedFields[originalIndex.toString()] || sf.fields[0]?.field || '';
+          const selectOptions = sf.fields.map((f) => ({ value: f.field, label: f.label }));
 
-        return (
-          <SearchInput
-            key={`textGroup_${originalIndex}`}
-            label="검색대상"
-            value={selectedField}
-            options={selectOptions}
-            inputValue={fieldValues[`textGroup_${originalIndex}`] || ''}
-            onFieldChange={(val) => {
-              onFieldChange(originalIndex, val);
-              onInputChange(`textGroup_${originalIndex}`, '');
-            }}
-            onInputChange={(value) => onInputChange(`textGroup_${originalIndex}`, value)}
-            onSearch={onSearch}
-            placeholder={placeholder}
-            size="small"
-            inputStyles={inputStyles}
-          />
-        );
-      })}
-    </>
-  );
-});
+          return (
+            <SearchInput
+              key={`textGroup_${originalIndex}`}
+              label="검색대상"
+              value={selectedField}
+              options={selectOptions}
+              inputValue={fieldValues[`textGroup_${originalIndex}`] || ''}
+              onFieldChange={(val) => {
+                onFieldChange(originalIndex, val);
+                onInputChange(`textGroup_${originalIndex}`, '');
+              }}
+              onInputChange={(value) => onInputChange(`textGroup_${originalIndex}`, value)}
+              onSearch={onSearch}
+              placeholder={placeholder}
+              size="small"
+              inputStyles={inputStyles}
+            />
+          );
+        })}
+      </>
+    );
+  },
+);
 
 TextGroupSearch.displayName = 'TextGroupSearch';
 
 export default TextGroupSearch;
-

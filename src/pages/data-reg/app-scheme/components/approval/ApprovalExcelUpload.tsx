@@ -13,8 +13,9 @@ import {
 } from '@/pages/data-reg/app-scheme/data';
 import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
 import { useCreateAppSchemesBatch } from '@/pages/data-reg/app-scheme/hooks';
-import { toast } from 'react-toastify';
-import { TOAST_MESSAGES, GUIDE_MESSAGES } from '@/constants/message';
+import { GUIDE_MESSAGES } from '@/constants/message';
+
+import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -29,34 +30,38 @@ const ApprovalExcelUpload: React.FC = () => {
   );
 
   const handleSave = useCallback(
-    async (data: any[]) => {
+    async (data: AppSchemeItem[]) => {
       try {
         console.log('ExcelListPreview에서 전달받은 데이터:', data);
         console.log(`총 ${data.length}개 행`);
 
         // 데이터 전처리
         const processedData = data.map((rowData) => {
+          const processedRow = { ...rowData } as Record<string, unknown>;
+
           // 문자열 필드: trim 처리
           processedFields.forEach((field) => {
-            if (rowData[field] !== null && rowData[field] !== undefined) {
-              rowData[field] = String(rowData[field]).trim();
+            if (processedRow[field] !== null && processedRow[field] !== undefined) {
+              processedRow[field] = String(processedRow[field]).trim();
             }
           });
 
           // 빈 문자열을 null로 변환 (선택 필드)
           ['goodsNameList', 'parentId', 'parentTitle'].forEach((field) => {
-            if (rowData[field] === '') {
-              rowData[field] = null;
+            if (processedRow[field] === '') {
+              processedRow[field] = null;
             }
           });
 
-          return rowData;
+          return processedRow;
         });
 
         console.log('전처리된 데이터:', processedData);
 
         // API 포맷으로 변환
-        const apiData = processedData.map((item) => transformToApiFormat(item));
+        const apiData = processedData.map((item) =>
+          transformToApiFormat(item as Partial<AppSchemeItem>),
+        );
 
         // 백엔드 API 호출
         await createBatchMutation.mutateAsync(apiData);
@@ -81,14 +86,14 @@ const ApprovalExcelUpload: React.FC = () => {
 
   // Validation 함수 (ExcelUpload의 validator prop 형식에 맞춤)
   const handleValidate = useCallback(
-    (data: any): Record<string, { isValid: boolean; message?: string }> => {
+    (data: AppSchemeItem): Record<string, { isValid: boolean; message?: string }> => {
       const results: Record<string, { isValid: boolean; message?: string }> = {};
 
       // 각 필드에 대해 validation 실행
       Object.keys(validationRules).forEach((field) => {
         const validator = validationRules[field];
-        const value = data[field];
-        results[field] = validator(value, data);
+        const value = (data as Record<string, unknown>)[field];
+        results[field] = validator(value as string | null | undefined, data);
       });
 
       return results;

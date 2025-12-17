@@ -90,12 +90,7 @@ const GlobalAlertDialog: React.FC = () => {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button
-          onClick={handleConfirm}
-          variant="contained"
-          color={severityColors[severity]}
-          autoFocus
-        >
+        <Button onClick={handleConfirm} variant="contained" color={severityColors[severity]}>
           {confirmText}
         </Button>
       </DialogActions>

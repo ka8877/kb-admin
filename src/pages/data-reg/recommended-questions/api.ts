@@ -5,6 +5,7 @@ import {
   getApi,
   putApi,
   patchApi,
+  fetchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
 } from '@/utils/apiUtils';
 import { toast } from 'react-toastify';
@@ -55,29 +56,34 @@ export interface CodeMapping {
  * Firebase 응답 데이터를 RecommendedQuestionItem으로 변환하는 헬퍼 함수
  */
 const transformItem = (
-  v: Partial<RecommendedQuestionItem> & Record<string, any>,
+  v: Partial<RecommendedQuestionItem> & Record<string, unknown>,
   options: { index: number; fallbackId?: string | number },
 ): RecommendedQuestionItem => {
   const { index, fallbackId } = options;
 
   return {
-    no: v.no ?? index + 1,
+    no: (v.no as number) ?? index + 1,
     qstId: String(v.qstId ?? v.qst_id ?? fallbackId ?? index + 1),
-    serviceCd: v.serviceCd ?? v.service_cd ?? '',
-    serviceNm: v.serviceNm ?? v.service_nm ?? '',
-    displayCtnt: v.displayCtnt ?? v.display_ctnt ?? '',
-    promptCtnt: v.promptCtnt ?? v.prompt_ctnt ?? null,
-    qstCtgr: v.qstCtgr ?? v.qst_ctgr ?? '',
-    qstStyle: v.qstStyle ?? v.qst_style ?? null,
-    parentId: v.parentId ?? v.parent_id ?? null,
-    parentNm: v.parentNm ?? v.parent_nm ?? null,
-    ageGrp: v.ageGrp ?? v.age_grp ?? null,
-    showU17: v.showU17 ?? v.under_17_yn ?? 'N',
-    impStartDate: v.impStartDate ?? (v.imp_start_date ? String(v.imp_start_date) : ''),
-    impEndDate: v.impEndDate ?? (v.imp_end_date ? String(v.imp_end_date) : ''),
+    serviceCd: v.serviceCd ?? (v.service_cd as string) ?? '',
+    serviceNm: v.serviceNm ?? (v.service_nm as string) ?? '',
+    displayCtnt: v.displayCtnt ?? (v.display_ctnt as string) ?? '',
+    promptCtnt: v.promptCtnt ?? (v.prompt_ctnt as string) ?? null,
+    qstCtgr: v.qstCtgr ?? (v.qst_ctgr as string) ?? '',
+    qstStyle: v.qstStyle ?? (v.qst_style as string) ?? null,
+    parentId: v.parentId ?? (v.parent_id as string) ?? null,
+    parentNm: v.parentNm ?? (v.parent_nm as string) ?? null,
+    ageGrp: v.ageGrp ?? (v.age_grp as string) ?? null,
+    showU17: v.showU17 ?? (v.under_17_yn as string) ?? 'N',
+    impStartDate: v.impStartDate
+      ? String(v.impStartDate)
+      : v.imp_start_date
+        ? String(v.imp_start_date)
+        : '',
+    impEndDate: v.impEndDate ? String(v.impEndDate) : v.imp_end_date ? String(v.imp_end_date) : '',
     updatedAt: v.updatedAt ? String(v.updatedAt) : '',
-    createdAt: v.createdAt ?? (v.createdAt ? String(v.createdAt) : ''),
+    createdAt: v.createdAt ? String(v.createdAt) : '',
     status: (v.status as RecommendedQuestionItem['status']) ?? OUT_OF_SERVICE,
+    locked: (v.locked as boolean) ?? false,
   };
 };
 
@@ -92,7 +98,7 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
     return raw
       .map((item, index) => {
         if (!item) return null;
-        const v = item as Partial<RecommendedQuestionItem> & Record<string, any>;
+        const v = item as Partial<RecommendedQuestionItem> & Record<string, unknown>;
         return transformItem(v, { index });
       })
       .filter((item): item is RecommendedQuestionItem => item !== null);
@@ -100,10 +106,10 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
 
   // 객체 형태 응답도 지원 (기존 방식)
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, unknown>) as [string, any][];
+    const entries = Object.entries(raw as Record<string, unknown>);
 
     return entries.map(([key, value], index) => {
-      const v = value as Partial<RecommendedQuestionItem> & Record<string, any>;
+      const v = value as Partial<RecommendedQuestionItem> & Record<string, unknown>;
       return transformItem(v, { index, fallbackId: key });
     });
   }
@@ -281,7 +287,7 @@ export const fetchRecommendedQuestions = async (
   });
 
   // TODO: 실제 REST API로 전환 시 아래 주석을 해제하고 사용
-  const queryParams = new URLSearchParams();
+  // const queryParams = new URLSearchParams();
   // queryParams.append('page', String(page));
   // queryParams.append('pageSize', String(pageSize));
   //
@@ -311,7 +317,7 @@ export const fetchRecommendedQuestions = async (
 export const fetchRecommendedQuestion = async (
   id: string | number,
 ): Promise<RecommendedQuestionItem> => {
-  const response = await getApi<Partial<RecommendedQuestionItem> & Record<string, any>>(
+  const response = await getApi<Partial<RecommendedQuestionItem> & Record<string, unknown>>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.DETAIL(id),
     {
       errorMessage: TOAST_MESSAGES.LOAD_DETAIL_FAILED,
@@ -329,27 +335,30 @@ export const fetchApprovalRequest = async (
   approvalId: string | number,
 ): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
-  const response = await getApi<any>(endpoint, {
+  const response = await getApi<Record<string, unknown>>(endpoint, {
     errorMessage: TOAST_MESSAGES.LOAD_APPROVAL_INFO_FAILED,
   });
 
   const v = response.data;
   return {
-    no: v.no ?? 0,
+    no: (v.no as number) ?? 0,
     approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
-    targetType: v.targetType ?? '',
-    targetId: v.targetId ?? '',
-    itsvcNo: v.itsvcNo ?? null,
-    requestKind: v.requestKind ?? v.approval_form ?? '',
-    approvalStatus: v.approvalStatus ?? v.status ?? 'request',
-    title: v.title ?? null,
-    content: v.content ?? null,
-    createdBy: v.createdBy ?? v.requester ?? '',
-    department: v.department ?? '',
-    updatedBy: v.updatedBy ?? null,
-    createdAt: v.createdAt ?? (v.request_date ? String(v.request_date) : ''),
-    updatedAt: v.updatedAt ?? (v.process_date ? String(v.process_date) : ''),
-    isRetracted: v.isRetracted ?? 0,
+    targetType: (v.targetType as string) ?? '',
+    targetId: (v.targetId as string) ?? '',
+    itsvcNo: (v.itsvcNo as string) ?? null,
+    requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
+    approvalStatus:
+      (v.approvalStatus as ApprovalRequestItem['approvalStatus']) ??
+      (v.status as ApprovalRequestItem['approvalStatus']) ??
+      'request',
+    title: (v.title as string) ?? null,
+    content: (v.content as string) ?? null,
+    createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
+    department: (v.department as string) ?? '',
+    updatedBy: (v.updatedBy as string) ?? null,
+    createdAt: v.createdAt ? String(v.createdAt) : v.request_date ? String(v.request_date) : '',
+    updatedAt: v.updatedAt ? String(v.updatedAt) : v.process_date ? String(v.process_date) : '',
+    isRetracted: (v.isRetracted as number) ?? 0,
   };
 };
 
@@ -381,7 +390,7 @@ export const createRecommendedQuestion = async (
 
   // RecommendedQuestionItem 형식으로 변환
   const item = transformItem(
-    { ...data, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
+    { ...data, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
     { index: 0, fallbackId: tempId },
   );
 
@@ -412,7 +421,7 @@ export const createRecommendedQuestionsBatch = async (
   const createdItems: RecommendedQuestionItem[] = items.map((item, index) => {
     const tempId = `temp_${baseTime}_${index}_${Math.random().toString(36).substr(2, 9)}`;
     return transformItem(
-      { ...item, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, any>,
+      { ...item, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
       { index, fallbackId: tempId },
     );
   });
@@ -447,6 +456,61 @@ export const updateApprovalRequestStatus = async (
   });
 
   console.log('🔍 updateApprovalRequestStatus API 완료');
+};
+
+/**
+ * 결재 요청 삭제
+ */
+export const deleteApprovalRequest = async (approvalId: string | number): Promise<void> => {
+  const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
+  await fetchApi({
+    method: 'DELETE',
+    endpoint,
+    errorMessage: '결재 요청 삭제에 실패했습니다.',
+  });
+};
+
+/**
+ * 추천질문 잠금 해제 (locked: false)
+ */
+export const unlockRecommendedQuestion = async (id: string | number): Promise<void> => {
+  const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE;
+  const endpoint = `${basePath}/${id}/locked.json`;
+  await putApi(endpoint, false, {
+    errorMessage: '데이터 잠금 해제에 실패했습니다.',
+  });
+};
+
+/**
+ * 추천질문 잠금 (locked: true)
+ */
+export const lockRecommendedQuestion = async (id: string | number): Promise<void> => {
+  const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE;
+  const endpoint = `${basePath}/${id}/locked.json`;
+  await putApi(endpoint, true, {
+    errorMessage: '데이터 잠금에 실패했습니다.',
+  });
+};
+
+/**
+ * 추천질문 일괄 잠금 (locked: true)
+ */
+export const lockRecommendedQuestions = async (ids: (string | number)[]): Promise<void> => {
+  if (ids.length === 0) return;
+
+  const updates: { [key: string]: boolean } = {};
+  const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE.replace(/^\//, '');
+
+  ids.forEach((id) => {
+    const path = `${basePath}/${id}/locked`;
+    updates[path] = true;
+  });
+
+  const databaseUrl = env.testURL.replace(/\/$/, '');
+  await patchApi('/.json', updates, {
+    baseURL: databaseUrl,
+    errorMessage: '데이터 일괄 잠금에 실패했습니다.',
+  });
 };
 
 /**
@@ -499,128 +563,128 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
  * 승인된 항목들을 실제 데이터로 수정 (data_modification인 경우)
  * @param items - 수정할 추천질문 아이템 배열 (qst_id 포함)
  */
-const updateApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
-  if (items.length === 0) {
-    console.log('🔍 updateApprovedQuestions: items가 비어있음');
-    return;
-  }
+// const updateApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
+//   if (items.length === 0) {
+//     console.log('🔍 updateApprovedQuestions: items가 비어있음');
+//     return;
+//   }
 
-  console.log('🔍 updateApprovedQuestions API 호출:', {
-    itemsCount: items.length,
-    items: items.map((item) => ({ qstId: item.qstId })),
-  });
+//   console.log('🔍 updateApprovedQuestions API 호출:', {
+//     itemsCount: items.length,
+//     items: items.map((item) => ({ qstId: item.qstId })),
+//   });
 
-  // 로딩 시작 (putApi가 이미 로딩을 관리하지만, 여러 항목을 수정하는 경우를 위해)
-  useLoadingStore.getState().start();
+//   // 로딩 시작 (putApi가 이미 로딩을 관리하지만, 여러 항목을 수정하는 경우를 위해)
+//   useLoadingStore.getState().start();
 
-  try {
-    // 각 항목을 개별적으로 UPDATE 엔드포인트로 수정
-    for (const item of items) {
-      const qstId = item.qstId;
-      if (!qstId) {
-        console.warn('🔍 qstId가 없는 항목 건너뜀:', item);
-        continue;
-      }
+//   try {
+//     // 각 항목을 개별적으로 UPDATE 엔드포인트로 수정
+//     for (const item of items) {
+//       const qstId = item.qstId;
+//       if (!qstId) {
+//         console.warn('🔍 qstId가 없는 항목 건너뜀:', item);
+//         continue;
+//       }
 
-      const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.UPDATE(qstId);
-      console.log('🔍 개별 항목 수정:', { qst_id: qstId, endpoint });
+//       const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.UPDATE(qstId);
+//       console.log('🔍 개별 항목 수정:', { qst_id: qstId, endpoint });
 
-      await putApi<RecommendedQuestionItem>(endpoint, item, {
-        errorMessage: `${TOAST_MESSAGES.UPDATE_FAILED} (qstId: ${qstId})`,
-      });
-    }
+//       await putApi<RecommendedQuestionItem>(endpoint, item, {
+//         errorMessage: `${TOAST_MESSAGES.UPDATE_FAILED} (qstId: ${qstId})`,
+//       });
+//     }
 
-    console.log(`🔍 승인된 항목 ${items.length}개가 수정되었습니다.`);
-  } finally {
-    useLoadingStore.getState().stop();
-  }
-};
+//     console.log(`🔍 승인된 항목 ${items.length}개가 수정되었습니다.`);
+//   } finally {
+//     useLoadingStore.getState().stop();
+//   }
+// };
 
 /**
  * 승인된 항목들을 실제 데이터로 삭제 (data_deletion인 경우)
  * @param items - 삭제할 추천질문 아이템 배열 (qst_id 포함)
  */
-const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
-  if (items.length === 0) {
-    console.log('🔍 deleteApprovedQuestions: items가 비어있음');
-    return;
-  }
+// const deleteApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
+//   if (items.length === 0) {
+//     console.log('🔍 deleteApprovedQuestions: items가 비어있음');
+//     return;
+//   }
 
-  console.log('🔍 deleteApprovedQuestions 입력 items:', items);
+//   console.log('🔍 deleteApprovedQuestions 입력 items:', items);
 
-  // 각 항목의 qstId 추출 (null, undefined, 빈 문자열 제외)
-  const qstIdsToDelete = items
-    .map((item) => {
-      const qstId = item.qstId;
-      console.log('🔍 deleteApprovedQuestions - item.qstId:', qstId, 'item:', item);
-      return qstId;
-    })
-    .filter((qstId) => {
-      const isValid = qstId !== undefined && qstId !== null && qstId !== '';
-      console.log('🔍 deleteApprovedQuestions - qstId 필터링:', { qstId, isValid });
-      return isValid;
-    }) as (string | number)[];
+//   // 각 항목의 qstId 추출 (null, undefined, 빈 문자열 제외)
+//   const qstIdsToDelete = items
+//     .map((item) => {
+//       const qstId = item.qstId;
+//       console.log('🔍 deleteApprovedQuestions - item.qstId:', qstId, 'item:', item);
+//       return qstId;
+//     })
+//     .filter((qstId) => {
+//       const isValid = qstId !== undefined && qstId !== null && qstId !== '';
+//       console.log('🔍 deleteApprovedQuestions - qstId 필터링:', { qstId, isValid });
+//       return isValid;
+//     }) as (string | number)[];
 
-  console.log('🔍 deleteApprovedQuestions - 추출된 qstIdsToDelete:', qstIdsToDelete);
+//   console.log('🔍 deleteApprovedQuestions - 추출된 qstIdsToDelete:', qstIdsToDelete);
 
-  if (qstIdsToDelete.length === 0) {
-    console.warn('🔍 deleteApprovedQuestions: 유효한 qstId가 없음');
-    console.warn('🔍 deleteApprovedQuestions: 입력 items:', items);
-    return;
-  }
+//   if (qstIdsToDelete.length === 0) {
+//     console.warn('🔍 deleteApprovedQuestions: 유효한 qstId가 없음');
+//     console.warn('🔍 deleteApprovedQuestions: 입력 items:', items);
+//     return;
+//   }
 
-  console.log('🔍 deleteApprovedQuestions API 호출:', {
-    qstIdsToDelete,
-    itemsCount: items.length,
-    deleteEndpoints: qstIdsToDelete.map((id) => API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE(id)),
-  });
+//   console.log('🔍 deleteApprovedQuestions API 호출:', {
+//     qstIdsToDelete,
+//     itemsCount: items.length,
+//     deleteEndpoints: qstIdsToDelete.map((id) => API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE(id)),
+//   });
 
-  // Firebase Multi-Path Update를 사용하여 일괄 삭제
-  const updates: { [key: string]: null } = {};
-  // DELETE 엔드포인트에서 경로 추출: '/data-reg/qst/${id}.json' -> 'data-reg/qst'
-  const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE.replace(/^\//, '');
+//   // Firebase Multi-Path Update를 사용하여 일괄 삭제
+//   const updates: { [key: string]: null } = {};
+//   // DELETE 엔드포인트에서 경로 추출: '/data-reg/qst/${id}.json' -> 'data-reg/qst'
+//   const basePath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE.replace(/^\//, '');
 
-  qstIdsToDelete.forEach((qstId) => {
-    // Firebase 경로는 앞의 슬래시를 제거하고 .json도 제거해야 함
-    // 예: data-reg/qst/temp_1764052479281_1_l8gsmmdv1
-    const path = `${basePath}/${qstId}`;
-    updates[path] = null;
-    console.log('🔍 삭제 경로 추가:', { qstId, path });
-  });
+//   qstIdsToDelete.forEach((qstId) => {
+//     // Firebase 경로는 앞의 슬래시를 제거하고 .json도 제거해야 함
+//     // 예: data-reg/qst/temp_1764052479281_1_l8gsmmdv1
+//     const path = `${basePath}/${qstId}`;
+//     updates[path] = null;
+//     console.log('🔍 삭제 경로 추가:', { qstId, path });
+//   });
 
-  if (Object.keys(updates).length === 0) {
-    console.warn('🔍 deleteApprovedQuestions: 삭제할 항목이 없음');
-    return;
-  }
+//   if (Object.keys(updates).length === 0) {
+//     console.warn('🔍 deleteApprovedQuestions: 삭제할 항목이 없음');
+//     return;
+//   }
 
-  // Firebase REST API를 통해 Multi-Path Update 실행
-  const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
+//   // Firebase REST API를 통해 Multi-Path Update 실행
+//   const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
 
-  console.log('🔍 deleteApprovedQuestions Firebase 업데이트:', {
-    updates,
-    updatesCount: Object.keys(updates).length,
-  });
+//   console.log('🔍 deleteApprovedQuestions Firebase 업데이트:', {
+//     updates,
+//     updatesCount: Object.keys(updates).length,
+//   });
 
-  // 로딩 시작
-  useLoadingStore.getState().start();
+//   // 로딩 시작
+//   useLoadingStore.getState().start();
 
-  try {
-    await patchApi('/.json', updates, {
-      baseURL: databaseUrl,
-      errorMessage: TOAST_MESSAGES.DELETE_FAILED,
-      successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
-    });
+//   try {
+//     await patchApi('/.json', updates, {
+//       baseURL: databaseUrl,
+//       errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+//       successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+//     });
 
-    console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
-  } catch (error) {
-    // toast.error(TOAST_MESSAGES.DELETE_FAILED); // patchApi에서 처리됨
-    throw error;
-  } finally {
-    useLoadingStore.getState().stop();
-  }
+//     console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
+//   } catch (error) {
+//     // toast.error(TOAST_MESSAGES.DELETE_FAILED); // patchApi에서 처리됨
+//     throw error;
+//   } finally {
+//     useLoadingStore.getState().stop();
+//   }
 
-  console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
-};
+//   console.log(`🔍 승인된 항목 ${qstIdsToDelete.length}개가 삭제되었습니다.`);
+// };
 
 /**
  * 추천질문 수정 (승인 요청 전송 후 실제 데이터 수정)
@@ -630,13 +694,16 @@ export const updateRecommendedQuestion = async (
   data: Partial<RecommendedQuestionItem>,
 ): Promise<RecommendedQuestionItem> => {
   const updatedItem = transformItem(
-    { ...data, qstId: String(id) } as Partial<RecommendedQuestionItem> & Record<string, any>,
+    { ...data, qstId: String(id) } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
     { index: 0, fallbackId: id },
   );
 
   // 승인 요청 전송
   await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
   toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
+
+  // 데이터 잠금
+  await lockRecommendedQuestion(id);
 
   // 결재 요청 성공 후 실제 데이터 수정
   // await updateApprovedQuestions([updatedItem]);
@@ -663,6 +730,9 @@ export const deleteRecommendedQuestion = async (id: string | number): Promise<vo
     if (deletedItem) {
       await sendApprovalRequest(DATA_DELETION, [deletedItem]);
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
+
+      // 데이터 잠금
+      await lockRecommendedQuestion(id);
 
       // 결재 요청 성공 후 실제 데이터 삭제
       //await deleteApprovedQuestions([deletedItem]);
@@ -703,6 +773,9 @@ export const deleteRecommendedQuestions = async (
       await sendApprovalRequest(DATA_DELETION, deletedItems);
       toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
 
+      // 데이터 일괄 잠금
+      await lockRecommendedQuestions(itemIdsToDelete);
+
       // 결재 요청 성공 후 실제 데이터 삭제
       // await deleteApprovedQuestions(deletedItems);
     } else {
@@ -717,16 +790,16 @@ export const deleteRecommendedQuestions = async (
  * 모든 코드 아이템 조회
  */
 export const fetchCodeItems = async (): Promise<CodeItem[]> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
     errorMessage: '코드 아이템 목록을 불러오는데 실패했습니다.',
   });
 
   let items: CodeItem[] = [];
   if (Array.isArray(response.data)) {
-    items = response.data;
+    items = response.data as CodeItem[];
   } else if (typeof response.data === 'object' && response.data !== null) {
     // Firebase 객체 형태를 배열로 변환하면서 key를 firebaseKey로 주입
-    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+    items = Object.entries(response.data as Record<string, CodeItem>).map(([key, value]) => ({
       ...value,
       firebaseKey: key,
     }));
@@ -738,15 +811,15 @@ export const fetchCodeItems = async (): Promise<CodeItem[]> => {
  * 서비스 매핑 목록 조회
  */
 export const fetchServiceMappings = async (): Promise<CodeMapping[]> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
     errorMessage: '서비스 매핑 정보를 불러오는데 실패했습니다.',
   });
 
   let items: CodeMapping[] = [];
   if (Array.isArray(response.data)) {
-    items = response.data;
+    items = response.data as CodeMapping[];
   } else if (typeof response.data === 'object' && response.data !== null) {
-    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+    items = Object.entries(response.data as Record<string, CodeMapping>).map(([key, value]) => ({
       ...value,
       firebaseKey: key,
     }));
@@ -758,15 +831,15 @@ export const fetchServiceMappings = async (): Promise<CodeMapping[]> => {
  * 질문 매핑 목록 조회
  */
 export const fetchQuestionMappings = async (): Promise<CodeMapping[]> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_MAPPINGS, {
     errorMessage: '질문 매핑 정보를 불러오는데 실패했습니다.',
   });
 
   let items: CodeMapping[] = [];
   if (Array.isArray(response.data)) {
-    items = response.data;
+    items = response.data as CodeMapping[];
   } else if (typeof response.data === 'object' && response.data !== null) {
-    items = Object.entries(response.data).map(([key, value]: [string, any]) => ({
+    items = Object.entries(response.data as Record<string, CodeMapping>).map(([key, value]) => ({
       ...value,
       firebaseKey: key,
     }));

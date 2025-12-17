@@ -20,7 +20,6 @@ import { parseSearchParams } from '@/utils/apiUtils';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 import { QST_ID, SERVICE_NM } from '@/pages/data-reg/recommended-questions/data';
-``;
 
 const RecommendedQuestionsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -122,6 +121,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         searchFields={searchFields}
         isLoading={isDataLoading}
         onSearchFieldChange={handleSearchFieldChange}
+        isRowSelectable={(params) => !params.row.locked}
       />
     </Box>
   );

@@ -17,6 +17,7 @@ import {
 } from '@/pages/data-reg/app-scheme/hooks';
 import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
 import { createAppSchemeYupSchema } from '@/pages/data-reg/app-scheme/validation/appSchemeValidation';
+import { ValidationError } from 'yup';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import type { ValidationResult } from '@/types/types';
@@ -84,25 +85,27 @@ const AppSchemeDetailPage: React.FC = () => {
         Object.keys(schema.fields).forEach((field) => {
           results[field] = { isValid: true };
         });
-      } catch (err: any) {
-        // validation 실패 시 에러 메시지 수집
-        const errors = err.inner || [];
-        const fieldErrors: Record<string, string> = {};
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          // validation 실패 시 에러 메시지 수집
+          const errors = err.inner || [];
+          const fieldErrors: Record<string, string> = {};
 
-        errors.forEach((error: any) => {
-          if (error.path) {
-            fieldErrors[error.path] = error.message;
-          }
-        });
+          errors.forEach((error) => {
+            if (error.path) {
+              fieldErrors[error.path] = error.message;
+            }
+          });
 
-        // 모든 필드에 대해 결과 생성
-        Object.keys(schema.fields).forEach((field) => {
-          if (fieldErrors[field]) {
-            results[field] = { isValid: false, message: fieldErrors[field] };
-          } else {
-            results[field] = { isValid: true };
-          }
-        });
+          // 모든 필드에 대해 결과 생성
+          Object.keys(schema.fields).forEach((field) => {
+            if (fieldErrors[field]) {
+              results[field] = { isValid: false, message: fieldErrors[field] };
+            } else {
+              results[field] = { isValid: true };
+            }
+          });
+        }
       }
 
       return results;

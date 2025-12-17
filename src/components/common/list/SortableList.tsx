@@ -26,7 +26,7 @@ export type SortableListProps<T extends GridValidRowModel = GridValidRowModel> =
   isSelectionMode?: boolean;
   onSelectionChange?: (ids: (string | number)[]) => void;
   // 스타일
-  sx?: Record<string, any>;
+  sx?: Record<string, unknown>;
   getRowClassName?: (params: { id: GridRowId; row: T }) => string;
 };
 

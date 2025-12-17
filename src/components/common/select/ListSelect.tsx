@@ -60,7 +60,6 @@ const ListSelect: React.FC<ListSelectProps> = ({ params, options }) => {
       onClose={handleClose}
       open={open}
       fullWidth
-      autoFocus
       size="small"
       MenuProps={{
         PaperProps: {

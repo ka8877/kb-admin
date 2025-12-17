@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react';
-import type { GridValidRowModel, GridColDef } from '@mui/x-data-grid';
+import { useCallback } from 'react';
+import type { GridValidRowModel, GridColDef, GridCellParams } from '@mui/x-data-grid';
 import { useGridApiRef } from '@mui/x-data-grid';
 import type { SelectFieldOption } from '@/types/types';
 import { isSelectField as checkIsSelectField } from '../utils/columnUtils';
@@ -78,7 +78,7 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
 
   // 셀 편집 종료 핸들러
   const handleCellEditStop = useCallback(
-    (params: any) => {
+    (params: GridCellParams) => {
       if (!isEditMode) return;
 
       const currentField = params.field;
@@ -134,7 +134,7 @@ export const useDataDetailKeyboard = <T extends GridValidRowModel>({
 
   // 셀 키보드 이벤트 핸들러
   const handleCellKeyDown = useCallback(
-    (params: any, event: React.KeyboardEvent) => {
+    (params: GridCellParams, event: React.KeyboardEvent) => {
       if (!isEditMode) return;
 
       if (event.key === 'Tab' && !event.shiftKey) {

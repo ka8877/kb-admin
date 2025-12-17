@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
@@ -10,10 +10,9 @@ import {
   useCreateRecommendedQuestionsBatch,
   useExcelSelectFieldsData,
   useQuestionMappingData,
-  useSelectFieldsData,
   useServiceDataConverter,
 } from '@/pages/data-reg/recommended-questions/hooks';
-import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
+import { transformToApiFormat, type CodeItem } from '@/pages/data-reg/recommended-questions/api';
 import { ROUTES } from '@/routes/menu';
 import { excludeFields } from '@/pages/data-reg/recommended-questions/data';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
@@ -27,15 +26,8 @@ import { validateExcelDuplicates } from '@/pages/data-reg/recommended-questions/
 import {
   SERVICE_NM,
   QST_CTGR,
-  DISPLAY_CTNT,
-  PROMPT_CTNT,
-  QST_STYLE,
-  PARENT_ID,
-  PARENT_NM,
   AGE_GRP,
   SHOW_U17,
-  IMP_START_DATE,
-  IMP_END_DATE,
 } from '@/pages/data-reg/recommended-questions/data';
 import { CODE_GROUP_ID_SERVICE_CD, CODE_GRUOP_ID_SERVICE_NM } from '@/constants/options';
 
@@ -71,7 +63,7 @@ const ApprovalExcelUpload: React.FC = () => {
   // 그리드 표시용 컬럼 (no 포함, serviceNm을 serviceCd로 교체)
   const gridColumns: GridColDef[] = useMemo(() => {
     const result = recommendedQuestionColumns
-      .filter((col) => !excelExcludeFields.includes(col.field as any))
+      .filter((col) => !(excelExcludeFields as readonly string[]).includes(col.field))
       .map((col) => {
         // serviceNm을 serviceCd로 교체
         if (col.field === SERVICE_NM) {
@@ -88,7 +80,7 @@ const ApprovalExcelUpload: React.FC = () => {
   }, []);
 
   const handleSave = useCallback(
-    async (data: any[]) => {
+    async (data: Record<string, unknown>[]) => {
       try {
         console.log('🚀 ApprovalExcelUpload handleSave 시작!');
         console.log('ExcelListPreview에서 전달받은 데이터:', data);
@@ -112,14 +104,14 @@ const ApprovalExcelUpload: React.FC = () => {
 
           // 서비스 코드/명 변환
           const { serviceCd, serviceNm } = getServiceData(
-            rowData[SERVICE_CD] || rowData[SERVICE_NM],
+            (rowData[SERVICE_CD] as string) || (rowData[SERVICE_NM] as string) || '',
           );
 
           return transformToApiFormat({
             ...rowData,
             serviceCd,
             serviceNm,
-          });
+          } as unknown as Parameters<typeof transformToApiFormat>[0]);
         });
 
         // 일괄 등록 API 호출
@@ -163,11 +155,11 @@ const ApprovalExcelUpload: React.FC = () => {
     (serviceCode: string | undefined) => {
       if (!serviceCode || !codeItems.length) return [];
 
-      let serviceCodeItem: any;
+      let serviceCodeItem: CodeItem | undefined;
 
       // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
       serviceCodeItem = codeItems.find(
-        (item: any) =>
+        (item) =>
           item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
           (item.code === serviceCode || item.code_name === serviceCode),
       );
@@ -175,18 +167,18 @@ const ApprovalExcelUpload: React.FC = () => {
       // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
       if (!serviceCodeItem) {
         const serviceNameItem = codeItems.find(
-          (item: any) =>
+          (item) =>
             item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
             (item.code === serviceCode || item.code_name === serviceCode),
         );
 
         if (serviceNameItem) {
           const serviceMapping = serviceMappings.find(
-            (m: any) => m.parent_code_item_id === serviceNameItem.firebaseKey,
+            (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
           );
           if (serviceMapping) {
             serviceCodeItem = codeItems.find(
-              (item: any) => item.firebaseKey === serviceMapping.child_code_item_id,
+              (item) => item.firebaseKey === serviceMapping.child_code_item_id,
             );
           }
         }
@@ -196,41 +188,43 @@ const ApprovalExcelUpload: React.FC = () => {
 
       // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
       const relatedQuestionMappings = questionMappings.filter(
-        (m: any) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
+        (m) => m.parent_code_item_id === serviceCodeItem!.firebaseKey,
       );
 
-      const questionCategoryIds = new Set(
-        relatedQuestionMappings.map((m: any) => m.child_code_item_id),
-      );
+      const questionCategoryIds = new Set(relatedQuestionMappings.map((m) => m.child_code_item_id));
 
       // 4. qst_ctgr 아이템 정보 반환
       return codeItems
-        .filter((item: any) => questionCategoryIds.has(item.firebaseKey))
-        .map((item: any) => ({
+        .filter((item) => questionCategoryIds.has(item.firebaseKey))
+        .map((item) => ({
           label: item.code_name,
           value: item.code_name,
         }))
-        .sort((a: any, b: any) => a.label.localeCompare(b.label));
+        .sort((a, b) => a.label.localeCompare(b.label));
     },
     [codeItems, serviceMappings, questionMappings],
   );
 
   // 동적 질문 카테고리 옵션 getter
   const dynamicQuestionCategoryOptionsGetter = useCallback(
-    (row: any) => getQuestionCategoryOptionsByService(row[SERVICE_CD]),
+    (row: Record<string, unknown>) =>
+      getQuestionCategoryOptionsByService(row[SERVICE_CD] as string),
     [getQuestionCategoryOptionsByService],
   );
 
   // 서비스 코드가 변경되면 질문 카테고리 초기화
-  const handleRowSanitizer = useCallback((newRow: any, oldRow: any) => {
-    if (newRow[SERVICE_CD] !== oldRow[SERVICE_CD]) {
-      return {
-        ...newRow,
-        [QST_CTGR]: '',
-      };
-    }
-    return newRow;
-  }, []);
+  const handleRowSanitizer = useCallback(
+    (newRow: Record<string, unknown>, oldRow: Record<string, unknown>) => {
+      if (newRow[SERVICE_CD] !== oldRow[SERVICE_CD]) {
+        return {
+          ...newRow,
+          [QST_CTGR]: '',
+        };
+      }
+      return newRow;
+    },
+    [],
+  );
 
   // ExcelListPreview용 selectFields 설정
   const selectFieldsConfig = useMemo(
@@ -245,13 +239,13 @@ const ApprovalExcelUpload: React.FC = () => {
 
   // Validation 함수 (serviceCd를 serviceNm으로 변환하여 체크)
   const handleValidate = useCallback(
-    (data: any) => {
+    (data: Record<string, unknown>) => {
       const normalized = { ...data };
       // serviceCd를 serviceNm으로 변환 (빈 문자열도 변환)
       if (normalized[SERVICE_CD] !== undefined && normalized[SERVICE_CD] !== null) {
         normalized[SERVICE_NM] = normalized[SERVICE_CD];
       }
-      return validateAll(normalized);
+      return validateAll(normalized as unknown as Parameters<typeof validateAll>[0]);
     },
     [validateAll],
   );
