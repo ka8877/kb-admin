@@ -85,57 +85,6 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     [id, updateMutation, refetch, getServiceData],
   );
 
-  // 서비스 코드별 질문 카테고리 옵션 맵 로드 (삭제됨 - useQuestionCategoriesByService 사용)
-  // const questionCategoryOptionsMap = useQuestionCategoryOptionsMap();
-
-  // editedData의 serviceNm에 따라 동적으로 카테고리 옵션 반환
-  // DataDetail 컴포넌트가 훅을 직접 호출할 수 없으므로,
-  // 여기서는 훅을 사용하여 데이터를 미리 로드하는 방식이 아니라,
-  // DataDetail 내부에서 동적으로 옵션을 가져올 수 있는 구조가 필요함.
-  // 하지만 현재 구조상 DataDetail에 전달하는 dynamicSelectFieldsConfig는 함수 형태이므로
-  // 훅을 내부에서 호출할 수 없음.
-  // 따라서, 현재 선택된 서비스명에 대한 옵션을 미리 로드하여 전달하거나,
-  // DataDetail이 훅을 사용할 수 있도록 구조를 변경해야 함.
-  // 여기서는 일단 useQuestionCategoriesByService 훅을 사용하여
-  // 현재 데이터의 서비스명에 맞는 옵션을 가져오는 방식으로 구현하되,
-  // 편집 중 서비스명이 변경될 때마다 옵션이 갱신되어야 하므로
-  // 이 부분은 DataDetail 내부 구현에 의존적임.
-
-  // 임시 해결책: DataDetail 컴포넌트가 훅을 직접 사용할 수 없으므로,
-  // useQuestionCategoriesByService 훅을 사용하여 모든 서비스에 대한 옵션을 미리 로드하는 것은 비효율적임.
-  // 대신, useQuestionCategoriesByService 훅은 단일 서비스에 대한 옵션만 반환하므로,
-  // 이를 활용하기 위해 약간의 트릭을 사용해야 함.
-  // 하지만 useQuestionCategoriesByService는 훅이므로 콜백 내부에서 호출 불가.
-
-  // 따라서 기존 방식(useQuestionCategoryOptionsMap)이 아닌,
-  // API를 통해 동적으로 매핑 정보를 가져오는 useQuestionCategoriesByService 로직을
-  // 일반 함수로 분리하거나, 여기서 모든 매핑 정보를 가져와서 처리해야 함.
-
-  // 하지만 useQuestionCategoriesByService 내부 로직이 복잡(API 호출 3번)하므로,
-  // 이를 재사용하기 위해 커스텀 훅을 사용하여 데이터를 가져오고,
-  // 그 데이터를 기반으로 옵션을 반환하도록 수정.
-
-  // 1. 모든 코드 아이템, 서비스 매핑, 질문 매핑 데이터를 미리 로드 (useQuestionCategoriesByService 내부 로직과 유사)
-  // 이를 위해 별도의 훅을 만들거나, useQuestionCategoriesByService를 수정하여
-  // 특정 서비스가 아닌 전체 매핑 정보를 반환하도록 할 수 있음.
-
-  // 하지만 요청하신 내용은 "useQuestionCategoriesByService(watchedServiceNm)을 사용해야 돼" 이므로,
-  // DataDetail 컴포넌트에서 편집 중인 데이터의 serviceNm을 알 수 있는 방법이 필요함.
-  // DataDetail은 내부적으로 상태를 관리하므로, 외부에서 훅을 호출하여 주입하기 어려움.
-
-  // 대안: DataDetail 컴포넌트가 `useQuestionCategoriesByService` 훅을 사용할 수 있도록
-  // `useQuestionCategoriesByService` 훅을 `dynamicSelectFieldsConfig` 내부에서 호출하는 것이 아니라,
-  // `DataDetail` 컴포넌트가 `serviceNm`이 변경될 때마다 외부에서 전달받은 `getOptions` 함수를 호출하도록 해야 하는데,
-  // `getOptions` 함수는 훅이 아니므로 훅을 호출할 수 없음.
-
-  // 따라서, 가장 현실적인 방법은
-  // `useQuestionCategoriesByService` 훅 내부의 로직(매핑 데이터 로드)을 분리하여
-  // 컴포넌트 레벨에서 데이터를 로드하고,
-  // `dynamicSelectFieldsConfig` 함수 내부에서 그 데이터를 사용하여 필터링하는 것임.
-
-  // `useQuestionCategoriesByService` 훅을 보면 `codeItems`, `serviceMappings`, `questionMappings`를 로드함.
-  // 이 데이터들을 여기서 로드하고, 필터링 로직을 `dynamicSelectFieldsConfig`에 구현.
-
   // 서비스 코드별 질문 카테고리 옵션 맵 로드
   const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
 
@@ -275,6 +224,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
         checkChangesBeforeSave={true}
         excludeFieldsFromChangeCheck={excludeFieldsFromChangeCheckConfig}
         canEdit={true}
+        isLocked={data?.locked ?? false}
       />
     </Box>
   );

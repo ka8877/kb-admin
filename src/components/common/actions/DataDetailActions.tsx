@@ -8,6 +8,7 @@ export type DataDetailActionsProps = {
   onDelete?: () => void;
   showEdit?: boolean;
   showDelete?: boolean;
+  isLocked?: boolean;
 };
 
 const DataDetailActions: React.FC<DataDetailActionsProps> = ({
@@ -16,6 +17,7 @@ const DataDetailActions: React.FC<DataDetailActionsProps> = ({
   onDelete,
   showEdit = true,
   showDelete = true,
+  isLocked = false,
 }) => {
   return (
     <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -23,13 +25,13 @@ const DataDetailActions: React.FC<DataDetailActionsProps> = ({
         목록으로
       </MediumButton>
 
-      {showEdit && onEdit && (
+      {showEdit && onEdit && !isLocked && (
         <MediumButton subType="u" variant="contained" onClick={onEdit}>
           수정
         </MediumButton>
       )}
 
-      {showDelete && onDelete && (
+      {showDelete && onDelete && !isLocked && (
         <MediumButton subType="d" variant="outlined" color="error" onClick={onDelete}>
           삭제
         </MediumButton>

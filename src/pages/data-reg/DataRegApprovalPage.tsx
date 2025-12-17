@@ -61,14 +61,14 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
           itsvcNo: (v.itsvcNo as string | null) ?? null,
           requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
           approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-          title: (v.title as string | null) ?? null,
-          content: (v.content as string | null) ?? null,
+          payloadAfter: (v.payloadAfter as string | null) ?? null,
           createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-          department: (v.department as string) ?? '',
           updatedBy: (v.updatedBy as string | null) ?? null,
           createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
           updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
           isRetracted: (v.isRetracted as number) ?? 0,
+          isApplied: (v.isApplied as number) ?? 0,
+          appliedAt: (v.appliedAt as string | null) ?? null,
         };
       })
       .filter((item): item is ApprovalRequestItem => item !== null);
@@ -88,14 +88,14 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
         itsvcNo: (v.itsvcNo as string | null) ?? null,
         requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
         approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-        title: (v.title as string | null) ?? null,
-        content: (v.content as string | null) ?? null,
+        payloadAfter: (v.payloadAfter as string | null) ?? null,
         createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-        department: (v.department as string) ?? '',
         updatedBy: (v.updatedBy as string | null) ?? null,
         createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
         updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
         isRetracted: (v.isRetracted as number) ?? 0,
+        isApplied: (v.isApplied as number) ?? 0,
+        appliedAt: (v.appliedAt as string | null) ?? null,
       };
     });
   }
@@ -302,15 +302,13 @@ const DataRegApprovalPage: React.FC = () => {
     [approvalRequests, pageType, queryClient],
   );
 
-  // 컬럼 필터링 (No, 결재양식, 제목, 내용, 요청자, 요청부서, 요청일, 처리상태, 처리일만 표시)
+  // 컬럼 필터링 (No, 결재양식, 변경 후 데이터, 요청자, 요청일, 처리상태, 처리일만 표시)
   const filteredColumns = useMemo(() => {
     const visibleFields = [
       'no',
       'requestKind',
-      'title',
-      'content',
+      'payloadAfter',
       'createdBy',
-      'department',
       'createdAt',
       'approvalStatus',
       'updatedAt',

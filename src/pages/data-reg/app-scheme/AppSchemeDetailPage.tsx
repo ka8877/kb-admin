@@ -130,6 +130,7 @@ const AppSchemeDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
+        isLocked={data?.locked ?? false}
         canEdit={true}
       />
     </Box>
