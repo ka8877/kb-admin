@@ -36,7 +36,6 @@ const AdminAuthEditPage: React.FC = () => {
   const [permissionCodeByName, setPermissionCodeByName] = useState<Record<string, string>>({});
 
   const modifiedRef = useRef<Set<number>>(new Set());
-  const hasFocusedRef = useRef(false);
 
   // Load permission options
   useEffect(() => {
@@ -48,7 +47,7 @@ const AdminAuthEditPage: React.FC = () => {
       active.forEach((p) => {
         nameMap[p.permission_id] = p.permission_name;
         reverseNameToCode[String(p.permission_name).toUpperCase()] = String(
-          p.permission_id,
+          p.permission_id
         ).toUpperCase();
       });
       setPermissionOptions(options);
@@ -99,7 +98,7 @@ const AdminAuthEditPage: React.FC = () => {
         }}
       />
     ),
-    [apiRef],
+    [apiRef]
   );
 
   const columns: GridColDef<LocalRow>[] = useMemo(
@@ -142,7 +141,7 @@ const AdminAuthEditPage: React.FC = () => {
         valueOptions: ['활성', '비활성'],
       },
     ],
-    [renderEmployeeSearchCell, permissionOptions],
+    [renderEmployeeSearchCell, permissionOptions, permissionNameByCode]
   );
 
   // Load data
@@ -209,12 +208,12 @@ const AdminAuthEditPage: React.FC = () => {
                   field: editableCol.field as string,
                 });
               }
-            } catch (e) {
+            } catch (_e) {
               // ignore
             }
           }, 0);
         }
-      } catch (e) {
+      } catch (_e) {
         // ignore
       }
     }, 0);
@@ -239,7 +238,7 @@ const AdminAuthEditPage: React.FC = () => {
           const normalized = permissionCodeByName[up] ?? up;
           if (!allowedPermissionCodes.has(normalized)) {
             validationErrors.push(
-              `${row.no}번 행: 올바른 이용권한을 선택해주세요 (${permissionOptions.join(', ')})`,
+              `${row.no}번 행: 올바른 이용권한을 선택해주세요 (${permissionOptions.join(', ')})`
             );
           }
 
@@ -261,7 +260,7 @@ const AdminAuthEditPage: React.FC = () => {
         // Validation 실패 시
         if (validationErrors.length > 0) {
           const hasControlChar = validationErrors.some((err) =>
-            err.includes('알 수 없는 제어 문자'),
+            err.includes('알 수 없는 제어 문자')
           );
           const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
 
@@ -312,7 +311,7 @@ const AdminAuthEditPage: React.FC = () => {
             } else {
               await updateAdminAuth(row.id, { ...row, use_permission: normalizedUsePerm });
             }
-          }),
+          })
         );
       }
 
@@ -327,7 +326,7 @@ const AdminAuthEditPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [rows, navigate, showAlert]);
+  }, [rows, navigate, showAlert, allowedPermissionCodes, permissionCodeByName, permissionOptions]);
 
   const handleSelectionModelChange = useCallback((newModel: (string | number)[]) => {
     setSelectionModel(newModel);
@@ -359,7 +358,7 @@ const AdminAuthEditPage: React.FC = () => {
       setSelectionMode(false);
       setLoading(false);
     },
-    [rows],
+    [rows]
   );
 
   return (

@@ -1,6 +1,6 @@
 // 화면 권한 관리 API
 
-import { getApi, postApi, putApi, deleteApi, patchApi } from '@/utils/apiUtils';
+import { getApi, postApi, deleteApi, patchApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
 import type { Permission, MenuTreeItem, ScreenPermission, ScreenPermissionInput } from './types';
@@ -17,30 +17,43 @@ const menuBasePath = 'management/menu';
  * 권한 목록 조회
  */
 export const fetchPermissions = async (): Promise<Permission[]> => {
-  const res = await getApi<Record<string, any>>(API_ENDPOINTS.PERMISSION.LIST, {
+  const res = await getApi<Record<string, unknown>>(API_ENDPOINTS.PERMISSION.LIST, {
     baseURL: env.testURL,
     errorMessage: '권한 목록을 불러오지 못했습니다.',
   });
 
   if (!res.data || typeof res.data !== 'object') return [];
 
-  return Object.entries(res.data).map(([firebaseKey, item], idx) => ({
-    permission_id: idx + 1,
-    permission_code: item.permission_id ?? firebaseKey,
-    permission_name: item.permission_name,
-    description: item.description,
-    is_active: item.status === '비활성' ? 0 : (item.is_active ?? 1),
-    created_at: item.created_at || '',
-    updated_at: item.updated_at || null,
-    firebaseKey,
-  }));
+  type PermissionData = {
+    permission_id?: string;
+    permission_name: string;
+    description: string;
+    status?: string;
+    is_active?: number;
+    created_at?: string;
+    updated_at?: string | null;
+  };
+
+  return Object.entries(res.data).map(([firebaseKey, item], idx) => {
+    const data = item as PermissionData;
+    return {
+      permission_id: idx + 1,
+      permission_code: data.permission_id ?? firebaseKey,
+      permission_name: data.permission_name,
+      description: data.description,
+      is_active: data.status === '비활성' ? 0 : (data.is_active ?? 1),
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || null,
+      firebaseKey,
+    };
+  });
 };
 
 /**
  * 메뉴 트리 조회 (Firebase에서 가져오기)
  */
 export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
-  const response = await getApi<Record<string, any>>('management/menu.json', {
+  const response = await getApi<Record<string, unknown>>('management/menu.json', {
     baseURL: env.testURL,
     errorMessage: '메뉴 트리를 불러오지 못했습니다.',
   });
@@ -68,11 +81,11 @@ export const fetchMenuTree = async (): Promise<MenuTreeItem[]> => {
   const allEntries = Object.entries(response.data) as Array<[string, RawMenu]>;
   // 홈('/') 항목과 비활성화된 메뉴(is_active=0)는 화면 목록/권한 대상에서 제외
   const rawEntries = allEntries.filter(
-    ([, d]) => d.menu_path !== '/' && (d.is_active === undefined || d.is_active === 1),
+    ([, d]) => d.menu_path !== '/' && (d.is_active === undefined || d.is_active === 1)
   );
 
   const getDepth = (d: RawMenu): number => {
-    const v = (d.MENU_DEPTH ?? d.menu_depth) as any;
+    const v = (d.MENU_DEPTH ?? d.menu_depth) as unknown;
     if (typeof v === 'number') return v;
     if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
     // fallback: 부모코드/부모ID의 존재 여부로 추론
@@ -156,7 +169,7 @@ export const fetchScreenPermissions = async (permissionId: number): Promise<Scre
     {
       baseURL: env.testURL,
       errorMessage: '화면 권한 목록을 불러오지 못했습니다.',
-    },
+    }
   );
 
   if (!response.data || typeof response.data !== 'object') {
@@ -177,7 +190,7 @@ export const fetchScreenPermissions = async (permissionId: number): Promise<Scre
  */
 export const saveScreenPermissions = async (
   permissionId: number,
-  permissions: ScreenPermissionInput[],
+  permissions: ScreenPermissionInput[]
 ): Promise<void> => {
   // 기존 권한 삭제
   const existing = await fetchScreenPermissions(permissionId);
@@ -187,7 +200,7 @@ export const saveScreenPermissions = async (
       baseURL: env.testURL,
       errorMessage: '',
       successMessage: '',
-    }),
+    })
   );
 
   await Promise.all(deletePromises);
@@ -206,8 +219,8 @@ export const saveScreenPermissions = async (
         baseURL: env.testURL,
         errorMessage: '',
         successMessage: '',
-      },
-    ),
+      }
+    )
   );
 
   await Promise.all(createPromises);
@@ -218,7 +231,7 @@ export const saveScreenPermissions = async (
  */
 export const updateMenuSortOrder = async (
   menuId: string | number,
-  sortOrder: number,
+  sortOrder: number
 ): Promise<void> => {
   await patchApi(
     `${menuBasePath}/${menuId}.json`,
@@ -230,7 +243,7 @@ export const updateMenuSortOrder = async (
       baseURL: env.testURL,
       errorMessage: '화면 순서 저장에 실패했습니다.',
       successMessage: '화면 순서가 저장되었습니다.',
-    },
+    }
   );
 };
 
@@ -239,7 +252,7 @@ export const updateMenuSortOrder = async (
  */
 export const deleteScreenPermission = async (
   permissionId: number,
-  menuId: number,
+  menuId: number
 ): Promise<void> => {
   const permissions = await fetchScreenPermissions(permissionId);
   const target = permissions.find((p) => p.menu_id === menuId);

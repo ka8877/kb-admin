@@ -4,7 +4,6 @@ import { Box, Stack, TextField, MenuItem, Typography, Paper } from '@mui/materia
 import MediumButton from '@/components/common/button/MediumButton';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import type { MenuItem as MenuItemType } from '../types';
-import { MenuValidator } from '../validation';
 
 const INITIAL_FORM_DATA: Partial<MenuItemType> = {
   menu_code: '',
@@ -14,12 +13,6 @@ const INITIAL_FORM_DATA: Partial<MenuItemType> = {
   parent_menu_code: undefined,
   is_active: 0,
 };
-
-const SCREEN_TYPE_OPTIONS = [
-  { value: '메뉴', label: '메뉴' },
-  { value: '페이지', label: '페이지' },
-  { value: '기능', label: '기능' },
-] as const;
 
 const DISPLAY_OPTIONS = [
   { value: 1, label: '표시' },
@@ -100,7 +93,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
     };
 
     onSave(savedData);
-  }, [formData, menuItem, onSave, isNew, allMenuItems]);
+  }, [formData, menuItem, onSave]);
 
   const handleDelete = useCallback(() => {
     if (menuItem && onDelete) {

@@ -12,7 +12,7 @@ import {
 import Section from '@/components/layout/Section';
 import MediumButton from '@/components/common/button/MediumButton';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
-import { ALERT_TITLES, TOAST_MESSAGES } from '@/constants/message';
+import { ALERT_TITLES } from '@/constants/message';
 import {
   useCodeItems,
   useServiceMappings,
@@ -26,7 +26,7 @@ import {
  * service_cd ↔ qst_ctgr (1:N 매핑)
  * 사용자는 서비스명으로 보고 질문카테고리를 선택
  */
-export default function QuestionMappingSection() {
+const QuestionMappingSection: React.FC = () => {
   const { showAlert } = useAlertDialog();
 
   // 데이터 로드
@@ -34,7 +34,7 @@ export default function QuestionMappingSection() {
   const serviceCodeItems = allCodeItems.filter((item) => item.group_code === 'service_cd');
   const questionCategoryItems = allCodeItems.filter((item) => item.group_code === 'qst_ctgr');
   const { data: serviceMappings = [] } = useServiceMappings();
-  const { data: questionMappings = [], isLoading } = useQuestionMappings();
+  const { data: questionMappings = [] } = useQuestionMappings();
 
   const createMappingMutation = useCreateQuestionMapping();
   const deleteMappingMutation = useDeleteQuestionMapping();
@@ -90,7 +90,7 @@ export default function QuestionMappingSection() {
     const mapping = questionMappings.find(
       (m) =>
         String(m.child_code_item_id) === questionKey &&
-        m.parent_code_item_id !== selectedServiceFirebaseKey,
+        m.parent_code_item_id !== selectedServiceFirebaseKey
     );
 
     if (!mapping) return null;
@@ -129,7 +129,7 @@ export default function QuestionMappingSection() {
       // 추가할 항목과 삭제할 항목 계산
       const toAdd = Array.from(selectedQuestionKeys).filter((key) => !mappedQuestionKeys.has(key));
       const toDelete = Array.from(mappedQuestionKeys).filter(
-        (key) => !selectedQuestionKeys.has(key),
+        (key) => !selectedQuestionKeys.has(key)
       );
 
       // 추가
@@ -148,7 +148,7 @@ export default function QuestionMappingSection() {
         const mapping = questionMappings.find(
           (m) =>
             m.parent_code_item_id === selectedServiceFirebaseKey &&
-            m.child_code_item_id === questionKey,
+            m.child_code_item_id === questionKey
         );
 
         if (mapping?.firebaseKey) {
@@ -178,7 +178,7 @@ export default function QuestionMappingSection() {
     const keyword = searchKeyword.toLowerCase();
     return questionCategoryItems.filter(
       (item) =>
-        item.code_name.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword),
+        item.code_name.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword)
     );
   }, [questionCategoryItems, searchKeyword]);
 
@@ -328,4 +328,6 @@ export default function QuestionMappingSection() {
       </Stack>
     </Section>
   );
-}
+};
+
+export default QuestionMappingSection;

@@ -1,11 +1,12 @@
 // 화면 권한 관리 메인 페이지
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Stack, Box, Paper, Typography } from '@mui/material';
+import { Stack, Box, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import PageHeader from '@/components/common/PageHeader';
 import Section from '@/components/layout/Section';
 import MediumButton from '@/components/common/button/MediumButton';
+import InlineSpinner from '@/components/common/spinner/InlineSpinner';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { useAuthStore } from '@/store/auth';
 import { ALERT_TITLES } from '@/constants/message';
@@ -19,7 +20,7 @@ import {
 } from './hooks';
 import type { Permission, PermissionDisplay, ScreenPermissionInput } from './types';
 
-export default function ScreenPermissionPage() {
+const ScreenPermissionPage: React.FC = () => {
   const { showAlert } = useAlertDialog();
   const user = useAuthStore((s) => s.user);
 
@@ -53,7 +54,7 @@ export default function ScreenPermissionPage() {
       setSelectedMenuIds(new Set());
       setHasChanges(false);
     }
-  }, [screenPermissions, selectedPermission?.permission_id]);
+  }, [screenPermissions, selectedPermission]);
 
   const handlePermissionSelect = useCallback((params: { row: PermissionDisplay }) => {
     setSelectedPermission(params.row);
@@ -91,8 +92,9 @@ export default function ScreenPermissionPage() {
       const userRoleUpper = String(user?.role || '').toUpperCase();
       const permCodeUpper = String(selectedPermission.permission_code || '').toUpperCase();
 
-      if (userRoleUpper === permCodeUpper && (window as any).refreshMenuPermissions) {
-        (window as any).refreshMenuPermissions();
+      const windowWithRefresh = window as Window & { refreshMenuPermissions?: () => void };
+      if (userRoleUpper === permCodeUpper && windowWithRefresh.refreshMenuPermissions) {
+        windowWithRefresh.refreshMenuPermissions();
       }
 
       showAlert({
@@ -183,9 +185,7 @@ export default function ScreenPermissionPage() {
           <Box sx={{ flex: 1, overflow: 'auto' }}>
             {selectedPermission ? (
               isMenuTreeLoading || isScreenPermissionsLoading ? (
-                <Typography variant="body2" color="text.secondary">
-                  로딩 중...
-                </Typography>
+                <InlineSpinner />
               ) : (
                 <MenuTree
                   menus={menuTree}
@@ -212,4 +212,6 @@ export default function ScreenPermissionPage() {
       </Stack>
     </Stack>
   );
-}
+};
+
+export default ScreenPermissionPage;

@@ -15,9 +15,13 @@ import { fetchAdminAuthList } from './api';
 const AdminAuthPage: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<RowItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchAdminAuthList().then((rows) => setData(rows));
+    setIsLoading(true);
+    fetchAdminAuthList()
+      .then((rows) => setData(rows))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleEdit = useCallback(() => {
@@ -28,7 +32,7 @@ const AdminAuthPage: React.FC = () => {
     (params: { id: string | number; row: RowItem }) => {
       navigate(`${ROUTES.ADMIN_AUTH}/detail/${params.row.id}`);
     },
-    [navigate],
+    [navigate]
   );
 
   const handleDownloadAll = useCallback(async () => {
@@ -89,7 +93,7 @@ const AdminAuthPage: React.FC = () => {
           const value = rowObj[field];
           return String(value ?? '').length;
         }),
-        0,
+        0
       );
       // 헤더와 데이터 중 더 긴 것 기준으로 너비 설정 (최소 10, 최대 50)
       const width = Math.min(Math.max(headerLength, maxDataLength, 10), 50);
@@ -133,12 +137,13 @@ const AdminAuthPage: React.FC = () => {
         </Box>
         <EditableList
           columns={listColumns}
-          fetcher={async () => await fetchAdminAuthList()}
+          rows={data}
           rowIdGetter={(r: RowItem) => r.id}
           defaultPageSize={25}
           pageSizeOptions={[10, 25, 50, 100]}
           onRowClick={handleRowClick}
           isEditMode={false}
+          isLoading={isLoading}
         />
       </Section>
     </Box>

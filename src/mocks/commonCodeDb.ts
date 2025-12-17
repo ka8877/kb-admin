@@ -279,7 +279,6 @@ const INITIAL_AGE_GROUPS: AgeGroupItem[] = [
 
 // Mutable State
 let codeTypeList: CodeTypeOption[] = [...INITIAL_CODE_TYPES];
-const serviceGroupList: CodeTypeOption[] = [...INITIAL_SERVICE_GROUPS];
 let serviceNameMockData: ServiceNameItem[] = [...INITIAL_SERVICE_NAMES];
 let questionCategoryMockData: QuestionCategoryItem[] = [...INITIAL_QUESTION_CATEGORIES];
 let ageGroupMockData: AgeGroupItem[] = [...INITIAL_AGE_GROUPS];
@@ -287,7 +286,7 @@ let otherCodeTypeMockData: CommonCodeItem[] = [];
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-function getCategoryDataAsCommonCode(): CommonCodeItem[] {
+const getCategoryDataAsCommonCode = (): CommonCodeItem[] => {
   const result: CommonCodeItem[] = [];
   let globalNo = 1;
 
@@ -331,7 +330,7 @@ function getCategoryDataAsCommonCode(): CommonCodeItem[] {
   });
 
   return result;
-}
+};
 
 export const commonCodeMockDb = {
   async listAll(): Promise<CommonCodeItem[]> {
@@ -415,15 +414,15 @@ export const commonCodeMockDb = {
     }
   },
 
-  async update(service_cd: string, input: Partial<CommonCodeItem>) {
+  async update(serviceCd: string, input: Partial<CommonCodeItem>) {
     await delay(150);
     const items = getCategoryDataAsCommonCode();
-    const item = items.find((it) => it.service_cd === service_cd);
+    const item = items.find((it) => it.service_cd === serviceCd);
     if (!item) return undefined;
 
     switch (item.code_type) {
       case 'SERVICE_NAME': {
-        const index = serviceNameMockData.findIndex((it) => it.service_cd === service_cd);
+        const index = serviceNameMockData.findIndex((it) => it.service_cd === serviceCd);
         if (index !== -1) {
           serviceNameMockData[index] = {
             ...serviceNameMockData[index],
@@ -435,7 +434,7 @@ export const commonCodeMockDb = {
         break;
       }
       case 'QUESTION_CATEGORY': {
-        const index = questionCategoryMockData.findIndex((it) => it.qst_ctgr_cd === service_cd);
+        const index = questionCategoryMockData.findIndex((it) => it.qst_ctgr_cd === serviceCd);
         if (index !== -1) {
           questionCategoryMockData[index] = {
             ...questionCategoryMockData[index],
@@ -448,7 +447,7 @@ export const commonCodeMockDb = {
         break;
       }
       case 'AGE_GROUP': {
-        const index = ageGroupMockData.findIndex((it) => it.age_grp_cd === service_cd);
+        const index = ageGroupMockData.findIndex((it) => it.age_grp_cd === serviceCd);
         if (index !== -1) {
           ageGroupMockData[index] = {
             ...ageGroupMockData[index],
@@ -460,7 +459,7 @@ export const commonCodeMockDb = {
         break;
       }
       default: {
-        const index = otherCodeTypeMockData.findIndex((it) => it.service_cd === service_cd);
+        const index = otherCodeTypeMockData.findIndex((it) => it.service_cd === serviceCd);
         if (index !== -1) {
           otherCodeTypeMockData[index] = {
             ...otherCodeTypeMockData[index],
@@ -471,30 +470,30 @@ export const commonCodeMockDb = {
       }
     }
     return getCategoryDataAsCommonCode().find(
-      (it) => it.service_cd === (input.service_cd || service_cd),
+      (it) => it.service_cd === (input.service_cd || serviceCd)
     );
   },
 
-  async delete(service_cd: string) {
+  async delete(serviceCd: string) {
     await delay(150);
     const items = getCategoryDataAsCommonCode();
-    const item = items.find((it) => it.service_cd === service_cd);
+    const item = items.find((it) => it.service_cd === serviceCd);
     if (!item) return false;
 
     switch (item.code_type) {
       case 'SERVICE_NAME':
-        serviceNameMockData = serviceNameMockData.filter((it) => it.service_cd !== service_cd);
+        serviceNameMockData = serviceNameMockData.filter((it) => it.service_cd !== serviceCd);
         break;
       case 'QUESTION_CATEGORY':
         questionCategoryMockData = questionCategoryMockData.filter(
-          (it) => it.qst_ctgr_cd !== service_cd,
+          (it) => it.qst_ctgr_cd !== serviceCd
         );
         break;
       case 'AGE_GROUP':
-        ageGroupMockData = ageGroupMockData.filter((it) => it.age_grp_cd !== service_cd);
+        ageGroupMockData = ageGroupMockData.filter((it) => it.age_grp_cd !== serviceCd);
         break;
       default:
-        otherCodeTypeMockData = otherCodeTypeMockData.filter((it) => it.service_cd !== service_cd);
+        otherCodeTypeMockData = otherCodeTypeMockData.filter((it) => it.service_cd !== serviceCd);
         break;
     }
     return true;
@@ -508,33 +507,40 @@ export const categoryMockDb = {
   getAgeGroups: async () => [...ageGroupMockData],
   getQuestionCategoriesByService: async (serviceCd: string) =>
     questionCategoryMockData.filter((i) => i.service_cd === serviceCd),
-  createServiceName: async (input: any) =>
+  createServiceName: async (input: { service_nm: string; display_yn: number }) =>
     commonCodeMockDb.create({
       ...input,
       code_type: 'SERVICE_NAME',
       category_nm: input.service_nm,
-      status_code: input.display_yn,
+      status_code: String(input.display_yn),
     }),
-  updateServiceName: async (cd: string, input: any) =>
+  updateServiceName: async (cd: string, input: { service_nm: string; display_yn: number }) =>
     commonCodeMockDb.update(cd, {
       ...input,
       category_nm: input.service_nm,
-      status_code: input.display_yn,
+      status_code: String(input.display_yn),
     }),
   deleteServiceName: async (cd: string) => commonCodeMockDb.delete(cd),
-  createQuestionCategory: async (input: any) =>
+  createQuestionCategory: async (input: {
+    qst_ctgr_nm: string;
+    display_yn: number;
+    service_cd: string;
+  }) =>
     commonCodeMockDb.create({
       ...input,
       code_type: 'QUESTION_CATEGORY',
       category_nm: input.qst_ctgr_nm,
-      status_code: input.display_yn,
+      status_code: String(input.display_yn),
       parent_service_cd: input.service_cd,
     }),
-  updateQuestionCategory: async (cd: string, input: any) =>
+  updateQuestionCategory: async (
+    cd: string,
+    input: { qst_ctgr_nm: string; display_yn: number; service_cd: string }
+  ) =>
     commonCodeMockDb.update(cd, {
       ...input,
       category_nm: input.qst_ctgr_nm,
-      status_code: input.display_yn,
+      status_code: String(input.display_yn),
       parent_service_cd: input.service_cd,
     }),
   deleteQuestionCategory: async (cd: string) => commonCodeMockDb.delete(cd),

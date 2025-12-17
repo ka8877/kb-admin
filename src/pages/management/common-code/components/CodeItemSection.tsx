@@ -4,7 +4,6 @@ import SortableList from '@/components/common/list/SortableList';
 import MediumButton from '@/components/common/button/MediumButton';
 import CodeItemForm from './CodeItemForm';
 import Section from '@/components/layout/Section';
-import { codeItemColumns } from './columns';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import {
   ALERT_TITLES,
@@ -15,6 +14,7 @@ import {
   getCodeItemDeleteSuccessMessage,
 } from '@/constants/message';
 import type { CodeItem, CodeItemDisplay, CodeGroupDisplay } from '../types';
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import {
   useCodeItems,
   useCodeGroups,
@@ -29,7 +29,7 @@ interface CodeItemSectionProps {
   selectedGroup: CodeGroupDisplay | null;
 }
 
-export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps) {
+const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
   const { showAlert } = useAlertDialog();
 
   // 코드아이템 (소분류) State & Hooks
@@ -56,7 +56,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
   const [selectedItemIds, setSelectedItemIds] = useState<(string | number)[]>([]); // 선택된 아이템 ID
 
   // 동적 컴럼 생성
-  const dynamicColumns = useMemo(() => {
+  const dynamicColumns = useMemo((): GridColDef<CodeItemDisplay>[] => {
     if (selectedGroup?.group_code === 'service_nm') {
       // service_nm: 정렬순서, 서비스코드(code), 서비스명(code_name), 사용여부
       return [
@@ -83,7 +83,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
           width: 100,
           align: 'center' as const,
           headerAlign: 'center' as const,
-          renderCell: (params: any) => (params.value === 0 ? '미사용' : '사용'),
+          renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
+            params.value === 0 ? '미사용' : '사용',
         },
       ];
     }
@@ -107,7 +108,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         width: 100,
         align: 'center' as const,
         headerAlign: 'center' as const,
-        renderCell: (params: any) => (params.value === 0 ? '미사용' : '사용'),
+        renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
+          params.value === 0 ? '미사용' : '사용',
       },
     ];
   }, [selectedGroup]);
@@ -147,7 +149,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       setIsItemFormOpen(true);
       setIsNewItem(false);
     },
-    [],
+    []
   );
 
   const handleAddItem = useCallback(() => {
@@ -175,10 +177,10 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         (item) =>
           item.code_group_id === codeGroupId &&
           item.code === code &&
-          (excludeItemId === undefined || item.code_item_id !== excludeItemId),
+          (excludeItemId === undefined || item.code_item_id !== excludeItemId)
       );
     },
-    [codeItems],
+    [codeItems]
   );
 
   const checkItemNameDuplicate = useCallback(
@@ -187,10 +189,10 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         (item) =>
           item.code_group_id === codeGroupId &&
           item.code_name === codeName &&
-          (excludeItemId === undefined || item.code_item_id !== excludeItemId),
+          (excludeItemId === undefined || item.code_item_id !== excludeItemId)
       );
     },
-    [codeItems],
+    [codeItems]
   );
 
   const handleSaveItem = useCallback(
@@ -198,7 +200,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       data: Omit<
         CodeItem,
         'code_item_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-      >,
+      >
     ) => {
       try {
         console.log('handleSaveItem:', { isNewItem, selectedItem, data });
@@ -323,7 +325,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       updateItemMutation,
       upsertServiceMappingMutation,
       showAlert,
-    ],
+    ]
   );
 
   const handleDeleteItem = useCallback(
@@ -347,7 +349,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         });
       }
     },
-    [selectedItem, deleteItemMutation, showAlert],
+    [selectedItem, deleteItemMutation, showAlert]
   );
 
   const handleDeleteSelectedItems = useCallback(
@@ -388,7 +390,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         });
       }
     },
-    [selectedItemIds, codeItems, deleteItemsMutation, showAlert],
+    [selectedItemIds, codeItems, deleteItemsMutation, showAlert]
   );
 
   const handleToggleBulkDeleteMode = useCallback(() => {
@@ -427,7 +429,7 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
 
     try {
       const validItems = tempSortedItems.filter(
-        (item) => item.code && item.code_name && item.code_group_id > 0,
+        (item) => item.code && item.code_name && item.code_group_id > 0
       );
 
       if (validItems.length === 0) {
@@ -439,9 +441,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
         return;
       }
 
-      const updatePromises = validItems.map((item, idx) => {
-        const { no, ...itemWithoutNo } = item;
-        return updateItemMutation.mutateAsync({
+      const updatePromises = validItems.map((item, idx) =>
+        updateItemMutation.mutateAsync({
           codeItemId: item.code_item_id,
           data: {
             code_group_id: item.code_group_id,
@@ -451,8 +452,8 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
             is_active: item.is_active,
             firebaseKey: item.firebaseKey,
           },
-        });
-      });
+        })
+      );
 
       await Promise.all(updatePromises);
 
@@ -606,4 +607,6 @@ export default function CodeItemSection({ selectedGroup }: CodeItemSectionProps)
       )}
     </>
   );
-}
+};
+
+export default CodeItemSection;

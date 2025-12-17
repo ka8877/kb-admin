@@ -9,7 +9,11 @@ interface EmployeeSearchCellProps {
   onClose?: () => void;
 }
 
-const EmployeeSearchCell: React.FC<EmployeeSearchCellProps> = ({ value, onChange, onClose }) => {
+const EmployeeSearchCell: React.FC<EmployeeSearchCellProps> = ({
+  value,
+  onChange,
+  onClose: _onClose,
+}) => {
   const [options, setOptions] = useState<EmployeeInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
@@ -33,7 +37,7 @@ const EmployeeSearchCell: React.FC<EmployeeSearchCellProps> = ({ value, onChange
         }
       });
     }
-  }, []);
+  }, [value]);
 
   // value prop이 외부에서 변경되면 내부 상태도 업데이트
   useEffect(() => {
@@ -110,7 +114,6 @@ const EmployeeSearchCell: React.FC<EmployeeSearchCellProps> = ({ value, onChange
       renderInput={(params) => (
         <TextField
           {...params}
-          autoFocus
           placeholder="이름, ID, 직책으로 검색..."
           size="small"
           variant="standard"

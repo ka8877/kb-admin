@@ -27,7 +27,7 @@ interface CodeGroupSectionProps {
   selectedGroup: CodeGroupDisplay | null;
 }
 
-export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeGroupSectionProps) {
+const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, selectedGroup }) => {
   const { showAlert } = useAlertDialog();
 
   // 코드그룹 (대분류) State & Hooks
@@ -38,7 +38,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
   const deleteItemsMutation = useDeleteCodeItems();
 
   const { data: codeItems = [] } = useCodeItems(
-    selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined,
+    selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined
   );
 
   const [isGroupFormOpen, setIsGroupFormOpen] = useState(false);
@@ -51,7 +51,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
       setIsGroupFormOpen(true);
       setIsNewGroup(false);
     },
-    [onGroupSelect],
+    [onGroupSelect]
   );
 
   const handleAddGroup = useCallback(() => {
@@ -64,7 +64,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
     (groupCode: string) => {
       return codeGroups.some((item) => item.group_code === groupCode);
     },
-    [codeGroups],
+    [codeGroups]
   );
 
   const handleSaveGroup = useCallback(
@@ -72,7 +72,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
       data: Omit<
         CodeGroup,
         'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-      >,
+      >
     ) => {
       try {
         if (isNewGroup) {
@@ -120,7 +120,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
       createGroupMutation,
       updateGroupMutation,
       showAlert,
-    ],
+    ]
   );
 
   const handleDeleteGroup = useCallback(
@@ -129,7 +129,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
 
       try {
         const relatedItems = codeItems.filter(
-          (item) => item.code_group_id === selectedGroup.code_group_id,
+          (item) => item.code_group_id === selectedGroup.code_group_id
         );
 
         if (relatedItems.length > 0) {
@@ -161,7 +161,7 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
         });
       }
     },
-    [selectedGroup, codeItems, deleteItemsMutation, deleteGroupMutation, showAlert, onGroupSelect],
+    [selectedGroup, codeItems, deleteItemsMutation, deleteGroupMutation, showAlert, onGroupSelect]
   );
 
   const handleCancelForm = useCallback(() => {
@@ -204,4 +204,6 @@ export default function CodeGroupSection({ onGroupSelect, selectedGroup }: CodeG
       )}
     </>
   );
-}
+};
+
+export default CodeGroupSection;

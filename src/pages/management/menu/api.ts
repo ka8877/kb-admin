@@ -2,9 +2,8 @@
 // common-code 패턴 참고
 
 import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
-import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config';
-import type { MenuItem, MenuItemDisplay, MenuItemFirebase } from './types';
+import type { MenuItem } from './types';
 
 // Firebase POST 응답 타입
 interface FirebasePostResponse {
@@ -17,8 +16,8 @@ const menuBasePath = 'management/menu';
  * MenuItem 변환 헬퍼 함수
  */
 const transformMenuItem = (
-  v: Partial<MenuItem> & Record<string, any>,
-  options: { index: number; fallbackId?: string | number },
+  v: Partial<MenuItem> & Record<string, unknown>,
+  options: { index: number; fallbackId?: string | number }
 ): MenuItem => {
   const { fallbackId } = options;
 
@@ -51,7 +50,7 @@ export const fetchMenus = async (): Promise<MenuItem[]> => {
   }
 
   const menuArray: MenuItem[] = Object.entries(response.data).map(([firebaseKey, data], index) =>
-    transformMenuItem({ ...data, firebaseKey }, { index, fallbackId: firebaseKey }),
+    transformMenuItem({ ...data, firebaseKey }, { index, fallbackId: firebaseKey })
   );
 
   // sort_order로 정렬
@@ -80,7 +79,7 @@ export const createMenu = async (menuData: Omit<MenuItem, 'firebaseKey'>): Promi
       baseURL: env.testURL,
       errorMessage: '메뉴 생성에 실패했습니다.',
       successMessage: '메뉴가 생성되었습니다.',
-    },
+    }
   );
 
   const firebaseKey = response.data.name;
@@ -99,7 +98,7 @@ export const createMenu = async (menuData: Omit<MenuItem, 'firebaseKey'>): Promi
  */
 export const updateMenu = async (
   firebaseKey: string,
-  updates: Partial<MenuItem>,
+  updates: Partial<MenuItem>
 ): Promise<MenuItem> => {
   const updateData = {
     ...updates,
@@ -137,7 +136,7 @@ export const deleteMenu = async (firebaseKey: string): Promise<void> => {
  */
 export const checkMenuCodeExists = async (
   menuCode: string,
-  excludeKey?: string,
+  excludeKey?: string
 ): Promise<boolean> => {
   const menus = await fetchMenus();
   return menus.some((menu) => menu.menu_code === menuCode && menu.firebaseKey !== excludeKey);

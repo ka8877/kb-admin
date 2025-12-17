@@ -42,8 +42,8 @@ const generateCodeFromFirebaseKey = (firebaseKey: string): string => {
  * CodeGroup 변환 헬퍼 함수
  */
 const transformCodeGroupItem = (
-  v: Partial<CodeGroup> & Record<string, any>,
-  options: { index: number; fallbackId?: string | number },
+  v: Partial<CodeGroup> & Record<string, unknown>,
+  options: { index: number; fallbackId?: string | number }
 ): CodeGroup => {
   const { fallbackId } = options;
 
@@ -71,7 +71,7 @@ const transformCodeGroups = (raw: unknown): CodeGroup[] => {
     return raw
       .map((item, index) => {
         if (!item) return null;
-        const v = item as Partial<CodeGroup> & Record<string, any>;
+        const v = item as Partial<CodeGroup> & Record<string, unknown>;
         return transformCodeGroupItem(v, { index });
       })
       .filter((item): item is CodeGroup => item !== null);
@@ -79,10 +79,10 @@ const transformCodeGroups = (raw: unknown): CodeGroup[] => {
 
   // 객체 형태 응답 (Firebase에서 ID를 키로 사용하는 경우)
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, any>);
+    const entries = Object.entries(raw as Record<string, unknown>);
     return entries
       .map(([firebaseKey, value], index) => {
-        const v = value as Partial<CodeGroup> & Record<string, any>;
+        const v = value as Partial<CodeGroup> & Record<string, unknown>;
         return transformCodeGroupItem({ ...v, firebaseKey }, { index, fallbackId: firebaseKey });
       })
       .filter((item) => item !== null);
@@ -96,7 +96,7 @@ const transformCodeGroups = (raw: unknown): CodeGroup[] => {
  */
 const transformCodeItemItem = (
   v: Partial<CodeItem> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number },
+  options: { index: number; fallbackId?: string | number }
 ): CodeItem | null => {
   const { fallbackId } = options;
 
@@ -147,7 +147,7 @@ const transformCodeItems = (raw: unknown): CodeItem[] => {
     return raw
       .map((item, index) => {
         if (!item) return null;
-        const v = item as Partial<CodeItem> & Record<string, any>;
+        const v = item as Partial<CodeItem> & Record<string, unknown>;
         return transformCodeItemItem(v, { index });
       })
       .filter((item): item is CodeItem => item !== null);
@@ -155,11 +155,11 @@ const transformCodeItems = (raw: unknown): CodeItem[] => {
 
   // 객체 형태 응답
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, any>);
+    const entries = Object.entries(raw as Record<string, unknown>);
 
     const transformed = entries
       .map(([firebaseKey, value], index) => {
-        const v = value as Partial<CodeItem> & Record<string, any>;
+        const v = value as Partial<CodeItem> & Record<string, unknown>;
         return transformCodeItemItem({ ...v, firebaseKey }, { index, fallbackId: firebaseKey });
       })
       .filter((item): item is CodeItem => item !== null);
@@ -197,12 +197,12 @@ export const fetchCodeGroups = async (): Promise<CodeGroupDisplay[]> => {
  * 코드그룹 상세 조회
  */
 export const fetchCodeGroup = async (codeGroupId: number): Promise<CodeGroup> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_GROUP_DETAIL(codeGroupId), {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_GROUP_DETAIL(codeGroupId), {
     baseURL: env.testURL,
     errorMessage: '코드그룹 상세 데이터를 불러오지 못했습니다.',
   });
 
-  const item = response.data;
+  const item = response.data as Partial<CodeGroup>;
   return {
     code_group_id: item.code_group_id || codeGroupId,
     group_code: item.group_code || '',
@@ -221,7 +221,7 @@ export const fetchCodeGroup = async (codeGroupId: number): Promise<CodeGroup> =>
 export const updateCodeGroup = async (
   codeGroupId: number,
   data: Partial<Omit<CodeGroup, 'code_group_id' | 'created_by' | 'created_at'>>,
-  firebaseKey?: string,
+  firebaseKey?: string
 ): Promise<CodeGroup> => {
   const updateData = {
     ...data,
@@ -238,7 +238,7 @@ export const updateCodeGroup = async (
     {
       baseURL: env.testURL,
       errorMessage: '코드그룹 수정에 실패했습니다.',
-    },
+    }
   );
 
   return response.data;
@@ -321,12 +321,12 @@ export const fetchCodeItems = async (params?: FetchCodeItemsParams): Promise<Cod
  * 코드아이템 상세 조회
  */
 export const fetchCodeItem = async (codeItemId: number): Promise<CodeItem> => {
-  const response = await getApi<any>(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DETAIL(codeItemId), {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DETAIL(codeItemId), {
     baseURL: env.testURL,
     errorMessage: '코드아이템 상세 데이터를 불러오지 못했습니다.',
   });
 
-  const item = response.data;
+  const item = response.data as Partial<CodeItem>;
   return {
     code_item_id: item.code_item_id || codeItemId,
     code_group_id: item.code_group_id || 0,
@@ -345,13 +345,11 @@ export const fetchCodeItem = async (codeItemId: number): Promise<CodeItem> => {
  * 코드그룹 생성
  */
 export const createCodeGroup = async (
-  data: Omit<
-    CodeGroup,
-    'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-  >,
+  data: Omit<CodeGroup, 'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'>
 ): Promise<CodeGroup> => {
   // Firebase에서는 Auto Increment가 없으므로 클라이언트에서 ID 생성
   const timestamp = Date.now();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   const code_group_id = timestamp;
 
   const newData = {
@@ -374,7 +372,7 @@ export const createCodeGroup = async (
  */
 export const updateCodeItem = async (
   codeItemId: number,
-  data: Partial<Omit<CodeItem, 'code_item_id' | 'created_by' | 'created_at'>>,
+  data: Partial<Omit<CodeItem, 'code_item_id' | 'created_by' | 'created_at'>>
 ): Promise<CodeItem> => {
   const { firebaseKey, ...restData } = data;
   const updateData = {
@@ -392,7 +390,7 @@ export const updateCodeItem = async (
     {
       baseURL: env.testURL,
       errorMessage: '코드아이템 수정에 실패했습니다.',
-    },
+    }
   );
 
   return response.data;
@@ -402,10 +400,11 @@ export const updateCodeItem = async (
  * 코드아이템 생성
  */
 export const createCodeItem = async (
-  data: Omit<CodeItem, 'code_item_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'>,
+  data: Omit<CodeItem, 'code_item_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'>
 ): Promise<CodeItem> => {
   // Firebase에서는 Auto Increment가 없으므로 클라이언트에서 ID 생성
   const timestamp = Date.now();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   const code_item_id = timestamp;
 
   // 코드가 비어있으면 일단 임시로 저장 (나중에 firebaseKey로 업데이트)
@@ -425,7 +424,7 @@ export const createCodeItem = async (
     {
       baseURL: env.testURL,
       errorMessage: '코드아이템 생성에 실패했습니다.',
-    },
+    }
   );
 
   // Firebase POST 응답: {name: "생성된키"}
@@ -473,7 +472,7 @@ export const deleteCodeItem = async (codeItemId: number, firebaseKey?: string): 
  * 여러 코드아이템을 한 번에 삭제
  */
 export const deleteCodeItems = async (
-  items: Array<{ codeItemId: number; firebaseKey?: string }>,
+  items: Array<{ codeItemId: number; firebaseKey?: string }>
 ): Promise<void> => {
   if (items.length === 0) {
     return;
@@ -516,8 +515,8 @@ export const deleteCodeItems = async (
  * ServiceMapping 변환 헬퍼 함수
  */
 const transformServiceMappingItem = (
-  v: Partial<ServiceMapping> & Record<string, any>,
-  options: { index: number; fallbackId?: string | number },
+  v: Partial<ServiceMapping> & Record<string, unknown>,
+  options: { index: number; fallbackId?: string | number }
 ): ServiceMapping | null => {
   const { fallbackId } = options;
 
@@ -547,10 +546,10 @@ const transformServiceMappings = (raw: unknown): ServiceMapping[] => {
   if (!raw) return [];
 
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, any>);
+    const entries = Object.entries(raw as Record<string, unknown>);
     return entries
       .map(([firebaseKey, value], index) => {
-        const v = value as Partial<ServiceMapping> & Record<string, any>;
+        const v = value as Partial<ServiceMapping> & Record<string, unknown>;
         return transformServiceMappingItem(v, { index, fallbackId: firebaseKey });
       })
       .filter((item): item is ServiceMapping => item !== null);
@@ -580,9 +579,10 @@ export const upsertServiceMapping = async (
   data: Omit<
     ServiceMapping,
     'code_mapping_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at' | 'firebaseKey'
-  > & { firebaseKey?: string },
+  > & { firebaseKey?: string }
 ): Promise<ServiceMapping> => {
   const timestamp = Date.now();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   const code_mapping_id = timestamp;
 
   const mappingData = {
@@ -624,8 +624,8 @@ export const deleteServiceMapping = async (firebaseKey: string): Promise<void> =
  * QuestionMapping 변환 헬퍼 함수
  */
 const transformQuestionMappingItem = (
-  v: Partial<QuestionMapping> & Record<string, any>,
-  options: { index: number; fallbackId?: string | number },
+  v: Partial<QuestionMapping> & Record<string, unknown>,
+  options: { index: number; fallbackId?: string | number }
 ): QuestionMapping | null => {
   const { fallbackId } = options;
 
@@ -655,10 +655,10 @@ const transformQuestionMappings = (raw: unknown): QuestionMapping[] => {
   if (!raw) return [];
 
   if (typeof raw === 'object' && raw !== null) {
-    const entries = Object.entries(raw as Record<string, any>);
+    const entries = Object.entries(raw as Record<string, unknown>);
     return entries
       .map(([firebaseKey, value], index) => {
-        const v = value as Partial<QuestionMapping> & Record<string, any>;
+        const v = value as Partial<QuestionMapping> & Record<string, unknown>;
         return transformQuestionMappingItem(v, { index, fallbackId: firebaseKey });
       })
       .filter((item): item is QuestionMapping => item !== null);
@@ -684,7 +684,7 @@ export const fetchQuestionMappings = async (params?: {
   // 필터링
   if (params?.serviceCodeItemId) {
     filteredData = filteredData.filter(
-      (item) => item.parent_code_item_id === params.serviceCodeItemId,
+      (item) => item.parent_code_item_id === params.serviceCodeItemId
     );
   }
 
@@ -698,9 +698,10 @@ export const createQuestionMapping = async (
   data: Omit<
     QuestionMapping,
     'code_mapping_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at' | 'firebaseKey'
-  >,
+  >
 ): Promise<QuestionMapping> => {
   const timestamp = Date.now();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   const code_mapping_id = timestamp;
 
   const newData = {

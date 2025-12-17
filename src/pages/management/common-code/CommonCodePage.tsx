@@ -6,7 +6,16 @@ import CodeGroupSection from './components/CodeGroupSection';
 import CodeItemSection from './components/CodeItemSection';
 import QuestionMappingSection from './components/QuestionMappingSection';
 
-export default function CommonCodePage() {
+// 스타일 정의
+const styles = {
+  gridItem: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    height: '100%',
+  },
+};
+
+const CommonCodePage: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<CodeGroupDisplay | null>(null);
   const [activeTab, setActiveTab] = useState(0);
 
@@ -16,15 +25,6 @@ export default function CommonCodePage() {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-  };
-
-  // 스타일 정의
-  const styles = {
-    gridItem: {
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-    },
   };
 
   return (
@@ -59,4 +59,6 @@ export default function CommonCodePage() {
       )}
     </Stack>
   );
-}
+};
+
+export default CommonCodePage;
