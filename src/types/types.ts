@@ -14,20 +14,20 @@ import {
 // 결재 요청 관련 타입 정의
 export type ApprovalRequestItem = {
   no: number; // 번호
-  approvalRequestId: string; // 아이디
-  targetType: string; // 대상 타입
-  targetId: string; // 대상 식별자
-  itsvcNo: string | null; // ITSVC/JIRA 번호
-  requestKind: string; // 결재양식
-  approvalStatus: string; // 처리상태
-  title: string | null; // 제목
-  content: string | null; // 내용
-  createdBy: string; // 요청자
-  department: string; // 요청부서
-  updatedBy: string | null; // 최근 처리자
-  createdAt: string; // 요청일
-  updatedAt: string; // 최근 변경 시각
-  isRetracted: number; // 회수 여부
+  approvalRequestId: string; // approval_request_id
+  targetType: string; // target_type
+  targetId: string; // target_id
+  itsvcNo: string | null; // itsvc_no
+  requestKind: string; // request_kind
+  approvalStatus: string; // approval_status
+  payloadAfter: string | null; // payload_after
+  createdBy: string; // created_by
+  createdAt: string; // created_at
+  updatedBy: string | null; // updated_by
+  updatedAt: string; // updated_at
+  isRetracted: number; // is_retracted
+  isApplied: number; // is_applied
+  appliedAt: string | null; // applied_at
 };
 
 export type SelectFieldOption = {

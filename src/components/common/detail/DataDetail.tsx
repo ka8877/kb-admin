@@ -36,6 +36,7 @@ export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   checkChangesBeforeSave?: boolean; // 저장 전 변경사항 체크 여부 (기본: false)
   excludeFieldsFromChangeCheck?: string[]; // 변경사항 체크에서 제외할 필드 목록
   canEdit?: boolean; // 편집 가능 여부 (기본: true, false면 편집 버튼 숨김)
+  isLocked?: boolean; // 데이터 잠금 여부 (true면 수정/삭제 버튼 숨김)
 };
 
 const defaultGetRowId =
@@ -70,6 +71,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   checkChangesBeforeSave = false,
   excludeFieldsFromChangeCheck = ['updatedAt', 'createdAt', 'no'],
   canEdit = true,
+  isLocked = false,
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
   const dataGridRef = useGridApiRef();
@@ -204,6 +206,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           onDelete={onDelete ? handleDeleteClick : undefined}
           showEdit={canEdit && !!onSave}
           showDelete={!!onDelete}
+          isLocked={isLocked}
         />
       )}
 

@@ -330,14 +330,14 @@ export const fetchApprovalRequest = async (
     itsvcNo: (v.itsvcNo as string) ?? null,
     requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
     approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-    title: (v.title as string) ?? null,
-    content: (v.content as string) ?? null,
+    payloadAfter: (v.payloadAfter as string | null) ?? null,
     createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-    department: (v.department as string) ?? '',
     updatedBy: (v.updatedBy as string) ?? null,
     createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
     updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
     isRetracted: (v.isRetracted as number) ?? 0,
+    isApplied: (v.isApplied as number) ?? 0,
+    appliedAt: (v.appliedAt as string | null) ?? null,
   };
 };
 
