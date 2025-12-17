@@ -33,10 +33,10 @@ export type ImportExcelToJsonParams = {
 
 /**
  * 엑셀 파일을 읽어서 JSON 데이터 배열로 변환하는 공통 함수
- * 
+ *
  * @param params - 엑셀 파일 읽기 파라미터
  * @returns 변환된 JSON 데이터 배열
- * 
+ *
  * @example
  * ```typescript
  * const data = await importExcelToJson({
@@ -63,17 +63,17 @@ export const importExcelToJson = async ({
 }: ImportExcelToJsonParams): Promise<ExcelRowData[]> => {
   // ExcelJS 동적 import
   const ExcelJS = await import('exceljs');
-  
+
   // 워크북 로드
   const workbook = new ExcelJS.Workbook();
   // 날짜를 텍스트로 읽기 위한 옵션 설정
   await workbook.xlsx.load(await file.arrayBuffer(), {
     ignoreNodes: [], // 모든 노드 읽기
   });
-  
+
   // 워크시트 가져오기
   const worksheet = workbook.getWorksheet(worksheetIndex);
-  
+
   if (!worksheet) {
     throw new Error(`워크시트를 찾을 수 없습니다. (인덱스: ${worksheetIndex})`);
   }
@@ -85,7 +85,7 @@ export const importExcelToJson = async ({
   for (let rowNum = startRow; rowNum <= lastRow; rowNum++) {
     const row = worksheet.getRow(rowNum);
     const rowData: ExcelRowData = {};
-    
+
     // 디버깅: 행의 모든 셀 정보 확인 (날짜 필드가 있는 행만)
     if (dateFields.length > 0 && rowNum <= startRow + 5) {
       console.log(`[${rowNum}행] 전체 셀 정보:`, {
@@ -111,7 +111,7 @@ export const importExcelToJson = async ({
       const cell = row.getCell(colIndex + 1);
       const isDateField = dateFields.includes(field);
       let cellValue: unknown;
-      
+
       // 날짜 필드인 경우 상세 디버깅
       if (isDateField) {
         console.log(`[${rowNum}행 ${colIndex + 1}열] 날짜 필드 ${field} 처리 시작`, {
@@ -126,7 +126,7 @@ export const importExcelToJson = async ({
       if (isDateField) {
         // cell.text를 우선 확인 (텍스트로 입력된 경우)
         const cellText = String(cell.value ?? cell.text ?? '').trim();
-        
+
         // 14자리 숫자 형식 검증 (YYYYMMDDHHmmss)
         if (/^\d{14}$/.test(cellText)) {
           // 14자리 숫자 형식 파싱: YYYYMMDDHHmmss
@@ -136,7 +136,7 @@ export const importExcelToJson = async ({
           const hour = cellText.substring(8, 10);
           const minute = cellText.substring(10, 12);
           const second = cellText.substring(12, 14);
-          
+
           // 날짜 유효성 검증 (간단한 범위 체크)
           const yearNum = parseInt(year);
           const monthNum = parseInt(month);
@@ -144,32 +144,35 @@ export const importExcelToJson = async ({
           const hourNum = parseInt(hour);
           const minuteNum = parseInt(minute);
           const secondNum = parseInt(second);
-          
+
           if (
-            yearNum < 1900 || yearNum > 9999 ||
-            monthNum < 1 || monthNum > 12 ||
-            dayNum < 1 || dayNum > 31 ||
+            yearNum < 1900 ||
+            yearNum > 9999 ||
+            monthNum < 1 ||
+            monthNum > 12 ||
+            dayNum < 1 ||
+            dayNum > 31 ||
             hourNum > 23 ||
             minuteNum > 59 ||
             secondNum > 59
           ) {
             throw new Error(
               `날짜 필드 ${field}의 값이 올바르지 않습니다 (${cellText}). ` +
-              `연월일시분초 형식(14자리 숫자)으로 입력해주세요. 예: 20251125000000`
+                `연월일시분초 형식(14자리 숫자)으로 입력해주세요. 예: 20251125000000`,
             );
           }
-          
+
           // YYYY-MM-DD HH:mm:ss 형식으로 변환
           cellValue = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-          console.log(`[날짜 필드 ${field}] 14자리 숫자 형식 파싱 성공:`, { 
-            input: cellText, 
-            output: cellValue 
+          console.log(`[날짜 필드 ${field}] 14자리 숫자 형식 파싱 성공:`, {
+            input: cellText,
+            output: cellValue,
           });
         } else if (cellText) {
           // 14자리 숫자 형식이 아닌 경우 에러
           throw new Error(
             `날짜 필드 ${field}는 14자리 숫자 형식(YYYYMMDDHHmmss)으로 입력해야 합니다. ` +
-            `입력된 값: ${cellText}, 예시: 20251125000000`
+              `입력된 값: ${cellText}, 예시: 20251125000000`,
           );
         } else {
           // 빈 값인 경우
@@ -207,8 +210,8 @@ export const importExcelToJson = async ({
     if (!hasData) continue;
 
     // 커스텀 변환 함수 적용
-    let transformedData = transformRow ? transformRow(rowData) : rowData;
-    
+    const transformedData = transformRow ? transformRow(rowData) : rowData;
+
     // transformRow가 null을 반환하면 해당 행 스킵
     if (transformedData === null) continue;
 
@@ -339,5 +342,3 @@ export const exportGridToExcel = async <T extends GridValidRowModel = GridValidR
   a.click();
   URL.revokeObjectURL(url);
 };
-
-

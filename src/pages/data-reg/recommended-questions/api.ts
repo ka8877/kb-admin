@@ -3,7 +3,6 @@
 
 import {
   getApi,
-  postApi,
   putApi,
   patchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
@@ -13,23 +12,17 @@ import { TOAST_MESSAGES } from '@/constants/message';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
-import { toCompactFormat, formatDateForStorage } from '@/utils/dateUtils';
+import { toCompactFormat } from '@/utils/dateUtils';
 import type { Dayjs } from 'dayjs';
 import { useLoadingStore } from '@/store/loading';
 import {
-  APPROVAL_STATUS_OPTIONS,
-  CREATE_REQUESTED,
-  UPDATE_REQUESTED,
-  DELETE_REQUESTED,
-  IN_REVIEW,
-  DONE_REVIEW,
   DATA_REGISTRATION,
   DATA_MODIFICATION,
   DATA_DELETION,
   TARGET_TYPE_RECOMMEND,
   OUT_OF_SERVICE,
 } from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestType, ApprovalRequestItem } from '@/types/types';
+import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
 
 /**
  * 코드 아이템 타입 정의

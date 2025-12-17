@@ -279,7 +279,7 @@ const INITIAL_AGE_GROUPS: AgeGroupItem[] = [
 
 // Mutable State
 let codeTypeList: CodeTypeOption[] = [...INITIAL_CODE_TYPES];
-let serviceGroupList: CodeTypeOption[] = [...INITIAL_SERVICE_GROUPS];
+const serviceGroupList: CodeTypeOption[] = [...INITIAL_SERVICE_GROUPS];
 let serviceNameMockData: ServiceNameItem[] = [...INITIAL_SERVICE_NAMES];
 let questionCategoryMockData: QuestionCategoryItem[] = [...INITIAL_QUESTION_CATEGORIES];
 let ageGroupMockData: AgeGroupItem[] = [...INITIAL_AGE_GROUPS];

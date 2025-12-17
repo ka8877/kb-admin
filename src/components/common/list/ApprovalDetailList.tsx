@@ -47,10 +47,6 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
   isError = false,
   gridHeight = 600,
 }: ApprovalDetailListProps<T>) => {
-  if (isLoading) {
-    return <GlobalLoadingSpinner isLoading={true} />;
-  }
-
   const { showConfirm } = useConfirmDialog();
 
   const handleFinalApprovalClick = useCallback(() => {
@@ -67,6 +63,10 @@ const ApprovalDetailList = <T extends GridValidRowModel = GridValidRowModel>({
       },
     });
   }, [onFinalApproval, showConfirm]);
+
+  if (isLoading) {
+    return <GlobalLoadingSpinner isLoading={true} />;
+  }
 
   // 에러가 발생했거나 로딩 중이면 버튼을 표시하지 않음
   const shouldShowButton = showFinalApprovalButton && onFinalApproval && !isError;

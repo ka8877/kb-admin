@@ -303,7 +303,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       dateFormat,
       dateDisplayFormat,
     });
-    
+
     // No 필드를 페이지네이션을 고려하여 동적으로 계산
     return processed.map((col) => {
       if (col.field === 'no') {
@@ -311,12 +311,12 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           ...col,
           valueGetter: (params: { value: any; row: T }) => {
             const { row } = params;
-            
+
             // row가 없으면 기본값 반환
             if (!row) {
               return '';
             }
-            
+
             try {
               // 페이지 번호와 페이지 크기를 고려하여 전체 목록에서의 순번 계산
               const currentRowId = getRowId(row);
@@ -328,12 +328,12 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
                   return false;
                 }
               });
-              
+
               // findIndex가 -1을 반환하면 (찾지 못한 경우) 기본값 반환
               if (rowIndex === -1) {
                 return '';
               }
-              
+
               // 숫자로 명확히 반환
               const no = paginationModel.page * paginationModel.pageSize + rowIndex + 1;
               return Number(no);
@@ -346,7 +346,16 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       }
       return col;
     });
-  }, [columns, selectFields, dateFields, dateFormat, dateDisplayFormat, filteredRows, paginationModel, getRowId]);
+  }, [
+    columns,
+    selectFields,
+    dateFields,
+    dateFormat,
+    dateDisplayFormat,
+    filteredRows,
+    paginationModel,
+    getRowId,
+  ]);
 
   const hasSearchFields = Array.isArray(searchFields) && searchFields.length > 0;
 
@@ -374,7 +383,9 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
           getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}
           rowSelectionModel={selectionModel}
-          onRowSelectionModelChange={selectionMode ? handleRowSelectionModelChange : setSelectionModel}
+          onRowSelectionModelChange={
+            selectionMode ? handleRowSelectionModelChange : setSelectionModel
+          }
           isRowSelectable={isRowSelectable}
           pagination
           paginationModel={paginationModel}
