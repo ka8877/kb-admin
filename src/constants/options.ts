@@ -91,14 +91,14 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
 export const APPROVAL_PAGE_STATE = 'approval_page_state' as const;
 export const APPROVAL_RETURN_URL = 'approval_return_url' as const;
 
-// 데이터 등록 반영 상태 옵션 데이터
-export const statusOptions = [
-  { label: '서비스 중', value: 'in_service' },
-  { label: '서비스 종료', value: 'out_of_service' },
-];
-
 export const IN_SERVICE = 'in_service' as const;
 export const OUT_OF_SERVICE = 'out_of_service' as const;
+
+// 데이터 등록 반영 상태 옵션 데이터
+export const statusOptions = [
+  { label: '서비스 중', value: IN_SERVICE },
+  { label: '서비스 종료', value: OUT_OF_SERVICE },
+];
 
 // 예 아니오 옵션 데이터
 export const yesNoOptions = [

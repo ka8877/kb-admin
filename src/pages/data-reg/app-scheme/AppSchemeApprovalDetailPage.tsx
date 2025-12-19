@@ -5,7 +5,7 @@ import { Box } from '@mui/material';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns/columns';
 import PageHeader from '@/components/common/PageHeader';
-import ApprovalDetailList from '@/components/common/list/ApprovalDetailList';
+import ApprovalDetailList from '@components/common/list/ApprovalDetailList';
 import { ROUTES } from '@/routes/menu';
 import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
 import { TOAST_MESSAGES } from '@/constants/message';
@@ -15,8 +15,8 @@ import { fetchApprovalRequest, updateApprovalRequestStatus } from '@/pages/data-
 import { useQuery } from '@tanstack/react-query';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
-import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
-import { appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
+import { createProcessedColumns } from '@components/common/upload/utils/listUtils';
+import { APP_SCHEME, appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const AppSchemeApprovalDetailPage: React.FC = () => {
@@ -56,7 +56,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
         dateFields: dateFieldsConfig,
         dateFormat: 'YYYYMMDDHHmmss',
       }),
-    [selectFieldsConfig, dateFieldsConfig],
+    [],
   );
 
   // rowId getter
@@ -85,7 +85,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
       // 모든 관련 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalRequest(id!) });
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalDetailQuestions(id!) });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
 
       // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
       handleBack();

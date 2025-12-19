@@ -11,7 +11,7 @@ import {
   fetchApprovalDetailAppSchemes,
 } from '@/pages/data-reg/app-scheme/api';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
-import { appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
+import { appSchemeKeys, approvalRequestKeys, APP_SCHEME } from '@/constants/queryKey';
 
 /**
  * 앱스킴 목록 조회 훅 파라미터 타입
@@ -20,7 +20,7 @@ export interface UseAppSchemesParams {
   /** 페이지 번호 (0부터 시작) */
   page?: number;
   /** 페이지당 행 수 */
-  pageSize?: number;
+  size?: number;
   /** 검색 조건 (필드명: 값 형태의 객체) */
   searchParams?: Record<string, string | number>;
 }
@@ -57,7 +57,7 @@ export const useCreateAppScheme = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
   });
 };
@@ -73,7 +73,7 @@ export const useCreateAppSchemesBatch = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
   });
 };
@@ -102,7 +102,7 @@ export const useUpdateAppScheme = () => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
   });
 };
@@ -118,7 +118,7 @@ export const useDeleteAppScheme = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
   });
 };
@@ -134,7 +134,7 @@ export const useDeleteAppSchemes = () => {
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list('app-scheme') });
+      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
   });
 };

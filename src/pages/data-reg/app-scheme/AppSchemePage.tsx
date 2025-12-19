@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
@@ -6,7 +6,7 @@ import { appSchemeColumns } from '@/pages/data-reg/app-scheme/components/columns
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { searchFields } from '@/pages/data-reg/app-scheme/data';
+import { APP_SCHEME_ID, searchFields } from '@/pages/data-reg/app-scheme/data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { useDeleteAppSchemes, useAppSchemes } from '@/pages/data-reg/app-scheme/hooks';
@@ -14,6 +14,7 @@ import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-schem
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
 import { PAGE_TITLES } from '@/constants/pageTitle';
+import { APPROVAL_RETURN_URL } from '@/constants/options';
 
 const AppSchemePage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +32,6 @@ const AppSchemePage: React.FC = () => {
     data: rows = [],
     isLoading,
     isFetching,
-    refetch,
   } = useAppSchemes({
     page: listState.page,
     size: listState.size,
@@ -45,7 +45,7 @@ const AppSchemePage: React.FC = () => {
 
   const handleRequestApproval = useCallback(() => {
     const currentUrl = location.pathname + location.search;
-    sessionStorage.setItem('approval_return_url', currentUrl);
+    sessionStorage.setItem(APPROVAL_RETURN_URL, currentUrl);
     navigate(ROUTES.APP_SCHEME_APPROVAL);
   }, [location.pathname, location.search, navigate]);
 
@@ -57,7 +57,7 @@ const AppSchemePage: React.FC = () => {
       try {
         await deleteMutation.mutateAsync(ids);
         //toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
-      } catch (error) {
+      } catch {
         toast.error(TOAST_MESSAGES.DELETE_FAILED);
       }
     },
@@ -78,7 +78,7 @@ const AppSchemePage: React.FC = () => {
         onRowClick={handleRowClick}
         columns={appSchemeColumns}
         rows={rows}
-        rowIdGetter={'appSchemeId'}
+        rowIdGetter={APP_SCHEME_ID}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}
         onDeleteConfirm={handleDeleteConfirm}

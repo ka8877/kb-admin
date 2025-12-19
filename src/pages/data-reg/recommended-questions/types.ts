@@ -1,4 +1,4 @@
-import { IN_SERVICE, OUT_OF_SERVICE } from '@/constants/options';
+import { statusType } from '@/pages/history/login/type';
 
 export type RecommendedQuestionItem = {
   no: number;
@@ -17,6 +17,6 @@ export type RecommendedQuestionItem = {
   impEndDate: string;
   updatedAt: string;
   createdAt: string;
-  status: typeof IN_SERVICE | typeof OUT_OF_SERVICE;
+  status: statusType;
   locked: boolean;
 };

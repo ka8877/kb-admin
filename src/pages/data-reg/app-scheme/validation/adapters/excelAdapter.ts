@@ -3,6 +3,17 @@
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
 import type { AppSchemeData } from '@/pages/data-reg/app-scheme/types';
+import {
+  PRODUCT_MENU_NAME,
+  DESCRIPTION,
+  APP_SCHEME_LINK,
+  ONE_LINK,
+  GOODS_NAME_LIST,
+  PARENT_ID,
+  PARENT_TITLE,
+  START_DATE,
+  END_DATE,
+} from '@/pages/data-reg/app-scheme/data';
 
 export type ValidationFunction = (
   value: string | number | Date | null | undefined,
@@ -15,7 +26,7 @@ export type ValidationFunction = (
 export const createExcelValidationRules = (): Record<string, ValidationFunction> => {
   return {
     // productMenuName: 필수, 200자 이하
-    productMenuName: (value, row) => {
+    [PRODUCT_MENU_NAME]: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: 'AI 검색 노출 버튼명은 필수입니다' };
       }
@@ -30,7 +41,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // description: 필수, 2000자 이하
-    description: (value, row) => {
+    [DESCRIPTION]: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '앱스킴 설명은 필수입니다' };
       }
@@ -45,7 +56,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // appSchemeLink: 필수, URL 형식, 500자 이하
-    appSchemeLink: (value, row) => {
+    [APP_SCHEME_LINK]: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '앱스킴 주소는 필수입니다' };
       }
@@ -74,7 +85,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // oneLink: 필수, URL 형식, 500자 이하
-    oneLink: (value, row) => {
+    [ONE_LINK]: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '원링크 주소는 필수입니다' };
       }
@@ -103,7 +114,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // goodsNameList: 선택, 200자 이하
-    goodsNameList: (value, row) => {
+    [GOODS_NAME_LIST]: (value, _row) => {
       if (value && String(value).length > 200) {
         return {
           isValid: false,
@@ -114,7 +125,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // parentId: 선택, 50자 이하
-    parentId: (value, row) => {
+    [PARENT_ID]: (value, _row) => {
       if (value && String(value).length > 50) {
         return {
           isValid: false,
@@ -125,7 +136,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // parentTitle: 선택, 200자 이하
-    parentTitle: (value, row) => {
+    [PARENT_TITLE]: (value, _row) => {
       if (value && String(value).length > 200) {
         return {
           isValid: false,
@@ -136,7 +147,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // startDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    startDate: (value, row) => {
+    [START_DATE]: (value, _row) => {
       if (!value) {
         return { isValid: false, message: '노출 시작일시는 필수입니다' };
       }
@@ -164,7 +175,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // endDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    endDate: (value, row) => {
+    [END_DATE]: (value, row) => {
       if (!value) {
         return { isValid: false, message: '노출 종료일시는 필수입니다' };
       }
@@ -190,8 +201,8 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
 
       // 시작일과 비교
       const rowData = row as Record<string, unknown>;
-      if (rowData?.startDate) {
-        const startDate = toISOString(rowData.startDate as string | Date | null);
+      if (rowData?.[START_DATE]) {
+        const startDate = toISOString(rowData[START_DATE] as string | Date | null);
         const endDate = toISOString(value as string | Date | null);
 
         if (startDate && endDate && endDate <= startDate) {

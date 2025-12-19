@@ -10,6 +10,9 @@ import {
   excludeFields,
   processedFields,
   excelDateFieldsConfig,
+  GOODS_NAME_LIST,
+  PARENT_ID,
+  PARENT_TITLE,
 } from '@/pages/data-reg/app-scheme/data';
 import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
 import { useCreateAppSchemesBatch } from '@/pages/data-reg/app-scheme/hooks';
@@ -47,7 +50,7 @@ const ApprovalExcelUpload: React.FC = () => {
           });
 
           // 빈 문자열을 null로 변환 (선택 필드)
-          ['goodsNameList', 'parentId', 'parentTitle'].forEach((field) => {
+          [GOODS_NAME_LIST, PARENT_ID, PARENT_TITLE].forEach((field) => {
             if (processedRow[field] === '') {
               processedRow[field] = null;
             }

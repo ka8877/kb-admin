@@ -24,7 +24,26 @@ import {
   OUT_OF_SERVICE,
 } from '@/constants/options';
 import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
-import { TABLE_LABELS } from '@/constants/label';
+import {
+  TABLE_LABELS,
+} from '@/constants/label';
+
+const {
+  LOCKED,
+  STATUS,
+  CREATED_AT,
+  UPDATED_AT,
+  END_DATE,
+  START_DATE,
+  PARENT_TITLE,
+  PARENT_ID,
+  APP_SCHEME_ID,
+  PRODUCT_MENU_NAME,
+  DESCRIPTION,
+  APP_SCHEME_LINK,
+  ONE_LINK,
+  GOODS_NAME_LIST,
+} = TABLE_LABELS.APP_SCHEME;
 
 const {
   NO,
@@ -57,21 +76,21 @@ const transformItem = (
   const { index, fallbackId } = options;
 
   return {
-    no: (v.no as number) ?? index + 1,
-    appSchemeId: String(v.id ?? fallbackId ?? index + 1),
-    productMenuName: (v.product_menu_name as string) ?? (v.productMenuName as string) ?? '',
-    description: (v.description as string) ?? '',
-    appSchemeLink: (v.app_scheme_link as string) ?? (v.appSchemeLink as string) ?? '',
-    oneLink: (v.one_link as string) ?? (v.oneLink as string) ?? '',
-    goodsNameList: (v.goods_name_list as string) ?? (v.goodsNameList as string) ?? null,
-    parentId: (v.parent_id as string) ?? (v.parentId as string) ?? null,
-    parentTitle: (v.parent_title as string) ?? (v.parentTitle as string) ?? null,
-    startDate: v.start_date ? String(v.start_date) : v.startDate ? String(v.startDate) : '',
-    endDate: v.end_date ? String(v.end_date) : v.endDate ? String(v.endDate) : '',
-    updatedAt: v.updatedAt ? String(v.updatedAt) : '',
-    createdAt: v.createdAt ? String(v.createdAt) : '',
-    status: (v.status as AppSchemeItem['status']) ?? OUT_OF_SERVICE,
-    locked: (v.locked as boolean) ?? false,
+    [TABLE_LABELS.APP_SCHEME.NO]: (v[TABLE_LABELS.APP_SCHEME.NO] as number) ?? index + 1,
+    [APP_SCHEME_ID]: String(v[APP_SCHEME_ID] ?? fallbackId ?? index + 1),
+    [PRODUCT_MENU_NAME]: (v[PRODUCT_MENU_NAME] as string) ?? '',
+    [DESCRIPTION]: (v[DESCRIPTION] as string) ?? '',
+    [APP_SCHEME_LINK]: (v[APP_SCHEME_LINK] as string) ?? '',
+    [ONE_LINK]: (v[ONE_LINK] as string) ?? '',
+    [GOODS_NAME_LIST]: (v[GOODS_NAME_LIST] as string) ?? null,
+    [PARENT_ID]: (v[PARENT_ID] as string) ?? null,
+    [PARENT_TITLE]: (v[PARENT_TITLE] as string) ?? null,
+    [START_DATE]: v[START_DATE] ? String(v[START_DATE]) : '',
+    [END_DATE]: v[END_DATE] ? String(v[END_DATE]) : '',
+    [UPDATED_AT]: v[UPDATED_AT] ? String(v[UPDATED_AT]) : '',
+    [CREATED_AT]: v[CREATED_AT] ? String(v[CREATED_AT]) : '',
+    [STATUS]: (v[STATUS] as AppSchemeItem['status']) ?? OUT_OF_SERVICE,
+    [LOCKED]: (v[LOCKED] as boolean) ?? false,
   };
 };
 
@@ -112,7 +131,7 @@ export interface FetchAppSchemesParams {
   /** 페이지 번호 (0부터 시작) */
   page?: number;
   /** 페이지당 행 수 */
-  pageSize?: number;
+  size?: number;
   /** 검색 조건 (필드명: 값 형태의 객체) */
   searchParams?: Record<string, string | number>;
 }
@@ -121,12 +140,12 @@ export interface FetchAppSchemesParams {
  * 앱스킴 목록 조회
  */
 export const fetchAppSchemes = async (params?: FetchAppSchemesParams): Promise<AppSchemeItem[]> => {
-  const { page = 0, pageSize = 20, searchParams = {} } = params || {};
+  const { page = 0, size = 20, searchParams = {} } = params || {};
 
   // 현재는 Firebase Realtime을 사용하므로 파라미터는 console.log로만 출력
   console.log('🔍 앱스킴 목록 조회 파라미터:', {
     page,
-    pageSize,
+    size,
     searchParams,
   });
 
@@ -182,7 +201,7 @@ const sendApprovalRequest = async (
       API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST,
       approvalForm,
       [item], // 단건 배열로 전달
-      item.description || '앱스킴',
+      item[DESCRIPTION] || '앱스킴',
       TARGET_TYPE_APP,
       targetId,
     );
@@ -197,51 +216,53 @@ const sendApprovalRequest = async (
  * @returns API 전송 형식의 데이터
  */
 export const transformToApiFormat = (inputData: {
-  productMenuName?: string | null;
-  description?: string | null;
-  appSchemeLink?: string | null;
-  oneLink?: string | null;
-  goodsNameList?: string | null;
-  parentId?: string | null;
-  parentTitle?: string | null;
-  startDate?: string | Date | Dayjs | null;
-  endDate?: string | Date | Dayjs | null;
-  status?: string | null;
+  [PRODUCT_MENU_NAME]?: string | null;
+  [DESCRIPTION]?: string | null;
+  [APP_SCHEME_LINK]?: string | null;
+  [ONE_LINK]?: string | null;
+  [GOODS_NAME_LIST]?: string | null;
+  [PARENT_ID]?: string | null;
+  [PARENT_TITLE]?: string | null;
+  [START_DATE]?: string | Date | Dayjs | null;
+  [END_DATE] ?: string | Date | Dayjs | null;
+  [STATUS]?: string | null;
 }): Partial<AppSchemeItem> => {
   // 날짜 변환
   let startDate = '';
-  if (inputData.startDate) {
-    if (typeof inputData.startDate === 'object' && 'toDate' in inputData.startDate) {
+  if (inputData[START_DATE]) {
+    const val = inputData[START_DATE];
+    if (val && typeof val === 'object' && 'toDate' in val) {
       // Dayjs 객체인 경우
-      startDate = toCompactFormat((inputData.startDate as Dayjs).toDate()) || '';
+      startDate = toCompactFormat((val as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      startDate = toCompactFormat(inputData.startDate) || '';
+      startDate = toCompactFormat(val as string | Date) || '';
     }
   }
 
   let endDate = '';
-  if (inputData.endDate) {
-    if (typeof inputData.endDate === 'object' && 'toDate' in inputData.endDate) {
+  if (inputData[END_DATE]) {
+    const val = inputData[END_DATE];
+    if (val && typeof val === 'object' && 'toDate' in val) {
       // Dayjs 객체인 경우
-      endDate = toCompactFormat((inputData.endDate as Dayjs).toDate()) || '';
+      endDate = toCompactFormat((val as Dayjs).toDate()) || '';
     } else {
       // 문자열 또는 Date 객체인 경우
-      endDate = toCompactFormat(inputData.endDate) || '';
+      endDate = toCompactFormat(val as string | Date) || '';
     }
   }
 
   return {
-    productMenuName: inputData.productMenuName ? String(inputData.productMenuName) : '',
-    description: inputData.description ? String(inputData.description) : '',
-    appSchemeLink: inputData.appSchemeLink ? String(inputData.appSchemeLink) : '',
-    oneLink: inputData.oneLink ? String(inputData.oneLink) : '',
-    goodsNameList: inputData.goodsNameList ? String(inputData.goodsNameList) : null,
-    parentId: inputData.parentId ? String(inputData.parentId) : null,
-    parentTitle: inputData.parentTitle ? String(inputData.parentTitle) : null,
+    productMenuName: inputData[PRODUCT_MENU_NAME] ? String(inputData[PRODUCT_MENU_NAME]) : '',
+    description: inputData[DESCRIPTION] ? String(inputData[DESCRIPTION]) : '',
+    appSchemeLink: inputData[APP_SCHEME_LINK] ? String(inputData[APP_SCHEME_LINK]) : '',
+    oneLink: inputData[ONE_LINK] ? String(inputData[ONE_LINK]) : '',
+    goodsNameList: inputData[GOODS_NAME_LIST] ? String(inputData[GOODS_NAME_LIST]) : null,
+    parentId: inputData[PARENT_ID] ? String(inputData[PARENT_ID]) : null,
+    parentTitle: inputData[PARENT_TITLE] ? String(inputData[PARENT_TITLE]) : null,
     startDate,
     endDate,
-    status: (inputData.status as AppSchemeItem['status']) || OUT_OF_SERVICE,
+    status: (inputData[STATUS] as AppSchemeItem[typeof STATUS]) || OUT_OF_SERVICE,
   };
 };
 
@@ -260,7 +281,7 @@ const createApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> =
 
   items.forEach((item) => {
     // list에 있는 id를 그대로 사용하여 등록
-    const id = item.appSchemeId;
+    const id = item[APP_SCHEME_ID];
     updates[`${basePath}/${id}`] = item;
   });
 
@@ -349,21 +370,17 @@ export const fetchApprovalRequest = async (
     [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
     [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
     [ITSVC_NO]: (v[ITSVC_NO] as string) ?? null,
-    [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? (v.approval_form as string) ?? '',
-    [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? (v.status as string) ?? 'request',
+    [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? '',
+    [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? '',
     [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
     [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
-    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? (v.createdBy as string) ?? null,
+    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null)  ?? null,
     [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
-    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null) ?? (v.updatedBy as string) ?? null,
+    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null)  ?? null,
     [REQUESTED_AT]:
-      (v[REQUESTED_AT] as string) ??
-      (v.createdAt as string) ??
-      (v.request_date ? String(v.request_date) : ''),
+      (v[REQUESTED_AT] as string) ?? '',
     [LAST_UPDATED_AT]:
-      (v[LAST_UPDATED_AT] as string) ??
-      (v.updatedAt as string) ??
-      (v.process_date ? String(v.process_date) : ''),
+      (v[LAST_UPDATED_AT] as string)?? '',
     [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
     [IS_APPLIED]: Boolean(v[IS_APPLIED]),
     [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
@@ -471,7 +488,7 @@ export const lockAppSchemes = async (ids: (string | number)[]): Promise<void> =>
  * 승인된 항목들을 실제 데이터로 삭제 (data_deletion인 경우)
  * @param items - 삭제할 앱스킴 아이템 배열 (id 포함)
  */
-const deleteApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
+const _deleteApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 deleteApprovedAppSchemes: items가 비어있음');
     return;
@@ -548,7 +565,7 @@ const deleteApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> =
  * 승인된 항목들을 실제 데이터로 수정 (data_modification인 경우)
  * @param items - 수정할 앱스킴 아이템 배열 (id 포함)
  */
-const updateApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
+const _updateApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 updateApprovedAppSchemes: items가 비어있음');
     return;

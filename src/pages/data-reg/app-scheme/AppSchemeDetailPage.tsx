@@ -22,6 +22,16 @@ import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import type { ValidationResult } from '@/types/types';
 import { PAGE_TITLES } from '@/constants/pageTitle';
+import {
+  DESCRIPTION,
+  APP_SCHEME_LINK,
+  ONE_LINK,
+  START_DATE,
+  END_DATE,
+  PRODUCT_MENU_NAME,
+  APP_SCHEME_ID,
+  LOCKED,
+} from '@/pages/data-reg/app-scheme/data';
 
 const AppSchemeDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,7 +52,7 @@ const AppSchemeDetailPage: React.FC = () => {
       await deleteMutation.mutateAsync(id);
       // toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
       navigate(-1);
-    } catch (error) {
+    } catch {
       toast.error(TOAST_MESSAGES.DELETE_FAILED);
     }
   }, [id, deleteMutation, navigate]);
@@ -64,13 +74,10 @@ const AppSchemeDetailPage: React.FC = () => {
   );
 
   // 필수 필드 목록 추출 (yup 스키마에서 required 필드 확인)
-  const getRequiredFields = React.useCallback(
-    (currentData: AppSchemeItem | undefined): string[] => {
-      // 앱스킴 필수 필드: yup 스키마의 required 필드들
-      return ['productMenuName', 'description', 'appSchemeLink', 'oneLink', 'startDate', 'endDate'];
-    },
-    [],
-  );
+  const getRequiredFields = React.useCallback((): string[] => {
+    // 앱스킴 필수 필드: yup 스키마의 required 필드들
+    return [PRODUCT_MENU_NAME, DESCRIPTION, APP_SCHEME_LINK, ONE_LINK, START_DATE, END_DATE];
+  }, []);
 
   // Validation 함수
   const handleValidate = React.useCallback(
@@ -120,7 +127,7 @@ const AppSchemeDetailPage: React.FC = () => {
         data={data}
         columns={appSchemeColumns}
         isLoading={isLoading}
-        rowIdGetter="appSchemeId"
+        rowIdGetter={APP_SCHEME_ID}
         onBack={handleBack}
         onDelete={handleDelete}
         onSave={handleSave}
@@ -130,7 +137,7 @@ const AppSchemeDetailPage: React.FC = () => {
         dateFormat="YYYYMMDDHHmmss"
         validator={handleValidate}
         getRequiredFields={getRequiredFields}
-        isLocked={data?.locked ?? false}
+        isLocked={data?.[LOCKED] ?? false}
         canEdit={true}
       />
     </Box>

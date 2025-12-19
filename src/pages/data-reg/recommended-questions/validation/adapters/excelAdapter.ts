@@ -10,6 +10,7 @@ import {
 } from '../recommendedQuestionValidation';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
+import { IN_SERVICE, OUT_OF_SERVICE } from '@/constants/options';
 
 // 엑셀 validation 함수 타입 정의
 export type ValidationFunction = (
@@ -23,7 +24,7 @@ export type ValidationFunction = (
 export const createExcelValidationRules = (): Record<string, ValidationFunction> => {
   return {
     // serviceCd: 필수, 20자 이하
-    serviceCd: (value, row) => {
+    serviceCd: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '서비스코드는 필수입니다' };
       }
@@ -34,7 +35,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // displayCtnt: 공통과 같음
-    displayCtnt: (value, row) => {
+    displayCtnt: (value, _row) => {
       const stringValue = value != null ? String(value) : null;
       const result = validateQuestionContent(stringValue);
       return {
@@ -44,7 +45,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // promptCtnt: 공통과 같음 (필수 아님, 글자 수 제한만)
-    promptCtnt: (value, row) => {
+    promptCtnt: (value, _row) => {
       const stringValue = value != null ? String(value) : null;
       const result = validatePromptContent(stringValue);
       return {
@@ -54,7 +55,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // qstCtgr: 필수, 20자 이하
-    qstCtgr: (value, row) => {
+    qstCtgr: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '질문 카테고리는 필수입니다' };
       }
@@ -65,7 +66,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // qstStyle: 공통과 같음
-    qstStyle: (value, row) => {
+    qstStyle: (value, _row) => {
       const stringValue = value != null ? String(value) : null;
       const result = validateQuestionStyle(stringValue);
       return {
@@ -122,7 +123,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // showU17: 필수, Y 또는 N
-    showU17: (value, row) => {
+    showU17: (value, _row) => {
       if (!value || String(value).trim() === '') {
         return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
       }
@@ -137,7 +138,7 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
     },
 
     // impStartDate: 필수, 14자리 숫자 형식 (YYYYMMDDHHmmss)
-    impStartDate: (value, row) => {
+    impStartDate: (value, _row) => {
       if (!value) {
         return { isValid: false, message: '노출 시작일시는 필수입니다' };
       }
@@ -217,11 +218,11 @@ export const createExcelValidationRules = (): Record<string, ValidationFunction>
       return { isValid: true };
     },
 
-    status: (value, row) => {
-      if (value && !['in_service', 'out_of_service'].includes(String(value))) {
+    status: (value, _row) => {
+      if (value && !([IN_SERVICE, OUT_OF_SERVICE] as string[]).includes(String(value))) {
         return {
           isValid: false,
-          message: 'status는 in_service 또는 out_of_service를 입력 가능합니다',
+          message: `status는 ${IN_SERVICE} 또는 ${OUT_OF_SERVICE}를 입력 가능합니다`,
         };
       }
       return { isValid: true };
@@ -263,7 +264,7 @@ export const validateExcelDuplicates = (data: Record<string, unknown>[]): string
   });
 
   // 2. 중복 확인 (하나라도 발견되면 즉시 반환)
-  for (const [key, indices] of duplicateMap) {
+  for (const [, indices] of duplicateMap) {
     if (indices.length > 1) {
       const rowsStr =
         indices.length === 2

@@ -13,6 +13,8 @@ import {
   CODE_GROUP_ID_AGE,
   CODE_GROUP_ID_SERVICE_CD,
   yesNoOptions,
+  IN_SERVICE,
+  OUT_OF_SERVICE,
 } from '@/constants/options';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
@@ -142,7 +144,7 @@ export const validateDate = (
 
 export const validateImpStartDate = (
   value: string | Date | null | undefined,
-  data?: RecommendedQuestionData,
+  _data?: RecommendedQuestionData,
 ): ValidationResult => {
   if (!value || value === null || value === undefined) {
     return { isValid: false, message: '노출 시작일시는 필수입니다' };
@@ -158,7 +160,7 @@ export const validateImpStartDate = (
 
 export const validateImpStartDateForCreate = (
   value: string | Date | null | undefined,
-  data?: RecommendedQuestionData,
+  _data?: RecommendedQuestionData,
 ): ValidationResult => {
   if (!value || value === null || value === undefined) {
     return { isValid: false, message: '노출 시작일시는 필수입니다' };
@@ -219,10 +221,10 @@ export const validateImpEndDate = (
 };
 
 export const validateStatus = (value: string | null | undefined): ValidationResult => {
-  if (value && !['in_service', 'out_of_service'].includes(value)) {
+  if (value && !([IN_SERVICE, OUT_OF_SERVICE] as string[]).includes(value)) {
     return {
       isValid: false,
-      message: 'status는 in_service 또는 out_of_service만 입력 가능합니다',
+      message: `status는 ${IN_SERVICE} 또는 ${OUT_OF_SERVICE}만 입력 가능합니다`,
     };
   }
 
@@ -233,32 +235,29 @@ export const validateStatus = (value: string | null | undefined): ValidationResu
  * 추천질문 Validation Hook
  */
 export const useRecommendedQuestionValidator = () => {
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
+  const { data: _serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
   const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
   const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
 
-  const validateServiceName = useCallback(
-    (value: string | null | undefined): ValidationResult => {
-      if (!value || value.trim() === '') {
-        return { isValid: false, message: '서비스명은 필수입니다' };
-      }
+  const validateServiceName = useCallback((value: string | null | undefined): ValidationResult => {
+    if (!value || value.trim() === '') {
+      return { isValid: false, message: '서비스명은 필수입니다' };
+    }
 
-      /*
+    /*
       const validServices = serviceOptions.map((option) => option.value);
       if (!validServices.includes(value)) {
         return { isValid: false, message: '없는 서비스명입니다' };
       }
          */
 
-      if (value.length > 50) {
-        return { isValid: false, message: '서비스명은 50자를 초과할 수 없습니다' };
-      }
+    if (value.length > 50) {
+      return { isValid: false, message: '서비스명은 50자를 초과할 수 없습니다' };
+    }
 
-      return { isValid: true };
-    },
-    [serviceOptions],
-  );
+    return { isValid: true };
+  }, []);
 
   const validateQuestionCategory = useCallback(
     (value: string | null | undefined, data?: RecommendedQuestionData): ValidationResult => {

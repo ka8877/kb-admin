@@ -1,3 +1,4 @@
+import { IN_SERVICE, OUT_OF_SERVICE } from '@/constants/options';
 import {
   NO,
   LOGIN_HISTORY_ID,
@@ -23,3 +24,5 @@ export type UserLoginItem = {
   [RESULT]: string; // 결과
   [FAIL_REASON]: string | null; // 실패 사유
 };
+
+export type statusType = typeof IN_SERVICE | typeof OUT_OF_SERVICE;

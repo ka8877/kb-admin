@@ -6,6 +6,17 @@
 
 import * as yup from 'yup';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
+import {
+  PRODUCT_MENU_NAME,
+  DESCRIPTION,
+  APP_SCHEME_LINK,
+  ONE_LINK,
+  GOODS_NAME_LIST,
+  PARENT_ID,
+  PARENT_TITLE,
+  START_DATE,
+  END_DATE,
+} from '@/pages/data-reg/app-scheme/data';
 
 /**
  * URL 유효성 검증 (http/https 없어도 허용)
@@ -41,21 +52,21 @@ const isValidUrlFormat = (value: string): boolean => {
  */
 export const createAppSchemeYupSchema = () => {
   return yup.object({
-    productMenuName: yup
+    [PRODUCT_MENU_NAME]: yup
       .string()
       .required('AI 검색 노출 버튼명은 필수입니다')
       .trim()
       .min(1, 'AI 검색 노출 버튼명은 필수입니다')
       .max(200, 'AI 검색 노출 버튼명은 200자(공백 포함)를 초과할 수 없습니다'),
 
-    description: yup
+    [DESCRIPTION]: yup
       .string()
       .required('앱스킴 설명은 필수입니다')
       .trim()
       .min(1, '앱스킴 설명은 필수입니다')
       .max(2000, '앱스킴 설명은 2000자(공백 포함)를 초과할 수 없습니다'),
 
-    appSchemeLink: yup
+    [APP_SCHEME_LINK]: yup
       .string()
       .required('앱스킴 주소는 필수입니다')
       .trim()
@@ -78,7 +89,7 @@ export const createAppSchemeYupSchema = () => {
         }
       }),
 
-    oneLink: yup
+    [ONE_LINK]: yup
       .string()
       .required('원링크 주소는 필수입니다')
       .trim()
@@ -101,25 +112,25 @@ export const createAppSchemeYupSchema = () => {
         }
       }),
 
-    goodsNameList: yup
+    [GOODS_NAME_LIST]: yup
       .string()
       .nullable()
       .max(200, '연관 상품/서비스 리스트는 200자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    parentId: yup
+    [PARENT_ID]: yup
       .string()
       .nullable()
       .max(50, 'MID는 50자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    parentTitle: yup
+    [PARENT_TITLE]: yup
       .string()
       .nullable()
       .max(200, 'MID 상품/서비스명은 200자(공백 포함)를 초과할 수 없습니다')
       .transform((value) => (value === '' ? null : value)),
 
-    startDate: yup
+    [START_DATE]: yup
       .mixed()
       .nullable()
       .required('노출 시작일시는 필수입니다')
@@ -136,7 +147,7 @@ export const createAppSchemeYupSchema = () => {
         }
       }),
 
-    endDate: yup
+    [END_DATE]: yup
       .mixed()
       .nullable()
       .required('노출 종료일시는 필수입니다')
@@ -152,8 +163,8 @@ export const createAppSchemeYupSchema = () => {
 
           // 노출 시작일시 < 노출 종료일시 체크
           const formData = this.parent;
-          if (formData?.startDate) {
-            const startDate = toISOString(formData.startDate as string | Date | null);
+          if (formData?.[START_DATE]) {
+            const startDate = toISOString(formData[START_DATE] as string | Date | null);
             const endDate = toISOString(value as string | Date | null);
 
             if (startDate && endDate) {

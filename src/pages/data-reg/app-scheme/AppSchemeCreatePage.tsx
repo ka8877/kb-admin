@@ -1,7 +1,7 @@
 // frontend/src/pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage.tsx
 import React from 'react';
 import { Box } from '@mui/material';
-import DualTabs from '@/components/common/tabs/DualTabs';
+import DualTabs from '../../../components/common/tabs/DualTabs';
 import PageHeader from '@/components/common/PageHeader';
 import ApprovalExcelUpload from '@/pages/data-reg/app-scheme/components/approval/ApprovalExcelUpload';
 import ApprovalManualForm from '@/pages/data-reg/app-scheme/components/approval/ApprovalManualForm';
