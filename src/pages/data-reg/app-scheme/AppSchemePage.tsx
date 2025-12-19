@@ -34,7 +34,7 @@ const AppSchemePage: React.FC = () => {
     refetch,
   } = useAppSchemes({
     page: listState.page,
-    pageSize: listState.pageSize,
+    size: listState.size,
     searchParams,
   });
   const isDataLoading = isLoading || isFetching;

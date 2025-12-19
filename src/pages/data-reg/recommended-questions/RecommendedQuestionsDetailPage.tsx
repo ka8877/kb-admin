@@ -15,6 +15,17 @@ import {
   CONDITIONAL_REQUIRED_FIELDS,
   conditionalRequiredFieldsForQuestionCategory,
   conditionalRequiredFieldsForService,
+  QST_CTGR,
+  DISPLAY_CTNT,
+  PROMPT_CTNT,
+  QST_STYLE,
+  PARENT_ID,
+  PARENT_NM,
+  AGE_GRP,
+  SHOW_U17,
+  IMP_START_DATE,
+  IMP_END_DATE,
+  STATUS,
 } from '@/pages/data-reg/recommended-questions/data';
 import {
   useRecommendedQuestion,
@@ -66,7 +77,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
 
       try {
         // 서비스 코드와 명칭 분리
-        const { serviceCd, serviceNm } = getServiceData(updatedData.serviceNm);
+        const { serviceCd, serviceNm } = getServiceData(updatedData[SERVICE_NM] as string);
 
         const dataToSave = {
           ...updatedData,
@@ -92,7 +103,7 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   const dynamicSelectFieldsConfig = React.useMemo(
     () => ({
       qstCtgr: (editedData?: RecommendedQuestionItem) => {
-        const serviceInput = editedData?.serviceNm;
+        const serviceInput = editedData?.[SERVICE_NM];
         if (!serviceInput || !codeItems.length) return [];
 
         let serviceCodeItem: CodeItem | undefined;
@@ -186,18 +197,18 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   const handleValidate = (data: RecommendedQuestionItem) => {
     // RecommendedQuestionItem을 RecommendedQuestionData로 변환
     const validationData: Parameters<typeof validateAll>[0] = {
-      serviceNm: data.serviceNm,
-      qstCtgr: data.qstCtgr,
-      displayCtnt: data.displayCtnt,
-      promptCtnt: data.promptCtnt,
-      qstStyle: data.qstStyle,
-      parentId: data.parentId,
-      parentNm: data.parentNm,
-      ageGrp: data.ageGrp,
-      showU17: data.showU17,
-      impStartDate: data.impStartDate,
-      impEndDate: data.impEndDate,
-      status: data.status,
+      [SERVICE_NM]: data[SERVICE_NM],
+      [QST_CTGR]: data[QST_CTGR],
+      [DISPLAY_CTNT]: data[DISPLAY_CTNT],
+      [PROMPT_CTNT]: data[PROMPT_CTNT],
+      [QST_STYLE]: data[QST_STYLE],
+      [PARENT_ID]: data[PARENT_ID],
+      [PARENT_NM]: data[PARENT_NM],
+      [AGE_GRP]: data[AGE_GRP],
+      [SHOW_U17]: data[SHOW_U17],
+      [IMP_START_DATE]: data[IMP_START_DATE],
+      [IMP_END_DATE]: data[IMP_END_DATE],
+      [STATUS]: data[STATUS],
     };
     return validateAll(validationData);
   };

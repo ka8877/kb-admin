@@ -6,7 +6,7 @@ import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questio
 import ManagementList from '@/components/common/list/ManagementList';
 import PageHeader from '@/components/common/PageHeader';
 import { ROUTES } from '@/routes/menu';
-import { dateFieldsConfig } from '@/pages/data-reg/recommended-questions/data';
+import { dateFieldsConfig, LOCKED } from '@/pages/data-reg/recommended-questions/data';
 import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import {
@@ -61,7 +61,7 @@ const RecommendedQuestionsPage: React.FC = () => {
     refetch,
   } = useRecommendedQuestions({
     page: listState.page,
-    pageSize: listState.pageSize,
+    size: listState.size,
     searchParams,
   });
 
@@ -121,7 +121,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         searchFields={searchFields}
         isLoading={isDataLoading}
         onSearchFieldChange={handleSearchFieldChange}
-        isRowSelectable={(params) => !params.row.locked}
+        isRowSelectable={(params) => !params.row[LOCKED]}
       />
     </Box>
   );

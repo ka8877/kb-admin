@@ -24,6 +24,47 @@ import {
   OUT_OF_SERVICE,
 } from '@/constants/options';
 import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
+import { TABLE_LABELS } from '@/constants/label';
+
+const {
+  NO,
+  APPROVAL_REQUEST_ID,
+  TARGET_TYPE,
+  TARGET_ID,
+  ITSVC_NO,
+  REQUEST_KIND,
+  APPROVAL_STATUS,
+  PAYLOAD_BEFORE,
+  PAYLOAD_AFTER,
+  REQUESTER_NAME,
+  REQUESTER_DEPT_NAME,
+  LAST_ACTOR_NAME,
+  REQUESTED_AT,
+  LAST_UPDATED_AT,
+  IS_RETRACTED,
+  IS_APPLIED,
+  APPLIED_AT,
+} = TABLE_LABELS.APPROVAL_REQUEST;
+
+const {
+  QST_ID,
+  SERVICE_CD,
+  SERVICE_NM,
+  DISPLAY_CTNT,
+  PROMPT_CTNT,
+  QST_CTGR,
+  QST_STYLE,
+  PARENT_ID,
+  PARENT_NM,
+  AGE_GRP,
+  SHOW_U17,
+  IMP_START_DATE,
+  IMP_END_DATE,
+  STATUS,
+  CREATED_AT,
+  UPDATED_AT,
+  LOCKED,
+} = TABLE_LABELS.RECOMMENDED_QUESTION;
 
 /**
  * 코드 아이템 타입 정의
@@ -63,27 +104,23 @@ const transformItem = (
 
   return {
     no: (v.no as number) ?? index + 1,
-    qstId: String(v.qstId ?? v.qst_id ?? fallbackId ?? index + 1),
-    serviceCd: v.serviceCd ?? (v.service_cd as string) ?? '',
-    serviceNm: v.serviceNm ?? (v.service_nm as string) ?? '',
-    displayCtnt: v.displayCtnt ?? (v.display_ctnt as string) ?? '',
-    promptCtnt: v.promptCtnt ?? (v.prompt_ctnt as string) ?? null,
-    qstCtgr: v.qstCtgr ?? (v.qst_ctgr as string) ?? '',
-    qstStyle: v.qstStyle ?? (v.qst_style as string) ?? null,
-    parentId: v.parentId ?? (v.parent_id as string) ?? null,
-    parentNm: v.parentNm ?? (v.parent_nm as string) ?? null,
-    ageGrp: v.ageGrp ?? (v.age_grp as string) ?? null,
-    showU17: v.showU17 ?? (v.under_17_yn as string) ?? 'N',
-    impStartDate: v.impStartDate
-      ? String(v.impStartDate)
-      : v.imp_start_date
-        ? String(v.imp_start_date)
-        : '',
-    impEndDate: v.impEndDate ? String(v.impEndDate) : v.imp_end_date ? String(v.imp_end_date) : '',
-    updatedAt: v.updatedAt ? String(v.updatedAt) : '',
-    createdAt: v.createdAt ? String(v.createdAt) : '',
-    status: (v.status as RecommendedQuestionItem['status']) ?? OUT_OF_SERVICE,
-    locked: (v.locked as boolean) ?? false,
+    [QST_ID]: String(v[QST_ID] ?? fallbackId ?? index + 1),
+    [SERVICE_CD]: (v[SERVICE_CD] as string) ?? '',
+    [SERVICE_NM]: (v[SERVICE_NM] as string) ?? '',
+    [DISPLAY_CTNT]: (v[DISPLAY_CTNT] as string) ?? '',
+    [PROMPT_CTNT]: (v[PROMPT_CTNT] as string) ?? null,
+    [QST_CTGR]: (v[QST_CTGR] as string) ?? '',
+    [QST_STYLE]: (v[QST_STYLE] as string) ?? null,
+    [PARENT_ID]: (v[PARENT_ID] as string) ?? null,
+    [PARENT_NM]: (v[PARENT_NM] as string) ?? null,
+    [AGE_GRP]: (v[AGE_GRP] as string) ?? null,
+    [SHOW_U17]: (v[SHOW_U17] as string) ?? 'N',
+    [IMP_START_DATE]: v[IMP_START_DATE] ? String(v[IMP_START_DATE]) : '',
+    [IMP_END_DATE]: v[IMP_END_DATE] ? String(v[IMP_END_DATE]) : '',
+    [UPDATED_AT]: v[UPDATED_AT] ? String(v[UPDATED_AT]) : '',
+    [CREATED_AT]: v[CREATED_AT] ? String(v[CREATED_AT]) : '',
+    [STATUS]: (v[STATUS] as RecommendedQuestionItem['status']) ?? OUT_OF_SERVICE,
+    [LOCKED]: (v[LOCKED] as boolean) ?? false,
   };
 };
 
@@ -132,7 +169,7 @@ const sendApprovalRequest = async (
       API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL,
       approvalForm,
       [item], // 단건 배열로 전달
-      item.displayCtnt || '추천질문',
+      item[DISPLAY_CTNT] || '추천질문',
       TARGET_TYPE_RECOMMEND,
       targetId,
     );
@@ -147,57 +184,36 @@ const sendApprovalRequest = async (
  * @returns API 전송 형식의 데이터
  */
 export const transformToApiFormat = (inputData: {
-  // 엑셀에서 올 수 있는 필드 (serviceCd, parent_id, parent_nm)
-  serviceCd?: string | null;
-  service_cd?: string | null; // Legacy support
-  serviceNm?: string | null;
-  service_nm?: string | null; // Legacy support
-  // 폼에서 올 수 있는 필드 (parentId, parentIdName)
-  parentId?: string | null;
+  [SERVICE_CD]?: string | null;
+  [SERVICE_NM]?: string | null;
+  [PARENT_ID]?: string | null;
   parentIdName?: string | null;
-  parentNm?: string | null;
-  // 공통 필드
-  displayCtnt?: string | null;
-  display_ctnt?: string | null; // Legacy support
-  promptCtnt?: string | null;
-  prompt_ctnt?: string | null; // Legacy support
-  qstCtgr?: string | null;
-  qst_ctgr?: string | null; // Legacy support
-  qstStyle?: string | null;
-  qst_style?: string | null; // Legacy support
-  parent_id?: string | null;
-  parent_nm?: string | null;
-  ageGrp?: string | number | null;
-  age_grp?: string | number | null; // Legacy support
-  showU17?: string | null;
-  under17Yn?: string | null; // Legacy support
-  under_17_yn?: string | null; // Legacy support
-  impStartDate?: string | Date | Dayjs | null;
-  imp_start_date?: string | Date | Dayjs | null; // Legacy support
-  impEndDate?: string | Date | Dayjs | null;
-  imp_end_date?: string | Date | Dayjs | null; // Legacy support
-  status?: string | null;
+  [PARENT_NM]?: string | null;
+  [DISPLAY_CTNT]?: string | null;
+  [PROMPT_CTNT]?: string | null;
+  [QST_CTGR]?: string | null;
+  [QST_STYLE]?: string | null;
+  [AGE_GRP]?: string | number | null;
+  [SHOW_U17]?: string | null;
+  [IMP_START_DATE]?: string | Date | Dayjs | null;
+  [IMP_END_DATE]?: string | Date | Dayjs | null;
+  [STATUS]?: string | null;
 }): Partial<RecommendedQuestionItem> => {
   // serviceCd 결정
-  const serviceCd = inputData.serviceCd || inputData.service_cd || '';
+  const serviceCd = inputData[SERVICE_CD] || '';
 
-  // serviceNm 결정: serviceNm이 있으면 사용, 없으면 service_nm, 없으면 serviceCd, 없으면 service_cd 사용
-  const serviceNm =
-    inputData.serviceNm ||
-    inputData.service_nm ||
-    inputData.serviceCd ||
-    inputData.service_cd ||
-    '';
+  // serviceNm 결정: serviceNm이 있으면 사용, 없으면 serviceCd 사용
+  const serviceNm = inputData[SERVICE_NM] || inputData[SERVICE_CD] || '';
 
-  // parentId 결정: parentId가 있으면 사용, 없으면 parent_id 사용
-  const parentId = inputData.parentId || inputData.parent_id || null;
+  // parentId 결정
+  const parentId = inputData[PARENT_ID] || null;
 
-  // parentNm 결정: parentNm이 있으면 사용, 없으면 parentIdName, 없으면 parent_nm 사용
-  const parentNm = inputData.parentNm || inputData.parentIdName || inputData.parent_nm || null;
+  // parentNm 결정
+  const parentNm = inputData[PARENT_NM] || inputData.parentIdName || null;
 
   // 날짜 변환
   let impStartDate = '';
-  const inputImpStartDate = inputData.impStartDate || inputData.imp_start_date;
+  const inputImpStartDate = inputData[IMP_START_DATE];
   if (inputImpStartDate) {
     if (typeof inputImpStartDate === 'object' && 'toDate' in inputImpStartDate) {
       // Dayjs 객체인 경우
@@ -209,7 +225,7 @@ export const transformToApiFormat = (inputData: {
   }
 
   let impEndDate = '';
-  const inputImpEndDate = inputData.impEndDate || inputData.imp_end_date;
+  const inputImpEndDate = inputData[IMP_END_DATE];
   if (inputImpEndDate) {
     if (typeof inputImpEndDate === 'object' && 'toDate' in inputImpEndDate) {
       // Dayjs 객체인 경우
@@ -222,40 +238,25 @@ export const transformToApiFormat = (inputData: {
 
   // ageGrp를 문자열로 변환 (포매팅 없이 그대로 저장)
   let ageGrp: string | null = null;
-  const inputAgeGrp = inputData.ageGrp ?? inputData.age_grp;
+  const inputAgeGrp = inputData[AGE_GRP];
   if (inputAgeGrp !== null && inputAgeGrp !== undefined && String(inputAgeGrp).trim() !== '') {
     ageGrp = String(inputAgeGrp);
   }
 
   return {
-    serviceCd: serviceCd,
-    serviceNm: serviceNm,
-    displayCtnt:
-      inputData.displayCtnt || inputData.display_ctnt
-        ? String(inputData.displayCtnt || inputData.display_ctnt)
-        : '',
-    promptCtnt:
-      inputData.promptCtnt || inputData.prompt_ctnt
-        ? String(inputData.promptCtnt || inputData.prompt_ctnt)
-        : null,
-    qstCtgr:
-      inputData.qstCtgr || inputData.qst_ctgr
-        ? String(inputData.qstCtgr || inputData.qst_ctgr)
-        : '',
-    qstStyle:
-      inputData.qstStyle || inputData.qst_style
-        ? String(inputData.qstStyle || inputData.qst_style)
-        : null,
-    parentId: parentId,
-    parentNm: parentNm,
-    ageGrp: ageGrp,
-    showU17:
-      inputData.showU17 || inputData.under17Yn || inputData.under_17_yn
-        ? String(inputData.showU17 || inputData.under17Yn || inputData.under_17_yn).toUpperCase()
-        : 'N',
-    impStartDate: impStartDate,
-    impEndDate: impEndDate,
-    status: (inputData.status as RecommendedQuestionItem['status']) || OUT_OF_SERVICE,
+    [SERVICE_CD]: serviceCd,
+    [SERVICE_NM]: serviceNm,
+    [DISPLAY_CTNT]: inputData[DISPLAY_CTNT] ? String(inputData[DISPLAY_CTNT]) : '',
+    [PROMPT_CTNT]: inputData[PROMPT_CTNT] ? String(inputData[PROMPT_CTNT]) : null,
+    [QST_CTGR]: inputData[QST_CTGR] ? String(inputData[QST_CTGR]) : '',
+    [QST_STYLE]: inputData[QST_STYLE] ? String(inputData[QST_STYLE]) : null,
+    [PARENT_ID]: parentId,
+    [PARENT_NM]: parentNm,
+    [AGE_GRP]: ageGrp,
+    [SHOW_U17]: inputData[SHOW_U17] ? String(inputData[SHOW_U17]).toUpperCase() : 'N',
+    [IMP_START_DATE]: impStartDate,
+    [IMP_END_DATE]: impEndDate,
+    [STATUS]: (inputData[STATUS] as RecommendedQuestionItem['status']) || OUT_OF_SERVICE,
   };
 };
 
@@ -266,7 +267,7 @@ export interface FetchRecommendedQuestionsParams {
   /** 페이지 번호 (0부터 시작) */
   page?: number;
   /** 페이지당 행 수 */
-  pageSize?: number;
+  size?: number;
   /** 검색 조건 (필드명: 값 형태의 객체) */
   searchParams?: Record<string, string | number>;
 }
@@ -277,19 +278,19 @@ export interface FetchRecommendedQuestionsParams {
 export const fetchRecommendedQuestions = async (
   params?: FetchRecommendedQuestionsParams,
 ): Promise<RecommendedQuestionItem[]> => {
-  const { page = 0, pageSize = 20, searchParams = {} } = params || {};
+  const { page = 0, size = 20, searchParams = {} } = params || {};
 
   // 현재는 Firebase Realtime을 사용하므로 파라미터는 console.log로만 출력
   console.log('🔍 추천질문 목록 조회 파라미터:', {
     page,
-    pageSize,
+    size,
     searchParams,
   });
 
   // TODO: 실제 REST API로 전환 시 아래 주석을 해제하고 사용
   // const queryParams = new URLSearchParams();
   // queryParams.append('page', String(page));
-  // queryParams.append('pageSize', String(pageSize));
+  // queryParams.append('size', String(size));
   //
   // // 검색 조건을 쿼리 파라미터로 추가
   //  Object.entries(searchParams).forEach(([key, value]) => {
@@ -341,24 +342,38 @@ export const fetchApprovalRequest = async (
 
   const v = response.data;
   return {
-    no: (v.no as number) ?? 0,
-    approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
-    targetType: (v.targetType as string) ?? '',
-    targetId: (v.targetId as string) ?? '',
-    itsvcNo: (v.itsvcNo as string) ?? null,
-    requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
-    approvalStatus:
-      (v.approvalStatus as ApprovalRequestItem['approvalStatus']) ??
+    [NO]: (v.no as number) ?? 0,
+    [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? approvalId),
+    [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
+    [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
+    [ITSVC_NO]: (v[ITSVC_NO] as string) ?? null,
+    [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? (v.approval_form as string) ?? '',
+    [APPROVAL_STATUS]:
+      (v[APPROVAL_STATUS] as ApprovalRequestItem['approvalStatus']) ??
       (v.status as ApprovalRequestItem['approvalStatus']) ??
       'request',
-    payloadAfter: (v.payloadAfter as string | null) ?? null,
-    createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-    updatedBy: (v.updatedBy as string) ?? null,
-    createdAt: v.createdAt ? String(v.createdAt) : v.request_date ? String(v.request_date) : '',
-    updatedAt: v.updatedAt ? String(v.updatedAt) : v.process_date ? String(v.process_date) : '',
-    isRetracted: (v.isRetracted as number) ?? 0,
-    isApplied: (v.isApplied as number) ?? 0,
-    appliedAt: (v.appliedAt as string | null) ?? null,
+    [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
+    [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
+    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? (v.createdBy as string) ?? null,
+    [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
+    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null) ?? (v.updatedBy as string) ?? null,
+    [REQUESTED_AT]: v[REQUESTED_AT]
+      ? String(v[REQUESTED_AT])
+      : v.createdAt
+        ? String(v.createdAt)
+        : v.request_date
+          ? String(v.request_date)
+          : '',
+    [LAST_UPDATED_AT]: v[LAST_UPDATED_AT]
+      ? String(v[LAST_UPDATED_AT])
+      : v.updatedAt
+        ? String(v.updatedAt)
+        : v.process_date
+          ? String(v.process_date)
+          : '',
+    [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
+    [IS_APPLIED]: Boolean(v[IS_APPLIED]),
+    [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
   };
 };
 

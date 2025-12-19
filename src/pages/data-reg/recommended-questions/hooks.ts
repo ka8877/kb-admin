@@ -20,7 +20,12 @@ type QuestionCategoryGroup = {
   options: { label: string; value: string }[];
 };
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { approvalRequestKeys, recommendedQuestionsKeys } from '@/constants/queryKey';
+import {
+  approvalRequestKeys,
+  RECOMMENDED_QUESTIONS,
+  recommendedQuestionsKeys,
+  commonCodeKeys,
+} from '@/constants/queryKey';
 import {
   fetchRecommendedQuestions,
   fetchRecommendedQuestion,
@@ -148,7 +153,7 @@ export interface UseRecommendedQuestionsParams {
   /** 페이지 번호 (0부터 시작) */
   page?: number;
   /** 페이지당 행 수 */
-  pageSize?: number;
+  size?: number;
   /** 검색 조건 (필드명: 값 형태의 객체) */
   searchParams?: Record<string, string | number>;
 }
@@ -198,7 +203,7 @@ export const useCreateRecommendedQuestion = () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
     },
   });
@@ -216,7 +221,7 @@ export const useCreateRecommendedQuestionsBatch = () => {
       // 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
     },
   });
@@ -236,7 +241,7 @@ export const useUpdateRecommendedQuestion = () => {
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.detail(variables.id) });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
     },
   });
@@ -254,7 +259,7 @@ export const useDeleteRecommendedQuestion = () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
     },
   });
@@ -272,7 +277,7 @@ export const useDeleteRecommendedQuestions = () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: recommendedQuestionsKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
     },
   });
@@ -293,21 +298,21 @@ export const useServiceCodeOptions = () => {
 export const useQuestionMappingData = () => {
   // 1. 모든 코드 아이템 조회
   const { data: codeItems = [] } = useQuery({
-    queryKey: ['codeItems'],
+    queryKey: commonCodeKeys.codeItemsLists(),
     queryFn: fetchCodeItems,
     staleTime: 1000 * 60 * 5,
   });
 
   // 2. 서비스 매핑 조회 (service_nm ↔ service_cd)
   const { data: serviceMappings = [] } = useQuery({
-    queryKey: ['serviceMappings'],
+    queryKey: commonCodeKeys.serviceMappings(),
     queryFn: fetchServiceMappings,
     staleTime: 1000 * 60 * 5,
   });
 
   // 3. 질문 매핑 조회 (service_cd ↔ qst_ctgr)
   const { data: questionMappings = [] } = useQuery({
-    queryKey: ['questionMappings'],
+    queryKey: commonCodeKeys.questionMappings(),
     queryFn: fetchQuestionMappings,
     staleTime: 1000 * 60 * 5,
   });
@@ -470,7 +475,7 @@ export const useSearchFields = (serviceNm?: string): SearchField[] => {
         type: 'textGroup',
         fields: [
           { field: DISPLAY_CTNT, label: '질문 내용' },
-          { field: QST_STYLE, label: '질문 스타일' },
+          { field: QST_STYLE, label: '질문 태그' },
         ],
       },
       { field: SERVICE_NM, label: '서비스명', type: 'select', options: serviceOptions },

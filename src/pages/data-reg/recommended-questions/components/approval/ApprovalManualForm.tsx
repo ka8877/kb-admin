@@ -10,7 +10,7 @@ import DateInput from '@/components/common/input/DateInput';
 import RadioInput from '@/components/common/input/RadioInput';
 import { yesNoOptions, CODE_GROUP_ID_AGE, CODE_GRUOP_ID_SERVICE_NM } from '@/constants/options';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_MESSAGES, CONFIRM_TITLES, TOAST_MESSAGES } from '@/constants/message';
+import { CONFIRM_MESSAGES, CONFIRM_TITLES } from '@/constants/message';
 import { useRecommendedQuestionYupSchema } from '@/pages/data-reg/recommended-questions/validation';
 import {
   useQuestionCategoriesByService,

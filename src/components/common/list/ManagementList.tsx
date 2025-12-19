@@ -208,9 +208,9 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   const paginationModel = useMemo(
     () =>
       enableStatePreservation
-        ? { page: listState.page, pageSize: listState.pageSize }
+        ? { page: listState.page, pageSize: listState.size }
         : localPaginationModel,
-    [enableStatePreservation, listState.page, listState.pageSize, localPaginationModel],
+    [enableStatePreservation, listState.page, listState.size, localPaginationModel],
   );
 
   const searchParams = useMemo(() => {

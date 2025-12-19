@@ -23,7 +23,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
-import { approvalRequestKeys } from '@/constants/queryKey';
+import { approvalRequestKeys, RECOMMENDED_QUESTIONS } from '@/constants/queryKey';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 
@@ -114,7 +114,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detailQuestions(id) });
       queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list('recommended-questions'),
+        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
       });
 
       // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);

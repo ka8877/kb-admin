@@ -1,6 +1,18 @@
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserLoginItem } from './type';
+import {
+  NO,
+  LOGIN_HISTORY_ID,
+  KC_USER_ID,
+  LOGIN_AT,
+  LOGOUT_AT,
+  LOGIN_IP,
+  LOGOUT_IP,
+  USER_AGENT,
+  RESULT,
+  FAIL_REASON,
+} from './data';
 
 const transformItem = (
   v: Partial<UserLoginItem> & Record<string, unknown>,
@@ -9,17 +21,17 @@ const transformItem = (
   const { index, fallbackId } = options;
 
   return {
-    no: v.no ?? index + 1,
-    loginHistoryId:
-      v.loginHistoryId ?? (v.login_history_id as string) ?? String(fallbackId ?? index + 1),
-    kcUserId: v.kcUserId ?? (v.kc_user_id as string) ?? '',
-    loginAt: v.loginAt ?? (v.login_at as string) ?? '',
-    logoutAt: v.logoutAt ?? (v.logout_at as string) ?? null,
-    loginIp: v.loginIp ?? (v.login_ip as string) ?? '',
-    logoutIp: v.logoutIp ?? (v.logout_ip as string) ?? null,
-    userAgent: v.userAgent ?? (v.user_agent as string) ?? null,
-    result: v.result ?? '',
-    failReason: v.failReason ?? (v.fail_reason as string) ?? null,
+    [NO]: v[NO] ?? index + 1,
+    [LOGIN_HISTORY_ID]:
+      v[LOGIN_HISTORY_ID] ?? (v[LOGIN_HISTORY_ID] as string) ?? String(fallbackId ?? index + 1),
+    [KC_USER_ID]: v[KC_USER_ID] ?? (v[KC_USER_ID] as string) ?? '',
+    [LOGIN_AT]: v[LOGIN_AT] ?? (v[LOGIN_AT] as string) ?? '',
+    [LOGOUT_AT]: v[LOGOUT_AT] ?? (v[LOGOUT_AT] as string) ?? null,
+    [LOGIN_IP]: v[LOGIN_IP] ?? (v[LOGIN_IP] as string) ?? '',
+    [LOGOUT_IP]: v[LOGOUT_IP] ?? (v[LOGOUT_IP] as string) ?? null,
+    [USER_AGENT]: v[USER_AGENT] ?? (v[USER_AGENT] as string) ?? null,
+    [RESULT]: v[RESULT] ?? '',
+    [FAIL_REASON]: v[FAIL_REASON] ?? (v[FAIL_REASON] as string) ?? null,
   };
 };
 
@@ -49,16 +61,16 @@ const transformUserLogins = (raw: unknown): UserLoginItem[] => {
 
 export interface FetchUserLoginsParams {
   page?: number;
-  pageSize?: number;
+  size?: number;
   searchParams?: Record<string, string | number>;
 }
 
 export const fetchUserLogins = async (params?: FetchUserLoginsParams): Promise<UserLoginItem[]> => {
-  const { page = 0, pageSize = 20, searchParams = {} } = params || {};
+  const { page = 0, size = 20, searchParams = {} } = params || {};
 
   console.log('🔍 로그인 이력 조회 파라미터:', {
     page,
-    pageSize,
+    size,
     searchParams,
   });
 

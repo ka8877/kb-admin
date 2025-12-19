@@ -24,6 +24,27 @@ import {
   OUT_OF_SERVICE,
 } from '@/constants/options';
 import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
+import { TABLE_LABELS } from '@/constants/label';
+
+const {
+  NO,
+  APPROVAL_REQUEST_ID,
+  TARGET_TYPE,
+  TARGET_ID,
+  ITSVC_NO,
+  REQUEST_KIND,
+  APPROVAL_STATUS,
+  PAYLOAD_BEFORE,
+  PAYLOAD_AFTER,
+  REQUESTER_NAME,
+  REQUESTER_DEPT_NAME,
+  LAST_ACTOR_NAME,
+  REQUESTED_AT,
+  LAST_UPDATED_AT,
+  IS_RETRACTED,
+  IS_APPLIED,
+  APPLIED_AT,
+} = TABLE_LABELS.APPROVAL_REQUEST;
 
 const basePath = API_ENDPOINTS.APP_SCHEME.BASE;
 /**
@@ -323,21 +344,29 @@ export const fetchApprovalRequest = async (
 
   const v = response.data;
   return {
-    no: (v.no as number) ?? 0,
-    approvalRequestId: String(v.approvalRequestId ?? v.id ?? approvalId),
-    targetType: (v.targetType as string) ?? '',
-    targetId: (v.targetId as string) ?? '',
-    itsvcNo: (v.itsvcNo as string) ?? null,
-    requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
-    approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-    payloadAfter: (v.payloadAfter as string | null) ?? null,
-    createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-    updatedBy: (v.updatedBy as string) ?? null,
-    createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
-    updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
-    isRetracted: (v.isRetracted as number) ?? 0,
-    isApplied: (v.isApplied as number) ?? 0,
-    appliedAt: (v.appliedAt as string | null) ?? null,
+    [NO]: (v[NO] as number) ?? 0,
+    [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? approvalId),
+    [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
+    [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
+    [ITSVC_NO]: (v[ITSVC_NO] as string) ?? null,
+    [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? (v.approval_form as string) ?? '',
+    [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? (v.status as string) ?? 'request',
+    [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
+    [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
+    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? (v.createdBy as string) ?? null,
+    [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
+    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null) ?? (v.updatedBy as string) ?? null,
+    [REQUESTED_AT]:
+      (v[REQUESTED_AT] as string) ??
+      (v.createdAt as string) ??
+      (v.request_date ? String(v.request_date) : ''),
+    [LAST_UPDATED_AT]:
+      (v[LAST_UPDATED_AT] as string) ??
+      (v.updatedAt as string) ??
+      (v.process_date ? String(v.process_date) : ''),
+    [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
+    [IS_APPLIED]: Boolean(v[IS_APPLIED]),
+    [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
   };
 };
 

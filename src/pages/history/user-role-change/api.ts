@@ -1,6 +1,19 @@
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserRoleChangeItem } from './type';
+import {
+  NO,
+  HISTORY_ID,
+  KC_USER_ID,
+  ROLE_ID,
+  CHANGE_TYPE,
+  ITSVC_NO,
+  REASON,
+  BEFORE_STATE,
+  AFTER_STATE,
+  CHANGED_BY,
+  CHANGED_AT,
+} from './data';
 
 const transformItem = (
   v: Partial<UserRoleChangeItem> & Record<string, unknown>,
@@ -9,26 +22,24 @@ const transformItem = (
   const { index, fallbackId } = options;
 
   let historyId: string | number = index + 1;
-  if (v.historyId !== undefined && v.historyId !== null) {
-    historyId = v.historyId;
-  } else if (v.history_id !== undefined && v.history_id !== null) {
-    historyId = v.history_id as string | number;
+  if (v[HISTORY_ID] !== undefined && v[HISTORY_ID] !== null) {
+    historyId = v[HISTORY_ID] as string | number;
   } else if (fallbackId !== undefined && fallbackId !== null) {
     historyId = fallbackId;
   }
 
   return {
-    no: v.no ?? index + 1,
-    historyId,
-    kcUserId: v.kcUserId ?? (v.kc_user_id as string) ?? '',
-    roleId: v.roleId ?? (v.role_id as string) ?? '',
-    changeType: v.changeType ?? (v.change_type as string) ?? '',
-    itsvcNo: v.itsvcNo ?? (v.itsvc_no as string) ?? '',
-    reason: v.reason ?? '',
-    beforeState: v.beforeState ?? (v.before_state as string) ?? '{}',
-    afterState: v.afterState ?? (v.after_state as string) ?? '{}',
-    changedBy: v.changedBy ?? (v.changed_by as string) ?? '',
-    changedAt: v.changedAt ?? (v.changed_at as string) ?? '',
+    [NO]: v[NO] ?? index + 1,
+    [HISTORY_ID]: historyId,
+    [KC_USER_ID]: v[KC_USER_ID] ?? '',
+    [ROLE_ID]: v[ROLE_ID] ?? '',
+    [CHANGE_TYPE]: v[CHANGE_TYPE] ?? '',
+    [ITSVC_NO]: v[ITSVC_NO] ?? '',
+    [REASON]: v[REASON] ?? '',
+    [BEFORE_STATE]: v[BEFORE_STATE] ?? '{}',
+    [AFTER_STATE]: v[AFTER_STATE] ?? '{}',
+    [CHANGED_BY]: v[CHANGED_BY] ?? '',
+    [CHANGED_AT]: v[CHANGED_AT] ?? '',
   };
 };
 
@@ -58,18 +69,18 @@ const transformUserRoleChanges = (raw: unknown): UserRoleChangeItem[] => {
 
 export interface FetchUserRoleChangesParams {
   page?: number;
-  pageSize?: number;
+  size?: number;
   searchParams?: Record<string, string | number>;
 }
 
 export const fetchUserRoleChanges = async (
   params?: FetchUserRoleChangesParams,
 ): Promise<UserRoleChangeItem[]> => {
-  const { page = 0, pageSize = 20, searchParams = {} } = params || {};
+  const { page = 0, size = 20, searchParams = {} } = params || {};
 
   console.log('🔍 사용자 역할 변경 이력 조회 파라미터:', {
     page,
-    pageSize,
+    size,
     searchParams,
   });
 

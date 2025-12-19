@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 
 export type ListState = {
   page: number;
-  pageSize: number;
+  size: number;
   searchField?: string;
   searchQuery?: string;
   searchFieldsState?: string; // JSON 직렬화된 다중 검색조건
@@ -15,7 +15,7 @@ export const useListState = (defaultPageSize: number = 10) => {
   const listState = useMemo<ListState>(() => {
     return {
       page: parseInt(searchParams.get('page') || '0', 10),
-      pageSize: parseInt(searchParams.get('pageSize') || String(defaultPageSize), 10),
+      size: parseInt(searchParams.get('size') || String(defaultPageSize), 10),
       searchField: searchParams.get('searchField') || undefined,
       searchQuery: searchParams.get('searchQuery') || undefined,
       searchFieldsState: searchParams.get('searchFieldsState') || undefined,
@@ -29,8 +29,8 @@ export const useListState = (defaultPageSize: number = 10) => {
       if (updates.page !== undefined) {
         newParams.set('page', String(updates.page));
       }
-      if (updates.pageSize !== undefined) {
-        newParams.set('pageSize', String(updates.pageSize));
+      if (updates.size !== undefined) {
+        newParams.set('size', String(updates.size));
       }
       if (updates.searchField !== undefined) {
         if (updates.searchField) {

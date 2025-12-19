@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { IN_REVIEW, DONE_REVIEW } from '@/constants/options';
+import { IN_REVIEW, DONE_REVIEW, APPROVAL_RETURN_URL } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -15,7 +15,7 @@ import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConf
 import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { PAGE_TYPE } from '@/constants/options';
 import {
   updateApprovalRequestStatus as updateRecommendedQuestionStatus,
   deleteApprovalRequest as deleteRecommendedQuestionApprovalRequest,
@@ -29,16 +29,35 @@ import {
 import { formatDateForStorage } from '@/utils/dateUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
+import {
+  NO,
+  APPROVAL_REQUEST_ID,
+  TARGET_TYPE,
+  TARGET_ID,
+  ITSVC_NO,
+  REQUEST_KIND,
+  APPROVAL_STATUS,
+  PAYLOAD_BEFORE,
+  PAYLOAD_AFTER,
+  REQUESTER_NAME,
+  REQUESTER_DEPT_NAME,
+  LAST_ACTOR_NAME,
+  REQUESTED_AT,
+  LAST_UPDATED_AT,
+  IS_RETRACTED,
+  IS_APPLIED,
+  APPLIED_AT,
+} from '@/constants/label';
 
-// 경로 타입 정의
-type ApprovalPageType = 'recommended-questions' | 'app-scheme';
+export const { RECOMMENDED_QUESTIONS, APP_SCHEME } = PAGE_TYPE.DATA_REG;
 
-// 경로에서 타입 추출 (ROUTES 상수 사용)
+type ApprovalPageType = typeof RECOMMENDED_QUESTIONS | typeof APP_SCHEME;
+
 const getApprovalPageType = (pathname: string): ApprovalPageType => {
   if (pathname.includes(ROUTES.APP_SCHEME_APPROVAL)) {
-    return 'app-scheme';
+    return APP_SCHEME;
   }
-  return 'recommended-questions';
+  return RECOMMENDED_QUESTIONS;
 };
 
 /**
@@ -50,25 +69,28 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
   // 배열 형태 응답: [null, { ... }, { ... }]
   if (Array.isArray(raw)) {
     return raw
-      .map((item, index) => {
+      .map((item, index): ApprovalRequestItem | null => {
         if (!item) return null;
         const v = item as Partial<ApprovalRequestItem> & Record<string, unknown>;
         return {
-          no: (v.no as number) ?? index + 1,
-          approvalRequestId: String(v.approvalRequestId ?? v.id ?? index + 1),
-          targetType: (v.targetType as string) ?? '',
-          targetId: (v.targetId as string) ?? '',
-          itsvcNo: (v.itsvcNo as string | null) ?? null,
-          requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
-          approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-          payloadAfter: (v.payloadAfter as string | null) ?? null,
-          createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-          updatedBy: (v.updatedBy as string | null) ?? null,
-          createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
-          updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
-          isRetracted: (v.isRetracted as number) ?? 0,
-          isApplied: (v.isApplied as number) ?? 0,
-          appliedAt: (v.appliedAt as string | null) ?? null,
+          [NO]: (v[NO] as number) ?? index + 1,
+          [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? index + 1),
+          [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
+          [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
+          [ITSVC_NO]: (v[ITSVC_NO] as string | null) ?? null,
+          [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? (v.approval_form as string) ?? '',
+          [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? (v.status as string) ?? 'request',
+          [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
+          [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
+          [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? (v.createdBy as string) ?? null,
+          [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
+          [LAST_ACTOR_NAME]:
+            (v[LAST_ACTOR_NAME] as string | null) ?? (v.updatedBy as string) ?? null,
+          [REQUESTED_AT]: (v[REQUESTED_AT] as string) ?? (v.createdAt as string) ?? '',
+          [LAST_UPDATED_AT]: (v[LAST_UPDATED_AT] as string) ?? (v.updatedAt as string) ?? '',
+          [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
+          [IS_APPLIED]: Boolean(v[IS_APPLIED]),
+          [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
         };
       })
       .filter((item): item is ApprovalRequestItem => item !== null);
@@ -78,24 +100,26 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
   if (typeof raw === 'object' && raw !== null) {
     const entries = Object.entries(raw as Record<string, unknown>);
 
-    return entries.map(([key, value], index) => {
+    return entries.map(([key, value], index): ApprovalRequestItem => {
       const v = value as Partial<ApprovalRequestItem> & Record<string, unknown>;
       return {
-        no: (v.no as number) ?? index + 1,
-        approvalRequestId: String(v.approvalRequestId ?? v.id ?? key),
-        targetType: (v.targetType as string) ?? '',
-        targetId: (v.targetId as string) ?? '',
-        itsvcNo: (v.itsvcNo as string | null) ?? null,
-        requestKind: (v.requestKind as string) ?? (v.approval_form as string) ?? '',
-        approvalStatus: (v.approvalStatus as string) ?? (v.status as string) ?? 'request',
-        payloadAfter: (v.payloadAfter as string | null) ?? null,
-        createdBy: (v.createdBy as string) ?? (v.requester as string) ?? '',
-        updatedBy: (v.updatedBy as string | null) ?? null,
-        createdAt: (v.createdAt as string) ?? (v.request_date ? String(v.request_date) : ''),
-        updatedAt: (v.updatedAt as string) ?? (v.process_date ? String(v.process_date) : ''),
-        isRetracted: (v.isRetracted as number) ?? 0,
-        isApplied: (v.isApplied as number) ?? 0,
-        appliedAt: (v.appliedAt as string | null) ?? null,
+        [NO]: (v[NO] as number) ?? index + 1,
+        [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? key),
+        [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
+        [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
+        [ITSVC_NO]: (v[ITSVC_NO] as string | null) ?? null,
+        [REQUEST_KIND]: (v[REQUEST_KIND] as string) ?? (v.approval_form as string) ?? '',
+        [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? (v.status as string) ?? 'request',
+        [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
+        [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
+        [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? (v.createdBy as string) ?? null,
+        [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
+        [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null) ?? (v.updatedBy as string) ?? null,
+        [REQUESTED_AT]: (v[REQUESTED_AT] as string) ?? (v.createdAt as string) ?? '',
+        [LAST_UPDATED_AT]: (v[LAST_UPDATED_AT] as string) ?? (v.updatedAt as string) ?? '',
+        [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
+        [IS_APPLIED]: Boolean(v[IS_APPLIED]),
+        [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
       };
     });
   }
@@ -110,7 +134,7 @@ const fetchApprovalRequests = async (
   pageType: ApprovalPageType,
 ): Promise<ApprovalRequestItem[]> => {
   const endpoint =
-    pageType === 'app-scheme'
+    pageType === APP_SCHEME
       ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
       : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
 
@@ -131,7 +155,7 @@ const DataRegApprovalPage: React.FC = () => {
 
   // 타입에 따른 설정
   const pageConfig = useMemo(() => {
-    if (pageType === 'app-scheme') {
+    if (pageType === APP_SCHEME) {
       return {
         title: PAGE_TITLES.APP_SCHEME_APPROVAL,
         searchFields: APPROVAL_SEARCH_FIELDS,
@@ -152,22 +176,22 @@ const DataRegApprovalPage: React.FC = () => {
   const selectFieldsConfig = useMemo(() => {
     const approvalFormField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'requestKind',
+        field.type === 'select' && field.field === REQUEST_KIND,
     );
     const statusField = pageConfig.searchFields?.find(
       (field): field is Extract<typeof field, { type: 'select'; field: string }> =>
-        field.type === 'select' && field.field === 'approvalStatus',
+        field.type === 'select' && field.field === APPROVAL_STATUS,
     );
 
     const approvalFormOptions = approvalFormField?.options || [];
     const statusOptions = statusField?.options || [];
 
     return {
-      requestKind: approvalFormOptions.map((opt: { label: string; value: string | number }) => ({
+      [REQUEST_KIND]: approvalFormOptions.map((opt: { label: string; value: string | number }) => ({
         label: opt.label,
         value: String(opt.value),
       })),
-      approvalStatus: statusOptions.map((opt: { label: string; value: string | number }) => ({
+      [APPROVAL_STATUS]: statusOptions.map((opt: { label: string; value: string | number }) => ({
         label: opt.label,
         value: String(opt.value),
       })),
@@ -195,12 +219,12 @@ const DataRegApprovalPage: React.FC = () => {
 
   // sessionStorage에서 원본 URL 가져오기 (useMemo로 최적화)
   const returnUrl = useMemo(() => {
-    return sessionStorage.getItem('approval_return_url');
+    return sessionStorage.getItem(APPROVAL_RETURN_URL);
   }, []);
 
   const handleBack = useCallback(() => {
     if (returnUrl) {
-      sessionStorage.removeItem('approval_return_url');
+      sessionStorage.removeItem(APPROVAL_RETURN_URL);
       navigate(returnUrl);
     } else {
       navigate(pageConfig.defaultReturnRoute);
@@ -208,7 +232,7 @@ const DataRegApprovalPage: React.FC = () => {
   }, [returnUrl, navigate, pageConfig.defaultReturnRoute]);
 
   const handleRowClick = useCallback(
-    (params: { id: string | number; row: ApprovalRequestItem }) => {
+    (_params: { id: string | number; row: ApprovalRequestItem }) => {
       const currentApprovalUrl = location.pathname + location.search;
       sessionStorage.setItem(APPROVAL_PAGE_STATE, currentApprovalUrl);
 
@@ -225,14 +249,14 @@ const DataRegApprovalPage: React.FC = () => {
   }, []);
 
   const queryClient = useQueryClient();
-  const { showAlert } = useAlertDialog();
+  // const { showAlert } = useAlertDialog();
 
   // 결재 확인 처리
   const handleApproveConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
       // 선택된 승인 요청들 필터링
       const selectedRequests = approvalRequests.filter((request) =>
-        selectedIds.includes(request.approvalRequestId),
+        selectedIds.includes(request[APPROVAL_REQUEST_ID]),
       );
 
       // 최종 결재 요청: 모든 선택된 요청의 status를 in_review로 변경
@@ -240,11 +264,11 @@ const DataRegApprovalPage: React.FC = () => {
         const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
         // 모든 선택된 요청의 status를 in_review로 변경
         for (const request of selectedRequests) {
-          if (pageType === 'app-scheme') {
-            await updateAppSchemeStatus(request.approvalRequestId, IN_REVIEW, processDate);
+          if (pageType === APP_SCHEME) {
+            await updateAppSchemeStatus(request[APPROVAL_REQUEST_ID], IN_REVIEW, processDate);
           } else {
             await updateRecommendedQuestionStatus(
-              request.approvalRequestId,
+              request[APPROVAL_REQUEST_ID],
               IN_REVIEW,
               processDate,
             );
@@ -268,25 +292,25 @@ const DataRegApprovalPage: React.FC = () => {
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
       // 선택된 승인 요청들 필터링
       const selectedRequests = approvalRequests.filter((request) =>
-        selectedIds.includes(request.approvalRequestId),
+        selectedIds.includes(request[APPROVAL_REQUEST_ID]),
       );
 
       try {
         for (const request of selectedRequests) {
-          if (pageType === 'app-scheme') {
+          if (pageType === APP_SCHEME) {
             // unlock data
-            if (request.targetId) {
-              await unlockAppScheme(request.targetId);
+            if (request[TARGET_ID]) {
+              await unlockAppScheme(request[TARGET_ID]);
             }
             // delete approval request
-            await deleteAppSchemeApprovalRequest(request.approvalRequestId);
+            await deleteAppSchemeApprovalRequest(request[APPROVAL_REQUEST_ID]);
           } else {
             // unlock data
-            if (request.targetId) {
-              await unlockRecommendedQuestion(request.targetId);
+            if (request[TARGET_ID]) {
+              await unlockRecommendedQuestion(request[TARGET_ID]);
             }
             // delete approval request
-            await deleteRecommendedQuestionApprovalRequest(request.approvalRequestId);
+            await deleteRecommendedQuestionApprovalRequest(request[APPROVAL_REQUEST_ID]);
           }
         }
         toast.success('선택한 항목이 회수되었습니다.');
@@ -302,23 +326,32 @@ const DataRegApprovalPage: React.FC = () => {
     [approvalRequests, pageType, queryClient],
   );
 
-  // 컬럼 필터링 (No, 결재양식, 변경 후 데이터, 요청자, 요청일, 처리상태, 처리일만 표시)
+  // 컬럼 필터링 (No, 결재양식, 변경 전 내용, 변경 후 내용, 요청자, 요청일, 처리상태, 처리일)
   const filteredColumns = useMemo(() => {
     const visibleFields = [
-      'no',
-      'requestKind',
-      'payloadAfter',
-      'createdBy',
-      'createdAt',
-      'approvalStatus',
-      'updatedAt',
+      NO,
+      REQUEST_KIND,
+      PAYLOAD_BEFORE,
+      PAYLOAD_AFTER,
+      REQUESTER_NAME,
+      REQUESTED_AT,
+      APPROVAL_STATUS,
+      LAST_UPDATED_AT,
     ];
 
-    return approvalRequestColumns
-      .filter((col) => visibleFields.includes(col.field))
+    // visibleFields 순서대로 컬럼 정렬
+    return visibleFields
+      .map((field) => approvalRequestColumns.find((col) => col.field === field))
+      .filter((col): col is (typeof approvalRequestColumns)[number] => !!col)
       .map((col) => {
-        if (col.field === 'updatedAt') {
+        if (col.field === LAST_UPDATED_AT) {
           return { ...col, headerName: '처리일' };
+        }
+        if (col.field === PAYLOAD_BEFORE) {
+          return { ...col, headerName: '변경 전 내용' };
+        }
+        if (col.field === PAYLOAD_AFTER) {
+          return { ...col, headerName: '변경 후 내용' };
         }
         return col;
       });
@@ -333,10 +366,10 @@ const DataRegApprovalPage: React.FC = () => {
         fetcher={listApi.list}
         isLoading={isDataLoading}
         selectFields={selectFieldsConfig}
-        dateFields={['createdAt', 'updatedAt']}
+        dateFields={[REQUESTED_AT, LAST_UPDATED_AT]}
         dateFormat="YYYYMMDDHHmmss"
         dateDisplayFormat="dots"
-        rowIdGetter="approvalRequestId"
+        rowIdGetter={APPROVAL_REQUEST_ID}
         actionsNode={({ toggleSelectionMode }) => (
           <ApprovalListActions
             onBack={handleBack}

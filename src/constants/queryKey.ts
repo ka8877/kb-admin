@@ -79,6 +79,10 @@ export const commonCodeKeys = {
   codeItemsList: (params?: { codeGroupId?: number; isActive?: number }) =>
     [...commonCodeKeys.codeItemsLists(), params] as const,
   codeItemDetail: (codeItemId: number) => [...commonCodeKeys.all, 'code-item', codeItemId] as const,
+  // 코드매핑 (cm_code_mapping)
+  codeMappings: () => [...commonCodeKeys.all, 'code-mappings'] as const,
+  serviceMappings: () => [...commonCodeKeys.codeMappings(), 'service'] as const,
+  questionMappings: () => [...commonCodeKeys.codeMappings(), 'question'] as const,
   // 레거시 (하위 호환성)
   codeTypes: () => [CODE_TYPES] as const,
   lists: () => [...commonCodeKeys.all, 'list'] as const,

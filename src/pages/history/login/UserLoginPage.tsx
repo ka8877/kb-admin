@@ -4,7 +4,7 @@ import PageHeader from '@/components/common/PageHeader';
 import SimpleList from '@/components/common/list/SimpleList';
 import type { UserLoginItem } from './type';
 import { userLoginColumns } from './components/columns/columns';
-import { resultOptions } from './data';
+import { LOGIN_HISTORY_ID, resultOptions } from './data';
 import { useUserLogins } from './hooks';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
@@ -30,7 +30,7 @@ const UserLoginPage: React.FC = () => {
     isFetching,
   } = useUserLogins({
     page: listState.page,
-    pageSize: listState.pageSize,
+    size: listState.size,
     searchParams,
   });
 
@@ -55,7 +55,7 @@ const UserLoginPage: React.FC = () => {
         }
         columns={userLoginColumns}
         rows={rows}
-        rowIdGetter="no"
+        rowIdGetter={LOGIN_HISTORY_ID}
         defaultPageSize={20}
         enableStatePreservation={true}
         selectFields={selectFieldsConfig}

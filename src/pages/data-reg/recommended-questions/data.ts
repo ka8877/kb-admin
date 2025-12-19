@@ -1,4 +1,3 @@
-import type { SearchField } from '@/types/types';
 import { categoryMockDb } from '@/mocks/commonCodeDb';
 import { statusOptions, yesNoOptions } from '@/constants/options';
 import { TABLE_LABELS } from '@/constants/label';
@@ -21,6 +20,7 @@ export const {
   STATUS,
   CREATED_AT,
   UPDATED_AT,
+  LOCKED,
 } = TABLE_LABELS.RECOMMENDED_QUESTION;
 
 // **************공통 코드 옵션 데이터 **************

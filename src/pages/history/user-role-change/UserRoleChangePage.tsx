@@ -13,6 +13,7 @@ import { parseSearchParams } from '@/utils/apiUtils';
 import MediumButton from '@/components/common/button/MediumButton';
 import { LABELS } from '@/constants/label';
 import { exportGridToExcel } from '@/utils/excelUtils';
+import { HISTORY_ID, BEFORE_STATE, AFTER_STATE } from './data';
 
 const selectFieldsConfig = {
   changeType: changeTypeOptions,
@@ -35,7 +36,7 @@ const UserRoleChangePage: React.FC = () => {
     isFetching,
   } = useUserRoleChanges({
     page: listState.page,
-    pageSize: listState.pageSize,
+    size: listState.size,
     searchParams,
   });
 
@@ -50,7 +51,7 @@ const UserRoleChangePage: React.FC = () => {
   };
 
   const handleCellClick: GridEventListener<'cellClick'> = (params) => {
-    if (params.field === 'beforeState' || params.field === 'afterState') {
+    if (params.field === BEFORE_STATE || params.field === AFTER_STATE) {
       setPopupTitle(params.colDef.headerName || '상세 정보');
       setPopupContent((params.value as string) || '');
       setPopupOpen(true);
@@ -68,7 +69,7 @@ const UserRoleChangePage: React.FC = () => {
         }
         columns={userRoleChangeColumns}
         rows={rows}
-        rowIdGetter="historyId"
+        rowIdGetter={HISTORY_ID}
         enableStatePreservation={true}
         selectFields={selectFieldsConfig}
         onCellClick={handleCellClick}

@@ -6,11 +6,11 @@
 import type { SearchField } from '@/types/types';
 
 /**
- * 결재양식 값 상수
+ * 결재양식 값 상수 requestKind
  */
-export const DATA_REGISTRATION = 'data_registration' as const;
-export const DATA_MODIFICATION = 'data_modification' as const;
-export const DATA_DELETION = 'data_deletion' as const;
+export const DATA_REGISTRATION = 'CREATE' as const;
+export const DATA_MODIFICATION = 'UPDATE' as const;
+export const DATA_DELETION = 'DELETE' as const;
 
 /**
  * 결재 대상 타입 상수
@@ -19,7 +19,7 @@ export const TARGET_TYPE_RECOMMEND = 'RECOMMEND' as const;
 export const TARGET_TYPE_APP = 'APP' as const;
 
 /**
- * 결재양식 옵션
+ * 결재양식 옵션 requestKind
  */
 export const APPROVAL_FORM_OPTIONS = [
   { label: '데이터 등록', value: DATA_REGISTRATION },
@@ -52,8 +52,8 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
   {
     type: 'textGroup',
     fields: [
-      { field: 'title', label: '제목' },
-      { field: 'content', label: '내용' },
+      { field: 'payloadBefore', label: '변경 전 내용' },
+      { field: 'payloadAfter', label: '변경 후 내용' },
     ],
   },
   {
@@ -117,3 +117,11 @@ export const CODE_GRUOP_ID_SERVICE_NM = 1765259941522;
 export const CODE_GROUP_ID_SERVICE_CD = 1765260502337;
 export const CODE_GROUP_ID_QST_CTGR = 1765416760082;
 export const CODE_GROUP_ID_AGE = 1765432508332;
+
+// 경로 상수
+export const PAGE_TYPE = {
+  DATA_REG: {
+    RECOMMENDED_QUESTIONS: 'recommended-questions',
+    APP_SCHEME: 'app-scheme',
+  },
+} as const;

@@ -10,24 +10,45 @@ import {
   ROLE_CRUD,
   ROLE_NONE,
 } from '@/constants/options';
+import {
+  NO,
+  APPROVAL_REQUEST_ID,
+  TARGET_TYPE,
+  TARGET_ID,
+  ITSVC_NO,
+  REQUEST_KIND,
+  APPROVAL_STATUS,
+  PAYLOAD_BEFORE,
+  PAYLOAD_AFTER,
+  REQUESTER_NAME,
+  REQUESTER_DEPT_NAME,
+  LAST_ACTOR_NAME,
+  REQUESTED_AT,
+  LAST_UPDATED_AT,
+  IS_RETRACTED,
+  IS_APPLIED,
+  APPLIED_AT,
+} from '@/constants/label';
 
 // 결재 요청 관련 타입 정의
 export type ApprovalRequestItem = {
-  no: number; // 번호
-  approvalRequestId: string; // approval_request_id
-  targetType: string; // target_type
-  targetId: string; // target_id
-  itsvcNo: string | null; // itsvc_no
-  requestKind: string; // request_kind
-  approvalStatus: string; // approval_status
-  payloadAfter: string | null; // payload_after
-  createdBy: string; // created_by
-  createdAt: string; // created_at
-  updatedBy: string | null; // updated_by
-  updatedAt: string; // updated_at
-  isRetracted: number; // is_retracted
-  isApplied: number; // is_applied
-  appliedAt: string | null; // applied_at
+  [NO]: number; // 번호
+  [APPROVAL_REQUEST_ID]: number; // approvalRequestId
+  [TARGET_TYPE]: string; // targetType
+  [TARGET_ID]: number; // targetId
+  [ITSVC_NO]: string | null; // itsvcNo
+  [REQUEST_KIND]: string; // requestKind
+  [APPROVAL_STATUS]: string; // approvalStatus
+  [PAYLOAD_BEFORE]: string | null; // payloadBefore
+  [PAYLOAD_AFTER]: string | null; // payloadAfter
+  [REQUESTER_NAME]: string | null; // requesterName
+  [REQUESTER_DEPT_NAME]: string | null; // requesterDeptName
+  [LAST_ACTOR_NAME]: string | null; // lastActorName
+  [REQUESTED_AT]: string; // requestedAt
+  [LAST_UPDATED_AT]: string; // lastUpdatedAt
+  [IS_RETRACTED]: boolean; // isRetracted
+  [IS_APPLIED]: boolean; // isApplied
+  [APPLIED_AT]: string | null; // appliedAt
 };
 
 export type SelectFieldOption = {
