@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { ApiMeta } from '@/utils/apiUtils';
 
 export type ListState = {
   page: number;
@@ -11,6 +12,13 @@ export type ListState = {
 
 export const useListState = (defaultPageSize: number = 10) => {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [meta, setMeta] = useState<ApiMeta>({
+    page: 1,
+    size: defaultPageSize,
+    totalElements: 0,
+    totalPages: 0,
+  });
 
   const listState = useMemo<ListState>(() => {
     return {
@@ -59,5 +67,5 @@ export const useListState = (defaultPageSize: number = 10) => {
     [searchParams, setSearchParams],
   );
 
-  return { listState, updateListState };
+  return { listState, updateListState, meta, setMeta };
 };

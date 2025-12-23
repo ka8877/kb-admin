@@ -12,11 +12,11 @@ export type RecommendedQuestionItem = {
   parentId: string | null;
   parentNm: string | null;
   ageGrp: string | null;
-  showU17: string;
+  showU17: boolean;
   impStartDate: string;
   impEndDate: string;
   updatedAt: string;
   createdAt: string;
   status: statusType;
-  locked: boolean;
+  locked: boolean | null;
 };

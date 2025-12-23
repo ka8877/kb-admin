@@ -18,7 +18,7 @@ import {
 } from '../../data';
 
 export const appSchemeColumns: GridColDef<AppSchemeItem>[] = [
-  { field: NO, headerName: 'No', width: 70 },
+  { field: NO, headerName: 'no', width: 70 },
   { field: APP_SCHEME_ID, headerName: '아이디', width: 80 },
   { field: PRODUCT_MENU_NAME, headerName: 'AI 검색 노출 버튼명', width: 180 },
   { field: DESCRIPTION, headerName: '앱스킴 설명', flex: 1, minWidth: 200 },

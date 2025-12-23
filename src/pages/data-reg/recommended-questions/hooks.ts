@@ -47,6 +47,7 @@ import {
   CODE_GRUOP_ID_SERVICE_NM,
   CODE_GROUP_ID_AGE,
   yesNoOptions,
+  booleanYesNoOptions,
   CODE_GROUP_ID_QST_CTGR,
   statusOptions,
 } from '@/constants/options';
@@ -404,7 +405,7 @@ export const useSelectFieldsData = () => {
   return {
     [SERVICE_NM]: serviceOptions,
     [AGE_GRP]: ageGroupOptions,
-    [SHOW_U17]: yesNoOptions,
+    [SHOW_U17]: booleanYesNoOptions,
     [STATUS]: statusOptions,
     [QST_CTGR]: questionCategoryOptions,
   };

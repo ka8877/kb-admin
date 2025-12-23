@@ -1,5 +1,6 @@
 // frontend/src/components/common/detail/DataDetail.tsx
 import React, { useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
@@ -13,7 +14,7 @@ import { useDataDetailKeyboard } from './hooks/useDataDetailKeyboard';
 import { useDataDetailValidation } from './hooks/useDataDetailValidation';
 import { dataGridStyles } from './utils/dataGridStyles';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { CONFIRM_TITLES, CONFIRM_MESSAGES } from '@/constants/message';
+import { CONFIRM_TITLES, CONFIRM_MESSAGES, ALERT_MESSAGES } from '@/constants/message';
 
 export type DataDetailProps<T extends GridValidRowModel = GridValidRowModel> = {
   data?: T;
@@ -55,7 +56,6 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   columns,
   isLoading,
   rowIdGetter,
-  onEdit,
   onDelete,
   onBack,
   onSave,
@@ -74,14 +74,19 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
   isLocked = false,
 }: DataDetailProps<T>): JSX.Element => {
   const getRowId = useMemo(() => defaultGetRowId<T>(rowIdGetter), [rowIdGetter]);
+  const navigate = useNavigate();
   const dataGridRef = useGridApiRef();
   const { showConfirm } = useConfirmDialog();
+
+  // no 컬럼 제거
+  const filteredColumns = useMemo(() => {
+    return columns.filter((col) => col.field !== 'no');
+  }, [columns]);
 
   // 상태 관리
   const {
     isEditMode,
     editedData,
-    hasInitialFocus,
     tabKeyPressedRef,
     shouldMoveToNextCellRef,
     setIsEditMode,
@@ -91,7 +96,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     handleCancelEdit,
   } = useDataDetailState({
     data,
-    columns,
+    columns: filteredColumns,
     readOnlyFields,
     getRowId,
     dataGridRef,
@@ -104,7 +109,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
 
   // 컬럼 처리
   const processedColumns = useDataDetailColumns({
-    columns,
+    columns: filteredColumns,
     isEditMode,
     readOnlyFields,
     selectFields,
@@ -127,15 +132,26 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
     shouldMoveToNextCellRef,
   });
 
+  // 저장 성공 시 네비게이션 처리를 위한 래퍼
+  const handleSaveWithNavigation = useCallback(
+    async (updatedData: T) => {
+      if (onSave) {
+        await onSave(updatedData);
+        navigate(-1);
+      }
+    },
+    [onSave, navigate],
+  );
+
   // 검증 및 저장 처리
   const { handleSaveClick } = useDataDetailValidation({
     data,
     editedData,
-    columns,
+    columns: filteredColumns,
     validator,
     checkChangesBeforeSave,
     excludeFieldsFromChangeCheck,
-    onSave,
+    onSave: handleSaveWithNavigation,
     setIsEditMode,
     setHasInitialFocus,
     tabKeyPressedRef,
@@ -189,12 +205,17 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
       severity: 'error',
       onConfirm: () => {
         const executeDelete = async () => {
-          await onDelete();
+          try {
+            await onDelete();
+            navigate(-1);
+          } catch (error) {
+            console.error('Delete failed:', error);
+          }
         };
         executeDelete();
       },
     });
-  }, [onDelete, showConfirm]);
+  }, [onDelete, showConfirm, navigate]);
 
   return (
     <Box>
@@ -207,6 +228,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           showEdit={canEdit && !!onSave}
           showDelete={!!onDelete}
           isLocked={isLocked}
+          isLoading={isLoading}
         />
       )}
 
@@ -226,6 +248,7 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
           onCellKeyDown={handleCellKeyDown}
           onCellEditStop={handleCellEditStop}
           sx={dataGridStyles}
+          localeText={{ noRowsLabel: ALERT_MESSAGES.NO_DATA }}
         />
       </Box>
 

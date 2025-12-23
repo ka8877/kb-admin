@@ -1,6 +1,8 @@
-import { getApi } from '@/utils/apiUtils';
+import { getApi, type ApiMeta } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserLoginItem } from './type';
+import { addRowNumber } from '@/utils/dataUtils';
+import { FetchListParams } from '@/types/types';
 import {
   NO,
   LOGIN_HISTORY_ID,
@@ -59,21 +61,35 @@ const transformUserLogins = (raw: unknown): UserLoginItem[] => {
   return [];
 };
 
-export interface FetchUserLoginsParams {
-  page?: number;
-  size?: number;
-  searchParams?: Record<string, string | number>;
-}
+export const fetchUserLogins = async (
+  params?: FetchListParams,
+): Promise<{ items: UserLoginItem[]; meta: ApiMeta | null }> => {
+  const { page = 1, size = 20, searchParams = {} } = params || {};
 
-export const fetchUserLogins = async (params?: FetchUserLoginsParams): Promise<UserLoginItem[]> => {
-  const { page = 0, size = 20, searchParams = {} } = params || {};
-
-  console.log('🔍 로그인 이력 조회 파라미터:', {
+  const apiParams = {
     page,
     size,
-    searchParams,
+    ...searchParams,
+  };
+
+  const response = await getApi(API_ENDPOINTS.USER_LOGIN.LIST, {
+    params: apiParams,
   });
 
-  const response = await getApi(API_ENDPOINTS.USER_LOGIN.LIST);
-  return transformUserLogins(response.data);
+  const items = transformUserLogins(response.data);
+
+  // No 생성 (내림차순)
+  // page는 1부터 시작하므로 0-based index로 변환하여 전달
+  const itemsWithNo = addRowNumber(
+    items,
+    response.meta?.totalElements ?? items.length,
+    page - 1,
+    size,
+    'desc',
+  );
+
+  return {
+    items: itemsWithNo,
+    meta: response.meta || null,
+  };
 };

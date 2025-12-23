@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { userRoleChangeKeys } from '@/constants/queryKey';
-import { fetchUserRoleChanges, FetchUserRoleChangesParams } from './api';
+import { fetchUserRoleChanges } from './api';
+import { FetchListParams } from '@/types/types';
 
-export const useUserRoleChanges = (params?: FetchUserRoleChangesParams) => {
+export const useUserRoleChanges = (params?: FetchListParams) => {
   return useQuery({
     queryKey: userRoleChangeKeys.list(params),
     queryFn: () => fetchUserRoleChanges(params),

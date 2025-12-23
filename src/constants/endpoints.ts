@@ -4,14 +4,14 @@
 export const API_ENDPOINTS = {
   // 추천질문 관련
   RECOMMENDED_QUESTIONS: {
-    BASE: '/data-reg/qst',
-    LIST: '/data-reg/qst.json',
-    DETAIL: (id: string | number) => `/data-reg/qst/${id}.json`,
-    CREATE: '/data-reg/qst.json',
-    UPDATE: (id: string | number) => `/data-reg/qst/${id}.json`,
-    DELETE: (id: string | number) => `/data-reg/qst/${id}.json`,
+    BASE: '/api/v1/recommended-questions',
+    DETAIL: (id: string | number) => `/api/v1/recommended-questions/${id}`,
+    CREATE: '/api/v1/recommended-questions',
+    UPDATE: (id: string | number) => `/api/v1/recommended-questions/${id}`,
+    DELETE: (id: string | number) => `/api/v1/recommended-questions/${id}/remove`,
+    DELETE_BATCH: '/api/v1/recommended-questions/remove',
     APPROVAL: '/approval/recommended-questions.json',
-    APPROVAL_LIST: '/approval/recommended-questions.json',
+    APPROVAL_LIST: '/api/v1/recommended-questions/approval-queue',
     APPROVAL_DETAIL: (id: string | number) => `/approval/recommended-questions/${id}.json`,
     APPROVAL_DETAIL_LIST: (id: string | number) =>
       `/approval/recommended-questions/${id}/list.json`,
@@ -19,13 +19,14 @@ export const API_ENDPOINTS = {
 
   // 앱 스킴 관련
   APP_SCHEME: {
-    BASE: '/data-reg/app-scheme',
+    BASE: '/api/v1/app-schemes',
     LIST: '/data-reg/app-scheme.json',
-    DETAIL: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
-    CREATE: '/data-reg/app-scheme.json',
-    UPDATE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
-    DELETE: (id: string | number) => `/data-reg/app-scheme/${id}.json`,
-    APPROVAL_LIST: '/approval/app-scheme.json',
+    DETAIL: (id: string | number) => `/api/v1/app-schemes/${id}`,
+    CREATE: '/api/v1/app-schemes',
+    UPDATE: (id: string | number) => `/api/v1/app-schemes/${id}`,
+    DELETE: (id: string | number) => `/api/v1/app-schemes/${id}/remove`,
+    DELETE_BATCH: '/api/v1/app-schemes/remove',
+    APPROVAL_LIST: '/api/v1/app-schemes/approval-queue',
     APPROVAL_DETAIL: (id: string | number) => `/approval/app-scheme/${id}.json`,
     APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
   },
@@ -55,13 +56,13 @@ export const API_ENDPOINTS = {
   // 사용자 역할 변경 이력
   USER_ROLE_CHANGE: {
     BASE: '/history/user-role-change',
-    LIST: '/history/user-role-change.json',
+    LIST: '/api/v1/user-role-change-history',
   },
 
   // 로그인 이력
   USER_LOGIN: {
     BASE: '/history/login',
-    LIST: '/history/login.json',
+    LIST: '/api/v1/login-history',
   },
 
   // 권한 관리

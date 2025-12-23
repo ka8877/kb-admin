@@ -44,6 +44,7 @@ export const TOAST_MESSAGES = {
   CODE_GROUP_CREATED: '코드그룹이 생성되었습니다.',
   CODE_GROUP_UPDATED: '코드그룹이 수정되었습니다.',
   SORT_ORDER_SAVED: '순서가 저장되었습니다.',
+  RETRACT_SUCCESS: '선택한 항목이 회수되었습니다.',
 
   // 실패 메시지
   UPDATE_FAILED: '수정에 실패하였습니다.',
@@ -57,6 +58,8 @@ export const TOAST_MESSAGES = {
   APPROVAL_STATUS_UPDATE_FAILED: '승인 요청 상태 수정에 실패했습니다.',
   APPROVAL_ID_MISSING: '승인 요청 ID가 없습니다.',
   FINAL_APPROVAL_FAILED: '결재 승인에 실패했습니다.',
+  FINAL_APPROVAL_PROCESS_FAILED: '최종 결재 처리에 실패했습니다.',
+  RETRACT_FAILED: '회수 처리에 실패했습니다.',
   CODE_ITEM_SAVE_FAILED: '코드아이템 저장 중 오류가 발생했습니다.',
   CODE_ITEM_DELETE_FAILED: '코드아이템 삭제 중 오류가 발생했습니다.',
   CODE_GROUP_SAVE_FAILED: '코드그룹 저장 중 오류가 발생했습니다.',

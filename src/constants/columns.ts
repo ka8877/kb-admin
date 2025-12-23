@@ -24,7 +24,7 @@ const {
 } = TABLE_LABELS.APPROVAL_REQUEST;
 
 export const approvalRequestColumns: GridColDef<ApprovalRequestItem>[] = [
-  { field: NO, headerName: 'No', width: 80 }, // No
+  { field: NO, headerName: 'no', width: 80 }, // No
   // id 필드는 숨김 처리 (행 구분용)
   { field: APPROVAL_REQUEST_ID, headerName: '아이디', width: 120 }, // PK 결재요청 PK
   { field: TARGET_TYPE, headerName: '대상 타입', flex: 1, minWidth: 150 }, // 대상 타입 IX(복합)

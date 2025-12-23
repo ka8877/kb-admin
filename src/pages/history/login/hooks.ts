@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { userLoginKeys } from '@/constants/queryKey';
-import { fetchUserLogins, FetchUserLoginsParams } from './api';
+import { fetchUserLogins } from './api';
+import { FetchListParams } from '@/types/types';
 
-export const useUserLogins = (params?: FetchUserLoginsParams) => {
+export const useUserLogins = (params?: FetchListParams) => {
   return useQuery({
     queryKey: userLoginKeys.list(params),
     queryFn: () => fetchUserLogins(params),

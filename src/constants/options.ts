@@ -106,6 +106,12 @@ export const yesNoOptions = [
   { label: '아니오', value: 'N' },
 ];
 
+// Boolean 예 아니오 옵션 데이터
+export const booleanYesNoOptions = [
+  { label: '예', value: true },
+  { label: '아니오', value: false },
+];
+
 // 권한 종류
 export const ROLE_ADMIN = 'admin' as const;
 export const ROLE_CRUD = 'crud' as const;

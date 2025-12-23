@@ -33,7 +33,7 @@ import {
 // 결재 요청 관련 타입 정의
 export type ApprovalRequestItem = {
   [NO]: number; // 번호
-  [APPROVAL_REQUEST_ID]: number; // approvalRequestId
+  [APPROVAL_REQUEST_ID]: string | number; // approvalRequestId
   [TARGET_TYPE]: string; // targetType
   [TARGET_ID]: number; // targetId
   [ITSVC_NO]: string | null; // itsvcNo
@@ -53,7 +53,7 @@ export type ApprovalRequestItem = {
 
 export type SelectFieldOption = {
   label: string;
-  value: string;
+  value: string | number | boolean;
 };
 
 export type SearchFieldOption = {
@@ -121,6 +121,18 @@ export interface ApprovalRequestData<T> {
   targetId: string;
   isRetracted: number;
   list: T[];
+}
+
+/**
+ * 목록 조회 공통 파라미터
+ */
+export interface FetchListParams {
+  /** 페이지 번호 (1부터 시작) */
+  page?: number;
+  /** 페이지당 행 수 */
+  size?: number;
+  /** 검색 조건 (필드명: 값 형태의 객체) */
+  searchParams?: Record<string, string | number>;
 }
 
 // 사용자 역할 타입

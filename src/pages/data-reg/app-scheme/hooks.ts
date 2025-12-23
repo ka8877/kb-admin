@@ -12,23 +12,12 @@ import {
 } from '@/pages/data-reg/app-scheme/api';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 import { appSchemeKeys, approvalRequestKeys, APP_SCHEME } from '@/constants/queryKey';
-
-/**
- * 앱스킴 목록 조회 훅 파라미터 타입
- */
-export interface UseAppSchemesParams {
-  /** 페이지 번호 (0부터 시작) */
-  page?: number;
-  /** 페이지당 행 수 */
-  size?: number;
-  /** 검색 조건 (필드명: 값 형태의 객체) */
-  searchParams?: Record<string, string | number>;
-}
+import { FetchListParams } from '@/types/types';
 
 /**
  * 앱스킴 목록 조회 훅
  */
-export const useAppSchemes = (params?: UseAppSchemesParams) => {
+export const useAppSchemes = (params?: FetchListParams) => {
   return useQuery({
     queryKey: appSchemeKeys.list(params),
     queryFn: () => fetchAppSchemes(params),

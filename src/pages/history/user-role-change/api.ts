@@ -1,6 +1,8 @@
-import { getApi } from '@/utils/apiUtils';
+import { getApi, type ApiMeta } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserRoleChangeItem } from './type';
+import { addRowNumber } from '@/utils/dataUtils';
+import { FetchListParams } from '@/types/types';
 import {
   NO,
   HISTORY_ID,
@@ -67,23 +69,34 @@ const transformUserRoleChanges = (raw: unknown): UserRoleChangeItem[] => {
   return [];
 };
 
-export interface FetchUserRoleChangesParams {
-  page?: number;
-  size?: number;
-  searchParams?: Record<string, string | number>;
-}
-
 export const fetchUserRoleChanges = async (
-  params?: FetchUserRoleChangesParams,
-): Promise<UserRoleChangeItem[]> => {
-  const { page = 0, size = 20, searchParams = {} } = params || {};
+  params?: FetchListParams,
+): Promise<{ items: UserRoleChangeItem[]; meta: ApiMeta | null }> => {
+  const { page = 1, size = 20, searchParams = {} } = params || {};
 
-  console.log('🔍 사용자 역할 변경 이력 조회 파라미터:', {
+  const apiParams = {
     page,
     size,
-    searchParams,
+    ...searchParams,
+  };
+
+  const response = await getApi(API_ENDPOINTS.USER_ROLE_CHANGE.LIST, {
+    params: apiParams,
   });
 
-  const response = await getApi(API_ENDPOINTS.USER_ROLE_CHANGE.LIST);
-  return transformUserRoleChanges(response.data);
+  const items = transformUserRoleChanges(response.data);
+
+  // No 생성 (내림차순)
+  const itemsWithNo = addRowNumber(
+    items,
+    response.meta?.totalElements ?? items.length,
+    page - 1,
+    size,
+    'desc',
+  );
+
+  return {
+    items: itemsWithNo,
+    meta: response.meta || null,
+  };
 };

@@ -17,6 +17,8 @@ import {
 import { transformToApiFormat } from '@/pages/data-reg/app-scheme/api';
 import { useCreateAppSchemesBatch } from '@/pages/data-reg/app-scheme/hooks';
 import { GUIDE_MESSAGES } from '@/constants/message';
+import { APPROVAL_RETURN_URL } from '@/constants/options';
+import { ROUTES } from '@/routes/menu';
 
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 
@@ -69,7 +71,14 @@ const ApprovalExcelUpload: React.FC = () => {
         // 백엔드 API 호출
         await createBatchMutation.mutateAsync(apiData);
 
-        navigate(-1);
+        // 성공 시 이전 페이지로 이동 또는 목록 페이지로 이동
+        const returnUrl = sessionStorage.getItem(APPROVAL_RETURN_URL);
+        if (returnUrl) {
+          navigate(returnUrl);
+          sessionStorage.removeItem(APPROVAL_RETURN_URL);
+        } else {
+          navigate(ROUTES.APP_SCHEME);
+        }
       } catch (error) {
         console.error('데이터 처리 오류:', error);
         throw error;

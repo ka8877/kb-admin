@@ -24,15 +24,13 @@ const UserLoginPage: React.FC = () => {
     [listState.searchFieldsState],
   );
 
-  const {
-    data: rows = [],
-    isLoading,
-    isFetching,
-  } = useUserLogins({
+  const { data, isLoading, isFetching } = useUserLogins({
     page: listState.page,
     size: listState.size,
     searchParams,
   });
+
+  const rows = data?.items || [];
 
   const isDataLoading = isLoading || isFetching;
 

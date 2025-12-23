@@ -214,7 +214,7 @@ export const fieldGuides: Record<string, string> = {
   [PARENT_ID]: '조건부 필수 | AI 검색 mid/story인 경우 필수 (예: M020011)',
   [PARENT_NM]: '조건부 필수 | AI 검색 mid/story인 경우 필수',
   [AGE_GRP]: '조건부 필수 | AI 금융계산기인 경우 필수, 참조 데이터 확인 (10, 20, 30, 40, 50)',
-  [SHOW_U17]: '필수 | Y 또는 N',
+  [SHOW_U17]: '필수 | true 또는 false',
   [IMP_START_DATE]: '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초)',
   [IMP_END_DATE]:
     '필수 | 20251125000000 형식 (14자리 숫자: 연월일시분초, 노출 시작일시 이후여야 함)',
@@ -231,7 +231,7 @@ export const exampleData = [
     [PARENT_ID]: 'M020011',
     [PARENT_NM]: '26주 적금',
     [AGE_GRP]: 10,
-    [SHOW_U17]: 'N',
+    [SHOW_U17]: true,
     [IMP_START_DATE]: '20251125000000',
     [IMP_END_DATE]: '99991231000000',
   },

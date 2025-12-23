@@ -64,12 +64,11 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     try {
       await deleteMutation.mutateAsync(id);
       // toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-      navigate(-1);
-    } catch (error) {
+    } catch {
       // TODO : 나중에 제거 예정
       toast.error(TOAST_MESSAGES.DELETE_FAILED);
     }
-  }, [id, deleteMutation, navigate]);
+  }, [id, deleteMutation]);
 
   const handleSave = React.useCallback(
     async (updatedData: RecommendedQuestionItem) => {

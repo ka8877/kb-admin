@@ -3,30 +3,25 @@
 
 import {
   getApi,
+  postApi,
   putApi,
   patchApi,
   fetchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
+  type ApiMeta,
+  type BatchResult,
 } from '@/utils/apiUtils';
-import { toast } from 'react-toastify';
 import { useLoadingStore } from '@/store/loading';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
 import { TOAST_MESSAGES } from '@/constants/message';
 import type { AppSchemeItem } from './types';
 import { toCompactFormat } from '@/utils/dateUtils';
+import { addRowNumber } from '@/utils/dataUtils';
 import type { Dayjs } from 'dayjs';
-import {
-  DATA_REGISTRATION,
-  DATA_MODIFICATION,
-  DATA_DELETION,
-  TARGET_TYPE_APP,
-  OUT_OF_SERVICE,
-} from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
-import {
-  TABLE_LABELS,
-} from '@/constants/label';
+import { TARGET_TYPE_APP, OUT_OF_SERVICE } from '@/constants/options';
+import type { ApprovalFormType, ApprovalRequestItem, FetchListParams } from '@/types/types';
+import { TABLE_LABELS } from '@/constants/label';
 
 const {
   LOCKED,
@@ -125,50 +120,40 @@ const transformAppSchemes = (raw: unknown): AppSchemeItem[] => {
 };
 
 /**
- * 앱스킴 목록 조회 파라미터 타입
- */
-export interface FetchAppSchemesParams {
-  /** 페이지 번호 (0부터 시작) */
-  page?: number;
-  /** 페이지당 행 수 */
-  size?: number;
-  /** 검색 조건 (필드명: 값 형태의 객체) */
-  searchParams?: Record<string, string | number>;
-}
-
-/**
  * 앱스킴 목록 조회
  */
-export const fetchAppSchemes = async (params?: FetchAppSchemesParams): Promise<AppSchemeItem[]> => {
+export const fetchAppSchemes = async (
+  params?: FetchListParams,
+): Promise<{ items: AppSchemeItem[]; meta: ApiMeta | null }> => {
   const { page = 0, size = 20, searchParams = {} } = params || {};
 
-  // 현재는 Firebase Realtime을 사용하므로 파라미터는 console.log로만 출력
-  console.log('🔍 앱스킴 목록 조회 파라미터:', {
-    page,
-    size,
-    searchParams,
-  });
-
-  // TODO: 실제 REST API로 전환 시 아래 주석을 해제하고 사용
-  // const queryParams = new URLSearchParams();
-  // queryParams.append('page', String(page));
-  // queryParams.append('pageSize', String(pageSize));
-  //
-  // // 검색 조건을 쿼리 파라미터로 추가
-  // Object.entries(searchParams).forEach(([key, value]) => {
-  //   if (value !== undefined && value !== null && value !== '') {
-  //     queryParams.append(key, String(value));
-  //   }
-  // });
-
-  // const endpoint = `${API_ENDPOINTS.APP_SCHEME.LIST}?${queryParams.toString()}`;
-
-  const response = await getApi<AppSchemeItem[]>(API_ENDPOINTS.APP_SCHEME.LIST, {
-    transform: transformAppSchemes,
+  const response = await getApi<Record<string, unknown>[]>(API_ENDPOINTS.APP_SCHEME.BASE, {
+    params: {
+      page: page + 1,
+      size,
+      ...searchParams,
+    },
     errorMessage: TOAST_MESSAGES.LOAD_DATA_FAILED,
   });
 
-  return response.data;
+  const items =
+    response.data && Array.isArray(response.data)
+      ? response.data.map((item, index) => transformItem(item, { index }))
+      : [];
+
+  // No 생성 (내림차순)
+  const itemsWithNo = addRowNumber(
+    items,
+    response.meta?.totalElements ?? items.length,
+    page,
+    size,
+    'desc',
+  );
+
+  return {
+    items: itemsWithNo,
+    meta: response.meta || null,
+  };
 };
 
 /**
@@ -224,7 +209,7 @@ export const transformToApiFormat = (inputData: {
   [PARENT_ID]?: string | null;
   [PARENT_TITLE]?: string | null;
   [START_DATE]?: string | Date | Dayjs | null;
-  [END_DATE] ?: string | Date | Dayjs | null;
+  [END_DATE]?: string | Date | Dayjs | null;
   [STATUS]?: string | null;
 }): Partial<AppSchemeItem> => {
   // 날짜 변환
@@ -267,89 +252,32 @@ export const transformToApiFormat = (inputData: {
 };
 
 /**
- * 승인된 항목들을 실제 데이터로 등록 (data_registration인 경우)
- * @param items - 등록할 앱스킴 아이템 배열 (id 포함)
+ * 앱스킴 생성
  */
-const createApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> => {
+export const createAppScheme = async (data: Partial<AppSchemeItem>): Promise<AppSchemeItem> => {
+  const response = await postApi<AppSchemeItem>(API_ENDPOINTS.APP_SCHEME.CREATE, data, {
+    errorMessage: TOAST_MESSAGES.SAVE_FAILED,
+  });
+
+  return response.data;
+};
+
+/**
+ * 앱스킴 일괄 생성
+ * @param items - 생성할 앱스킴 아이템 배열
+ */
+export const createAppSchemesBatch = async (
+  items: Partial<AppSchemeItem>[],
+): Promise<BatchResult | undefined> => {
   if (items.length === 0) {
-    console.log('🔍 createApprovedAppSchemes: items가 비어있음');
     return;
   }
 
-  // Firebase Multi-Path Update를 사용하여 각 항목을 지정된 id로 등록
-  const updates: { [key: string]: Partial<AppSchemeItem> } = {};
-
-  items.forEach((item) => {
-    // list에 있는 id를 그대로 사용하여 등록
-    const id = item[APP_SCHEME_ID];
-    updates[`${basePath}/${id}`] = item;
+  const response = await postApi<BatchResult>(API_ENDPOINTS.APP_SCHEME.CREATE, items, {
+    errorMessage: TOAST_MESSAGES.SAVE_FAILED,
   });
 
-  // Firebase REST API를 통해 Multi-Path Update 실행
-  const databaseUrl = env.testURL.replace(/\/$/, ''); // 마지막 슬래시 제거
-
-  console.log('🔍 createApprovedAppSchemes API 호출:', {
-    updates,
-    itemsCount: items.length,
-  });
-
-  try {
-    await patchApi('/.json', updates, {
-      baseURL: databaseUrl,
-      errorMessage: '승인된 항목 등록에 실패했습니다.',
-    });
-
-    console.log(`🔍 승인된 항목 ${items.length}개가 등록되었습니다.`);
-  } catch (error) {
-    console.error('🔍 createApprovedAppSchemes 오류:', error);
-    throw error;
-  }
-};
-
-/**
- * 앱스킴 생성 (승인 요청 전송 후 실제 데이터 생성)
- */
-export const createAppScheme = async (data: Partial<AppSchemeItem>): Promise<AppSchemeItem> => {
-  // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
-  const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // AppSchemeItem 형식으로 변환
-  const item = transformItem(
-    { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, unknown>,
-    { index: 0, fallbackId: tempId },
-  );
-
-  // 승인 요청 전송
-  await sendApprovalRequest(DATA_REGISTRATION, [item]);
-
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 id로)
-  await createApprovedAppSchemes([item]);
-
-  return item;
-};
-
-/**
- * 앱스킴 일괄 생성 (승인 요청 전송 후 실제 데이터 생성)
- * @param items - 생성할 앱스킴 아이템 배열
- */
-export const createAppSchemesBatch = async (items: Partial<AppSchemeItem>[]): Promise<void> => {
-  // 각 아이템에 대해 임시 ID 생성 및 변환
-  const transformedItems = items.map((data, index) => {
-    const tempId = `temp_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-    return transformItem(
-      { ...data, id: tempId } as Partial<AppSchemeItem> & Record<string, unknown>,
-      {
-        index,
-        fallbackId: tempId,
-      },
-    );
-  });
-
-  // 승인 요청 전송 (일괄)
-  await sendApprovalRequest(DATA_REGISTRATION, transformedItems);
-
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 id로)
-  await createApprovedAppSchemes(transformedItems);
+  return response.data;
 };
 
 /**
@@ -374,13 +302,11 @@ export const fetchApprovalRequest = async (
     [APPROVAL_STATUS]: (v[APPROVAL_STATUS] as string) ?? '',
     [PAYLOAD_BEFORE]: (v[PAYLOAD_BEFORE] as string | null) ?? null,
     [PAYLOAD_AFTER]: (v[PAYLOAD_AFTER] as string | null) ?? null,
-    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null)  ?? null,
+    [REQUESTER_NAME]: (v[REQUESTER_NAME] as string | null) ?? null,
     [REQUESTER_DEPT_NAME]: (v[REQUESTER_DEPT_NAME] as string | null) ?? null,
-    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null)  ?? null,
-    [REQUESTED_AT]:
-      (v[REQUESTED_AT] as string) ?? '',
-    [LAST_UPDATED_AT]:
-      (v[LAST_UPDATED_AT] as string)?? '',
+    [LAST_ACTOR_NAME]: (v[LAST_ACTOR_NAME] as string | null) ?? null,
+    [REQUESTED_AT]: (v[REQUESTED_AT] as string) ?? '',
+    [LAST_UPDATED_AT]: (v[LAST_UPDATED_AT] as string) ?? '',
     [IS_RETRACTED]: Boolean(v[IS_RETRACTED]),
     [IS_APPLIED]: Boolean(v[IS_APPLIED]),
     [APPLIED_AT]: (v[APPLIED_AT] as string | null) ?? null,
@@ -603,65 +529,30 @@ const _updateApprovedAppSchemes = async (items: AppSchemeItem[]): Promise<void> 
 };
 
 /**
- * 앱스킴 수정 (승인 요청 전송 후 실제 데이터 수정)
+ * 앱스킴 수정
  */
 export const updateAppScheme = async (
   id: string | number,
   data: Partial<AppSchemeItem>,
-): Promise<AppSchemeItem> => {
-  const updatedItem = transformItem(
-    { ...data, id: String(id) } as Partial<AppSchemeItem> & Record<string, unknown>,
-    { index: 0, fallbackId: id },
-  );
-
-  // 승인 요청 전송
-  await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
-  toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
-
-  // 데이터 잠금
-  await lockAppScheme(id);
-
-  // 결재 요청 성공 후 실제 데이터 수정
-  // await updateApprovedAppSchemes([updatedItem]);
-
-  return updatedItem;
+): Promise<void> => {
+  await postApi(API_ENDPOINTS.APP_SCHEME.UPDATE(id), data, {
+    errorMessage: TOAST_MESSAGES.UPDATE_FAILED,
+    successMessage: TOAST_MESSAGES.SAVE_SUCCESS,
+  });
 };
 
 /**
- * 앱스킴 삭제 (승인 요청 전송 후 실제 데이터 삭제)
+ * 앱스킴 삭제
  */
 export const deleteAppScheme = async (id: string | number): Promise<void> => {
-  useLoadingStore.getState().start();
-  try {
-    // 삭제 전에 데이터 조회 (승인 요청에 사용)
-    let deletedItem: AppSchemeItem | null = null;
-    try {
-      deletedItem = await fetchAppScheme(id);
-    } catch (error) {
-      console.warn('삭제 전 데이터 조회 실패:', error);
-      throw new Error('삭제할 데이터를 조회하지 못했습니다.');
-    }
-
-    // 승인 요청 전송
-    if (deletedItem) {
-      await sendApprovalRequest(DATA_DELETION, [deletedItem]);
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-
-      // 데이터 잠금
-      await lockAppScheme(id);
-
-      // 결재 요청 성공 후 실제 데이터 삭제
-      // await deleteApprovedAppSchemes([deletedItem]);
-    } else {
-      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
-    }
-  } finally {
-    useLoadingStore.getState().stop();
-  }
+  await postApi(API_ENDPOINTS.APP_SCHEME.DELETE(id), null, {
+    errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+  });
 };
 
 /**
- * 여러 앱스킴을 한 번에 삭제 (승인 요청 전송 후 실제 데이터 삭제)
+ * 여러 앱스킴을 한 번에 삭제
  * @param itemIdsToDelete - 삭제할 아이템 ID 배열
  */
 export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Promise<void> => {
@@ -669,33 +560,8 @@ export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Pr
     return;
   }
 
-  useLoadingStore.getState().start();
-  try {
-    // 삭제 전에 데이터 조회 (승인 요청에 사용)
-    const deletedItems: AppSchemeItem[] = [];
-    for (const id of itemIdsToDelete) {
-      try {
-        const item = await fetchAppScheme(id);
-        deletedItems.push(item);
-      } catch (error) {
-        console.warn(`삭제 전 데이터 조회 실패 (id: ${id}):`, error);
-      }
-    }
-
-    // 승인 요청 전송
-    if (deletedItems.length > 0) {
-      await sendApprovalRequest(DATA_DELETION, deletedItems);
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-
-      // 데이터 일괄 잠금
-      await lockAppSchemes(itemIdsToDelete);
-
-      // 결재 요청 성공 후 실제 데이터 삭제
-      // await deleteApprovedAppSchemes(deletedItems);
-    } else {
-      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
-    }
-  } finally {
-    useLoadingStore.getState().stop();
-  }
+  await postApi(API_ENDPOINTS.APP_SCHEME.DELETE_BATCH, itemIdsToDelete, {
+    errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+  });
 };

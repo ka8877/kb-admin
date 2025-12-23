@@ -132,7 +132,7 @@ const ApprovalExcelUpload: React.FC = () => {
         throw error;
       }
     },
-    [createBatchMutation, navigate],
+    [createBatchMutation, navigate, getServiceData],
   );
 
   const handleCancel = useCallback(() => {

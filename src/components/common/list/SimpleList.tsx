@@ -245,7 +245,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       if (enableStatePreservation) {
         updateListState({
           page: model.page,
-          pageSize: model.pageSize,
+          size: model.pageSize,
         });
       } else {
         setLocalPaginationModel(model);
@@ -310,58 +310,8 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
       dateDisplayFormat,
     });
 
-    // No 필드를 페이지네이션을 고려하여 동적으로 계산
-    return processed.map((col) => {
-      if (col.field === 'no') {
-        return {
-          ...col,
-          valueGetter: (params: { row: T }) => {
-            const { row } = params;
-
-            // row가 없으면 기본값 반환
-            if (!row) {
-              return '';
-            }
-
-            try {
-              // 페이지 번호와 페이지 크기를 고려하여 전체 목록에서의 순번 계산
-              const currentRowId = getRowId(row);
-              const rowIndex = filteredRows.findIndex((r) => {
-                try {
-                  const rowId = getRowId(r);
-                  return rowId === currentRowId;
-                } catch {
-                  return false;
-                }
-              });
-
-              // findIndex가 -1을 반환하면 (찾지 못한 경우) 기본값 반환
-              if (rowIndex === -1) {
-                return '';
-              }
-
-              // 숫자로 명확히 반환
-              const no = paginationModel.page * paginationModel.pageSize + rowIndex + 1;
-              return Number(no);
-            } catch (error) {
-              console.warn('No 필드 계산 중 오류:', error);
-              return '';
-            }
-          },
-        };
-      }
-      return col;
-    });
-  }, [
-    columns,
-    selectFields,
-    dateFields,
-    dateFormat,
-    dateDisplayFormat,
-    filteredRows,
-    paginationModel,
-    getRowId,
-  ]);
+    return processed;
+  }, [columns, selectFields, dateFields, dateFormat, dateDisplayFormat]);
 
   const hasSearchFields = Array.isArray(searchFields) && searchFields.length > 0;
 

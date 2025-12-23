@@ -28,16 +28,15 @@ const AppSchemePage: React.FC = () => {
     [listState.searchFieldsState],
   );
 
-  const {
-    data: rows = [],
-    isLoading,
-    isFetching,
-  } = useAppSchemes({
+  const { data, isLoading, isFetching } = useAppSchemes({
     page: listState.page,
     size: listState.size,
     searchParams,
   });
   const isDataLoading = isLoading || isFetching;
+
+  const rows = data?.items || [];
+  const totalElements = data?.meta?.totalElements;
 
   const handleCreate = useCallback(() => {
     navigate(ROUTES.APP_SCHEME_CREATE);
@@ -78,6 +77,7 @@ const AppSchemePage: React.FC = () => {
         onRowClick={handleRowClick}
         columns={appSchemeColumns}
         rows={rows}
+        totalElements={totalElements}
         rowIdGetter={APP_SCHEME_ID}
         onCreate={handleCreate}
         onRequestApproval={handleRequestApproval}

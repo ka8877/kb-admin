@@ -54,16 +54,14 @@ const RecommendedQuestionsPage: React.FC = () => {
 
   const searchFields = useSearchFields(watchedServiceNm);
 
-  const {
-    data: rows = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useRecommendedQuestions({
+  const { data, isLoading, isFetching } = useRecommendedQuestions({
     page: listState.page,
     size: listState.size,
     searchParams,
   });
+
+  const rows = data?.items || [];
+  const totalElements = data?.meta?.totalElements || 0;
 
   // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
   const isDataLoading = isLoading || isFetching;
@@ -86,7 +84,7 @@ const RecommendedQuestionsPage: React.FC = () => {
       try {
         await deleteMutation.mutateAsync(ids);
         //toast.success(TOAST_MESSAGES.SAVE_SUCCESS);
-      } catch (error) {
+      } catch {
         // TODO : 나중에 제거 예정
         toast.error(TOAST_MESSAGES.DELETE_FAILED);
       }
@@ -122,6 +120,7 @@ const RecommendedQuestionsPage: React.FC = () => {
         isLoading={isDataLoading}
         onSearchFieldChange={handleSearchFieldChange}
         isRowSelectable={(params) => !params.row[LOCKED]}
+        totalElements={totalElements}
       />
     </Box>
   );

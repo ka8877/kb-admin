@@ -62,17 +62,47 @@ export interface FetchApiOptions<T = unknown> {
   params?: Record<string, string | number | boolean>;
 }
 
-export interface StandardApiResponse<T> {
-  HEADER: Record<string, unknown>;
-  COMMON: Record<string, unknown>;
-  DATA: T;
-  MESSAGE: Record<string, unknown>;
+export interface ApiMeta {
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  code: string;
+  message: string | null;
+  data: T;
+  meta?: ApiMeta | null;
 }
 
 export interface FetchApiResponse<T> {
+  success: boolean;
+  code: string;
+  message: string | null;
   data: T;
-  status: number;
-  statusText: string;
+  meta?: ApiMeta | null;
+}
+
+export interface BatchResult {
+  totalCount: number;
+  successCount: number;
+  failCount: number;
+}
+
+/**
+ * API 에러 클래스
+ * 서버에서 내려준 메시지인지 여부를 구분하기 위해 사용
+ */
+export class ApiError extends Error {
+  isServerMessage: boolean;
+
+  constructor(message: string, isServerMessage: boolean = false) {
+    super(message);
+    this.name = 'ApiError';
+    this.isServerMessage = isServerMessage;
+  }
 }
 
 /**
@@ -91,6 +121,52 @@ const getSuccessMessage = (method: HttpMethod, customMessage?: string): string =
       return TOAST_MESSAGES.DELETE_SUCCESS;
     default:
       return '';
+  }
+};
+
+const isBatchResult = (data: unknown): data is BatchResult => {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+
+  const record = data as Record<string, unknown>;
+
+  return (
+    typeof record.totalCount === 'number' &&
+    typeof record.successCount === 'number' &&
+    typeof record.failCount === 'number'
+  );
+};
+
+/**
+ * API 성공 시 토스트 메시지 처리를 담당하는 함수
+ */
+const handleSuccessMessage = (
+  method: HttpMethod,
+  data: unknown,
+  apiMessage: string | null,
+  providedSuccessMessage?: string,
+) => {
+  // 1. 서버에서 내려준 메시지가 있으면 최우선으로 표시
+  if (apiMessage) {
+    toast.success(apiMessage, { toastId: apiMessage });
+    return;
+  }
+
+  // 2. 배치 결과인 경우 (totalCount, successCount, failCount)
+  if (isBatchResult(data)) {
+    const { totalCount, successCount, failCount } = data;
+    const message = `${totalCount}건 중 ${successCount}건 성공, ${failCount}건 실패`;
+    toast.success(message, { toastId: `batch-${totalCount}-${successCount}-${failCount}` });
+    return;
+  }
+
+  // 3. CUD 작업인 경우 기본/제공된 메시지 표시
+  if (isCudOperation(method)) {
+    const successMessage = getSuccessMessage(method, providedSuccessMessage);
+    if (successMessage) {
+      toast.success(successMessage, { toastId: successMessage });
+    }
   }
 };
 
@@ -164,47 +240,64 @@ export const fetchApi = async <T = unknown>(
 
     if (!response.ok) {
       let serverErrorMessage = response.statusText;
+      let isCustomMessage = false;
       try {
         const errorData = await response.json();
         if (errorData && typeof errorData.message === 'string') {
           serverErrorMessage = errorData.message;
+          isCustomMessage = true;
         }
       } catch {
         // ignore json parse error
       }
-      throw new Error(serverErrorMessage);
+      throw new ApiError(serverErrorMessage, isCustomMessage);
     }
 
     const rawData = await response.json();
 
-    // TODO: 백엔드 응답 구조 변경 시 아래 주석 해제 및 로직 적용
-    /*
-    const standardResponse = rawData as StandardApiResponse<T>;
-    // 필요한 경우 HEADER, COMMON, MESSAGE 처리 로직 추가
-    const data = transform ? transform(standardResponse.DATA) : (standardResponse.DATA as T);
-    */
-
-    // 현재 로직 (변경 전)
-    const data = transform ? transform(rawData) : (rawData as T);
-
-    // CUD 작업 성공 시 토스트 메시지 표시
-    if (isCudOperation(method)) {
-      const successMessage = getSuccessMessage(method, providedSuccessMessage);
-
-      if (successMessage) {
-        // toastId를 메시지 내용으로 설정하여 동일한 메시지가 중복되어 표시되지 않도록 함
-        toast.success(successMessage, { toastId: successMessage });
+    // 표준 응답 처리: success가 false이면 에러 처리
+    if (rawData && typeof rawData === 'object' && 'success' in rawData) {
+      const apiResponse = rawData as ApiResponse;
+      if (!apiResponse.success) {
+        throw new ApiError(
+          apiResponse.message || '요청 처리에 실패했습니다.',
+          !!apiResponse.message,
+        );
       }
+
+      const apiResponseData = rawData as ApiResponse<T>;
+      const data = transform ? transform(rawData) : (apiResponseData.data as T);
+
+      // 성공 메시지 처리
+      handleSuccessMessage(method, data, apiResponseData.message, providedSuccessMessage);
+
+      return {
+        success: apiResponseData.success,
+        code: apiResponseData.code,
+        message: apiResponseData.message,
+        data,
+        meta: apiResponseData.meta,
+      };
     }
 
+    // 비표준 응답(Firebase 등) 처리
+    const data = transform ? transform(rawData) : (rawData as T);
+
+    // 성공 메시지 처리
+    handleSuccessMessage(method, data, null, providedSuccessMessage);
+
     return {
+      success: true,
+      code: 'OK',
+      message: null,
       data,
-      status: response.status,
-      statusText: response.statusText,
+      meta: null,
     };
   } catch (error) {
     let message = '';
-    if (providedErrorMessage) {
+    if (error instanceof ApiError && error.isServerMessage) {
+      message = error.message;
+    } else if (providedErrorMessage) {
       message = providedErrorMessage;
     } else if (error instanceof Error) {
       message = error.message;

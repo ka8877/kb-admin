@@ -3,27 +3,23 @@
 
 import {
   getApi,
+  postApi,
   putApi,
   patchApi,
   fetchApi,
   sendApprovalRequest as sendApprovalRequestCommon,
+  ApiMeta,
 } from '@/utils/apiUtils';
-import { toast } from 'react-toastify';
 import { TOAST_MESSAGES } from '@/constants/message';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { toCompactFormat } from '@/utils/dateUtils';
+import { addRowNumber } from '@/utils/dataUtils';
 import type { Dayjs } from 'dayjs';
 import { useLoadingStore } from '@/store/loading';
-import {
-  DATA_REGISTRATION,
-  DATA_MODIFICATION,
-  DATA_DELETION,
-  TARGET_TYPE_RECOMMEND,
-  OUT_OF_SERVICE,
-} from '@/constants/options';
-import type { ApprovalFormType, ApprovalRequestItem } from '@/types/types';
+import { TARGET_TYPE_RECOMMEND, OUT_OF_SERVICE } from '@/constants/options';
+import type { ApprovalFormType, ApprovalRequestItem, FetchListParams } from '@/types/types';
 import { TABLE_LABELS } from '@/constants/label';
 
 const {
@@ -114,7 +110,7 @@ const transformItem = (
     [PARENT_ID]: (v[PARENT_ID] as string) ?? null,
     [PARENT_NM]: (v[PARENT_NM] as string) ?? null,
     [AGE_GRP]: (v[AGE_GRP] as string) ?? null,
-    [SHOW_U17]: (v[SHOW_U17] as string) ?? 'N',
+    [SHOW_U17]: v[SHOW_U17] === true,
     [IMP_START_DATE]: v[IMP_START_DATE] ? String(v[IMP_START_DATE]) : '',
     [IMP_END_DATE]: v[IMP_END_DATE] ? String(v[IMP_END_DATE]) : '',
     [UPDATED_AT]: v[UPDATED_AT] ? String(v[UPDATED_AT]) : '',
@@ -194,7 +190,7 @@ export const transformToApiFormat = (inputData: {
   [QST_CTGR]?: string | null;
   [QST_STYLE]?: string | null;
   [AGE_GRP]?: string | number | null;
-  [SHOW_U17]?: string | null;
+  [SHOW_U17]?: boolean | string | null;
   [IMP_START_DATE]?: string | Date | Dayjs | null;
   [IMP_END_DATE]?: string | Date | Dayjs | null;
   [STATUS]?: string | null;
@@ -247,13 +243,13 @@ export const transformToApiFormat = (inputData: {
     [SERVICE_CD]: serviceCd,
     [SERVICE_NM]: serviceNm,
     [DISPLAY_CTNT]: inputData[DISPLAY_CTNT] ? String(inputData[DISPLAY_CTNT]) : '',
-    [PROMPT_CTNT]: inputData[PROMPT_CTNT] ? String(inputData[PROMPT_CTNT]) : null,
+    [PROMPT_CTNT]: inputData[PROMPT_CTNT] ? String(inputData[PROMPT_CTNT]) : '',
     [QST_CTGR]: inputData[QST_CTGR] ? String(inputData[QST_CTGR]) : '',
-    [QST_STYLE]: inputData[QST_STYLE] ? String(inputData[QST_STYLE]) : null,
+    [QST_STYLE]: inputData[QST_STYLE] ? String(inputData[QST_STYLE]) : '',
     [PARENT_ID]: parentId,
     [PARENT_NM]: parentNm,
-    [AGE_GRP]: ageGrp,
-    [SHOW_U17]: inputData[SHOW_U17] ? String(inputData[SHOW_U17]).toUpperCase() : 'N',
+    [AGE_GRP]: ageGrp || '',
+    [SHOW_U17]: inputData[SHOW_U17] === true,
     [IMP_START_DATE]: impStartDate,
     [IMP_END_DATE]: impEndDate,
     [STATUS]: (inputData[STATUS] as RecommendedQuestionItem['status']) || OUT_OF_SERVICE,
@@ -261,55 +257,43 @@ export const transformToApiFormat = (inputData: {
 };
 
 /**
- * 추천질문 목록 조회 파라미터 타입
- */
-export interface FetchRecommendedQuestionsParams {
-  /** 페이지 번호 (0부터 시작) */
-  page?: number;
-  /** 페이지당 행 수 */
-  size?: number;
-  /** 검색 조건 (필드명: 값 형태의 객체) */
-  searchParams?: Record<string, string | number>;
-}
-
-/**
  * 추천질문 목록 조회
  */
 export const fetchRecommendedQuestions = async (
-  params?: FetchRecommendedQuestionsParams,
-): Promise<RecommendedQuestionItem[]> => {
+  params?: FetchListParams,
+): Promise<{ items: RecommendedQuestionItem[]; meta: ApiMeta | null }> => {
   const { page = 0, size = 20, searchParams = {} } = params || {};
 
-  // 현재는 Firebase Realtime을 사용하므로 파라미터는 console.log로만 출력
-  console.log('🔍 추천질문 목록 조회 파라미터:', {
-    page,
-    size,
-    searchParams,
-  });
-
-  // TODO: 실제 REST API로 전환 시 아래 주석을 해제하고 사용
-  // const queryParams = new URLSearchParams();
-  // queryParams.append('page', String(page));
-  // queryParams.append('size', String(size));
-  //
-  // // 검색 조건을 쿼리 파라미터로 추가
-  //  Object.entries(searchParams).forEach(([key, value]) => {
-  //   if (value !== undefined && value !== null && value !== '') {
-  //     queryParams.append(key, String(value));
-  //   }
-  // });
-
-  //const endpoint = `${API_ENDPOINTS.RECOMMENDED_QUESTIONS.LIST}?${queryParams.toString()}`;
-
-  const response = await getApi<RecommendedQuestionItem[]>(
-    API_ENDPOINTS.RECOMMENDED_QUESTIONS.LIST,
+  const response = await getApi<Record<string, unknown>[]>(
+    API_ENDPOINTS.RECOMMENDED_QUESTIONS.BASE,
     {
-      transform: transformRecommendedQuestions,
+      params: {
+        page: page + 1,
+        size,
+        ...searchParams,
+      },
       errorMessage: TOAST_MESSAGES.LOAD_DATA_FAILED,
     },
   );
 
-  return response.data;
+  const items =
+    response.data && Array.isArray(response.data)
+      ? response.data.map((item, index) => transformItem(item, { index }))
+      : [];
+
+  // No 생성 (내림차순)
+  const itemsWithNo = addRowNumber(
+    items,
+    response.meta?.totalElements ?? items.length,
+    page,
+    size,
+    'desc',
+  );
+
+  return {
+    items: itemsWithNo,
+    meta: response.meta || null,
+  };
 };
 
 /**
@@ -395,31 +379,24 @@ export const fetchApprovalDetailQuestions = async (
 };
 
 /**
- * 추천질문 생성 (승인 요청 전송 후 실제 데이터 생성)
+ * 추천질문 생성
  */
 export const createRecommendedQuestion = async (
   data: Partial<RecommendedQuestionItem>,
 ): Promise<RecommendedQuestionItem> => {
-  // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
-  const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // RecommendedQuestionItem 형식으로 변환
-  const item = transformItem(
-    { ...data, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
-    { index: 0, fallbackId: tempId },
+  const response = await postApi<RecommendedQuestionItem>(
+    API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE,
+    data,
+    {
+      errorMessage: TOAST_MESSAGES.SAVE_FAILED,
+    },
   );
 
-  // 승인 요청 전송
-  await sendApprovalRequest(DATA_REGISTRATION, [item]);
-
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 qstId로)
-  await createApprovedQuestions([item]);
-
-  return item;
+  return response.data;
 };
 
 /**
- * 추천질문 일괄 생성 (승인 요청 전송 후 실제 데이터 생성)
+ * 추천질문 일괄 생성
  * @param items - 생성할 추천질문 아이템 배열
  */
 export const createRecommendedQuestionsBatch = async (
@@ -429,23 +406,9 @@ export const createRecommendedQuestionsBatch = async (
     return;
   }
 
-  // 임시 ID 생성 (승인 후 실제 생성될 때 사용될 ID)
-  const baseTime = Date.now();
-
-  // RecommendedQuestionItem 형식으로 변환
-  const createdItems: RecommendedQuestionItem[] = items.map((item, index) => {
-    const tempId = `temp_${baseTime}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-    return transformItem(
-      { ...item, qstId: tempId } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
-      { index, fallbackId: tempId },
-    );
+  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE, items, {
+    errorMessage: TOAST_MESSAGES.SAVE_FAILED,
   });
-
-  // 승인 요청 전송
-  await sendApprovalRequest(DATA_REGISTRATION, createdItems);
-
-  // 결재 요청 성공 후 실제 데이터 생성 (같은 qstId로)
-  await createApprovedQuestions(createdItems);
 };
 
 /**
@@ -702,65 +665,30 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
 // };
 
 /**
- * 추천질문 수정 (승인 요청 전송 후 실제 데이터 수정)
+ * 추천질문 수정
  */
 export const updateRecommendedQuestion = async (
   id: string | number,
   data: Partial<RecommendedQuestionItem>,
-): Promise<RecommendedQuestionItem> => {
-  const updatedItem = transformItem(
-    { ...data, qstId: String(id) } as Partial<RecommendedQuestionItem> & Record<string, unknown>,
-    { index: 0, fallbackId: id },
-  );
-
-  // 승인 요청 전송
-  await sendApprovalRequest(DATA_MODIFICATION, [updatedItem]);
-  toast.success(TOAST_MESSAGES.UPDATE_REQUESTED);
-
-  // 데이터 잠금
-  await lockRecommendedQuestion(id);
-
-  // 결재 요청 성공 후 실제 데이터 수정
-  // await updateApprovedQuestions([updatedItem]);
-
-  return updatedItem;
+): Promise<void> => {
+  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.UPDATE(id), data, {
+    errorMessage: TOAST_MESSAGES.UPDATE_FAILED,
+    successMessage: TOAST_MESSAGES.SAVE_SUCCESS,
+  });
 };
 
 /**
- * 추천질문 삭제 (승인 요청 전송 후 실제 데이터 삭제)
+ * 추천질문 삭제
  */
 export const deleteRecommendedQuestion = async (id: string | number): Promise<void> => {
-  useLoadingStore.getState().start();
-  try {
-    // 삭제 전에 데이터 조회 (승인 요청에 사용)
-    let deletedItem: RecommendedQuestionItem | null = null;
-    try {
-      deletedItem = await fetchRecommendedQuestion(id);
-    } catch (error) {
-      console.warn('삭제 전 데이터 조회 실패:', error);
-      throw new Error('삭제할 데이터를 조회하지 못했습니다.');
-    }
-
-    // 승인 요청 전송
-    if (deletedItem) {
-      await sendApprovalRequest(DATA_DELETION, [deletedItem]);
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-
-      // 데이터 잠금
-      await lockRecommendedQuestion(id);
-
-      // 결재 요청 성공 후 실제 데이터 삭제
-      //await deleteApprovedQuestions([deletedItem]);
-    } else {
-      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
-    }
-  } finally {
-    useLoadingStore.getState().stop();
-  }
+  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE(id), null, {
+    errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+  });
 };
 
 /**
- * 여러 추천질문을 한 번에 삭제 (승인 요청 전송 후 실제 데이터 삭제)
+ * 여러 추천질문을 한 번에 삭제
  * @param itemIdsToDelete - 삭제할 아이템 ID 배열
  */
 export const deleteRecommendedQuestions = async (
@@ -770,35 +698,10 @@ export const deleteRecommendedQuestions = async (
     return;
   }
 
-  useLoadingStore.getState().start();
-  try {
-    // 삭제 전에 데이터 조회 (승인 요청에 사용)
-    const deletedItems: RecommendedQuestionItem[] = [];
-    for (const id of itemIdsToDelete) {
-      try {
-        const item = await fetchRecommendedQuestion(id);
-        deletedItems.push(item);
-      } catch (error) {
-        console.warn(`삭제 전 데이터 조회 실패 (id: ${id}):`, error);
-      }
-    }
-
-    // 승인 요청 전송
-    if (deletedItems.length > 0) {
-      await sendApprovalRequest(DATA_DELETION, deletedItems);
-      toast.success(TOAST_MESSAGES.DELETE_SUCCESS);
-
-      // 데이터 일괄 잠금
-      await lockRecommendedQuestions(itemIdsToDelete);
-
-      // 결재 요청 성공 후 실제 데이터 삭제
-      // await deleteApprovedQuestions(deletedItems);
-    } else {
-      throw new Error('삭제할 데이터를 찾을 수 없습니다.');
-    }
-  } finally {
-    useLoadingStore.getState().stop();
-  }
+  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE_BATCH, itemIdsToDelete, {
+    errorMessage: TOAST_MESSAGES.DELETE_FAILED,
+    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+  });
 };
 
 /**

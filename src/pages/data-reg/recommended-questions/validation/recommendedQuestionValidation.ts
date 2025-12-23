@@ -12,7 +12,6 @@ import {
   CODE_GRUOP_ID_SERVICE_NM,
   CODE_GROUP_ID_AGE,
   CODE_GROUP_ID_SERVICE_CD,
-  yesNoOptions,
   IN_SERVICE,
   OUT_OF_SERVICE,
 } from '@/constants/options';
@@ -30,7 +29,7 @@ export interface RecommendedQuestionData {
   parentId?: string | null;
   parentNm?: string | null;
   ageGrp?: string | null;
-  showU17?: string | null;
+  showU17?: boolean | null;
   impStartDate?: string | Date | null;
   impEndDate?: string | Date | null;
   status?: string | null;
@@ -115,14 +114,9 @@ export const validateParentIdName = (
   return { isValid: true };
 };
 
-export const validateShowU17 = (value: string | null | undefined): ValidationResult => {
-  if (!value || value.trim() === '') {
+export const validateShowU17 = (value: boolean | null | undefined): ValidationResult => {
+  if (value === null || value === undefined) {
     return { isValid: false, message: '17세 미만 노출 여부는 필수입니다' };
-  }
-
-  const validOptions = yesNoOptions.map((option) => option.value);
-  if (!validOptions.includes(value)) {
-    return { isValid: false, message: '17세 미만 노출 여부는 Y 또는 N만 입력 가능합니다' };
   }
 
   return { isValid: true };

@@ -179,7 +179,7 @@ const ApprovalManualForm: React.FC = () => {
         // toast.error(TOAST_MESSAGES.SAVE_FAILED);
       }
     },
-    [createMutation, navigate],
+    [createMutation, navigate, getServiceData],
   );
 
   const handleSaveClick = useCallback(async () => {

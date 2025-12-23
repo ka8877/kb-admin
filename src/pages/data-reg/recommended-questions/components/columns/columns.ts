@@ -19,7 +19,7 @@ import {
 } from '@/pages/data-reg/recommended-questions/data';
 
 export const recommendedQuestionColumns: GridColDef<RecommendedQuestionItem>[] = [
-  { field: 'no', headerName: 'No', width: 80 },
+  { field: 'no', headerName: 'no', width: 80 },
   { field: QST_ID, headerName: '질문 아이디', width: 120 },
   { field: SERVICE_NM, headerName: '서비스명', flex: 1, minWidth: 100 },
   { field: DISPLAY_CTNT, headerName: '질문', flex: 2, minWidth: 250 },

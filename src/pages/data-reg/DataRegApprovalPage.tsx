@@ -1,33 +1,26 @@
-import { toast } from 'react-toastify';
+import { TOAST_MESSAGES } from '@/constants/message';
 // Re-saving to fix potential TS errors
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_RETURN_URL } from '@/constants/options';
 import { approvalRequestKeys } from '@/constants/queryKey';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
+import { GridEventListener } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import type { ApprovalRequestItem } from '@/types/types';
 import { approvalRequestColumns } from '@/constants/columns';
 import SimpleList from '@/components/common/list/SimpleList';
 import PageHeader from '@/components/common/PageHeader';
+import TextPopup from '@/components/common/popup/TextPopup';
 import { ROUTES } from '@/routes/menu';
 import ApprovalListActions from '@/components/common/actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
-import { getApi } from '@/utils/apiUtils';
+import { getApi, postApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { useQueryClient } from '@tanstack/react-query';
 import { PAGE_TYPE } from '@/constants/options';
-import {
-  updateApprovalRequestStatus as updateRecommendedQuestionStatus,
-  deleteApprovalRequest as deleteRecommendedQuestionApprovalRequest,
-  unlockRecommendedQuestion,
-} from '@/pages/data-reg/recommended-questions/api';
-import {
-  updateApprovalRequestStatus as updateAppSchemeStatus,
-  deleteApprovalRequest as deleteAppSchemeApprovalRequest,
-  unlockAppScheme,
-} from '@/pages/data-reg/app-scheme/api';
-import { formatDateForStorage } from '@/utils/dateUtils';
+
+import { addRowNumber } from '@/utils/dataUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 import {
@@ -75,7 +68,8 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
         const v = item as Partial<ApprovalRequestItem> & Record<string, unknown>;
         return {
           [NO]: (v[NO] as number) ?? index + 1,
-          [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? index + 1),
+          [APPROVAL_REQUEST_ID]:
+            (v[APPROVAL_REQUEST_ID] as string | number) ?? (v.id as string | number) ?? index + 1,
           [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
           [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
           [ITSVC_NO]: (v[ITSVC_NO] as string | null) ?? null,
@@ -105,7 +99,8 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
       const v = value as Partial<ApprovalRequestItem> & Record<string, unknown>;
       return {
         [NO]: (v[NO] as number) ?? index + 1,
-        [APPROVAL_REQUEST_ID]: Number(v[APPROVAL_REQUEST_ID] ?? v.id ?? key),
+        [APPROVAL_REQUEST_ID]:
+          (v[APPROVAL_REQUEST_ID] as string | number) ?? (v.id as string | number) ?? key,
         [TARGET_TYPE]: (v[TARGET_TYPE] as string) ?? '',
         [TARGET_ID]: Number(v[TARGET_ID] ?? 0),
         [ITSVC_NO]: (v[ITSVC_NO] as string | null) ?? null,
@@ -144,12 +139,17 @@ const fetchApprovalRequests = async (
     errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
   });
 
-  return response.data;
+  // No 생성 (내림차순) - dataUtils의 addRowNumber 사용
+  return addRowNumber(response.data, response.data.length, 0, response.data.length, 'desc');
 };
 
 const DataRegApprovalPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupContent, setPopupContent] = useState('');
+  const [popupTitle, setPopupTitle] = useState('');
 
   // 경로에 따라 타입 결정
   const pageType = useMemo(() => getApprovalPageType(location.pathname), [location.pathname]);
@@ -243,6 +243,14 @@ const DataRegApprovalPage: React.FC = () => {
     [location.pathname, location.search],
   );
 
+  const handleCellClick: GridEventListener<'cellClick'> = (params) => {
+    if (params.field === PAYLOAD_BEFORE || params.field === PAYLOAD_AFTER) {
+      setPopupTitle(params.colDef.headerName || '상세 정보');
+      setPopupContent((params.value as string) || '');
+      setPopupOpen(true);
+    }
+  };
+
   // 결재 선택 토글 상태 및 핸들러
   const [approveSelectionMode, setApproveSelectionMode] = React.useState(false);
   const handleApproveSelect = useCallback((next: boolean) => {
@@ -255,76 +263,53 @@ const DataRegApprovalPage: React.FC = () => {
   // 결재 확인 처리
   const handleApproveConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
-      // 선택된 승인 요청들 필터링
-      const selectedRequests = approvalRequests.filter((request) =>
-        selectedIds.includes(request[APPROVAL_REQUEST_ID]),
-      );
-
-      // 최종 결재 요청: 모든 선택된 요청의 status를 in_review로 변경
       try {
-        const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-        // 모든 선택된 요청의 status를 in_review로 변경
-        for (const request of selectedRequests) {
-          if (pageType === APP_SCHEME) {
-            await updateAppSchemeStatus(request[APPROVAL_REQUEST_ID], IN_REVIEW, processDate);
-          } else {
-            await updateRecommendedQuestionStatus(
-              request[APPROVAL_REQUEST_ID],
-              IN_REVIEW,
-              processDate,
-            );
-          }
-        }
+        const endpoint =
+          pageType === APP_SCHEME
+            ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
+            : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
+
+        await postApi(endpoint, selectedIds, {
+          successMessage: TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED,
+          errorMessage: TOAST_MESSAGES.FINAL_APPROVAL_PROCESS_FAILED,
+        });
+
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
         }
         queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
       } catch {
-        // TODO: 나중에 제거 예정
-        toast.error('최종 결재 처리에 실패했습니다.');
+        // toast handled by postApi
       }
     },
-    [approvalRequests, pageType, queryClient],
+    [pageType, queryClient],
   );
 
   // 회수 확인 처리
   const handleRetractConfirm = useCallback(
     async (selectedIds: (string | number)[], toggleSelectionMode?: (next?: boolean) => void) => {
-      // 선택된 승인 요청들 필터링
-      const selectedRequests = approvalRequests.filter((request) =>
-        selectedIds.includes(request[APPROVAL_REQUEST_ID]),
-      );
-
       try {
-        for (const request of selectedRequests) {
-          if (pageType === APP_SCHEME) {
-            // unlock data
-            if (request[TARGET_ID]) {
-              await unlockAppScheme(request[TARGET_ID]);
-            }
-            // delete approval request
-            await deleteAppSchemeApprovalRequest(request[APPROVAL_REQUEST_ID]);
-          } else {
-            // unlock data
-            if (request[TARGET_ID]) {
-              await unlockRecommendedQuestion(request[TARGET_ID]);
-            }
-            // delete approval request
-            await deleteRecommendedQuestionApprovalRequest(request[APPROVAL_REQUEST_ID]);
-          }
-        }
-        toast.success('선택한 항목이 회수되었습니다.');
+        const endpoint =
+          pageType === APP_SCHEME
+            ? API_ENDPOINTS.APP_SCHEME.APPROVAL_LIST
+            : API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_LIST;
+
+        await postApi(`${endpoint}/retract`, selectedIds, {
+          successMessage: TOAST_MESSAGES.RETRACT_SUCCESS,
+          errorMessage: TOAST_MESSAGES.RETRACT_FAILED,
+        });
+
         setApproveSelectionMode(false);
         if (toggleSelectionMode) {
           toggleSelectionMode(false);
         }
         queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(pageType) });
       } catch {
-        toast.error('회수 처리에 실패했습니다.');
+        // toast handled by postApi
       }
     },
-    [approvalRequests, pageType, queryClient],
+    [pageType, queryClient],
   );
 
   // 컬럼 필터링 (No, 결재양식, 변경 전 내용, 변경 후 내용, 요청자, 요청일, 처리상태, 처리일)
@@ -405,6 +390,13 @@ const DataRegApprovalPage: React.FC = () => {
             params.row.approvalStatus !== DONE_REVIEW && params.row.approvalStatus !== IN_REVIEW
           );
         }}
+        onCellClick={handleCellClick}
+      />
+      <TextPopup
+        open={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        title={popupTitle}
+        content={popupContent}
       />
     </Box>
   );

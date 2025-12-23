@@ -1,3 +1,5 @@
+import { FetchListParams } from '@/types/types';
+
 /**
  * React Query QueryKey 상수 정의
  * 애플리케이션 전역에서 사용되는 QueryKey 값들을 중앙에서 관리
@@ -35,11 +37,7 @@ export const CODE_TYPES = 'code-types';
 export const recommendedQuestionsKeys = {
   all: [RECOMMENDED_QUESTIONS] as const,
   lists: () => [...recommendedQuestionsKeys.all, 'list'] as const,
-  list: (params?: {
-    page?: number;
-    pageSize?: number;
-    searchParams?: Record<string, string | number>;
-  }) => [...recommendedQuestionsKeys.lists(), params] as const,
+  list: (params?: FetchListParams) => [...recommendedQuestionsKeys.lists(), params] as const,
   details: () => [...recommendedQuestionsKeys.all, 'detail'] as const,
   detail: (id: string | number) => [...recommendedQuestionsKeys.details(), id] as const,
 };
@@ -47,11 +45,7 @@ export const recommendedQuestionsKeys = {
 export const appSchemeKeys = {
   all: [APP_SCHEME] as const,
   lists: () => [...appSchemeKeys.all, 'list'] as const,
-  list: (params?: {
-    page?: number;
-    pageSize?: number;
-    searchParams?: Record<string, string | number>;
-  }) => [...appSchemeKeys.lists(), params] as const,
+  list: (params?: FetchListParams) => [...appSchemeKeys.lists(), params] as const,
   details: () => [...appSchemeKeys.all, 'detail'] as const,
   detail: (id: string | number) => [...appSchemeKeys.details(), id] as const,
   approvalRequest: (id: string | number) => [APP_SCHEME_APPROVAL_REQUEST, id] as const,
@@ -100,11 +94,7 @@ export const USER_ROLE_CHANGE = 'user-role-change';
 export const userRoleChangeKeys = {
   all: [USER_ROLE_CHANGE] as const,
   lists: () => [...userRoleChangeKeys.all, 'list'] as const,
-  list: (params?: {
-    page?: number;
-    pageSize?: number;
-    searchParams?: Record<string, string | number>;
-  }) => [...userRoleChangeKeys.lists(), params] as const,
+  list: (params?: FetchListParams) => [...userRoleChangeKeys.lists(), params] as const,
 };
 
 /**
@@ -115,9 +105,5 @@ export const USER_LOGIN = 'user-login';
 export const userLoginKeys = {
   all: [USER_LOGIN] as const,
   lists: () => [...userLoginKeys.all, 'list'] as const,
-  list: (params?: {
-    page?: number;
-    pageSize?: number;
-    searchParams?: Record<string, string | number>;
-  }) => [...userLoginKeys.lists(), params] as const,
+  list: (params?: FetchListParams) => [...userLoginKeys.lists(), params] as const,
 };

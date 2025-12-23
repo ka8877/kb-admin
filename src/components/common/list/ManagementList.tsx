@@ -26,7 +26,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   /** 데이터를 가져오는 함수 (페이지/검색 조건 변경 시 자동 호출) */
   fetcher?: (params: {
     page: number;
-    pageSize: number;
+    size: number;
     searchParams?: Record<string, string | number>;
   }) => Promise<T[]>;
   rows?: T[];
@@ -49,6 +49,7 @@ export type ManagementListProps<T extends GridValidRowModel = GridValidRowModel>
   isLoading?: boolean; // 로딩 상태
   onSearchFieldChange?: (field: string, value: string | number) => void; // 검색 필드 변경 핸들러
   isRowSelectable?: (params: { row: T }) => boolean; // 행 선택 가능 여부
+  totalElements?: number;
 };
 
 const defaultGetRowId =
@@ -135,7 +136,7 @@ const useGridData = <T extends GridValidRowModel>({
       let mounted = true;
       fetcher({
         page: paginationModel.page,
-        pageSize: paginationModel.pageSize,
+        size: paginationModel.pageSize,
         searchParams,
       })
         .then((d) => mounted && setData(d))
@@ -193,9 +194,10 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   isLoading = false,
   onSearchFieldChange,
   isRowSelectable,
+  totalElements,
 }: ManagementListProps<T>): JSX.Element => {
   // 1. 상태 관리 (URL vs Local)
-  const { listState, updateListState } = useListState(defaultPageSize);
+  const { listState, updateListState, setMeta } = useListState(defaultPageSize);
   const [localPaginationModel, setLocalPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: defaultPageSize,
@@ -241,7 +243,18 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     paginationModel,
     searchParams,
   });
+  // totalElements가 변경되면 meta 업데이트
+  useEffect(() => {
+    if (totalElements !== undefined) {
+      setMeta((prev) => ({
+        ...prev,
+        totalElements,
+        totalPages: Math.ceil(totalElements / paginationModel.pageSize),
+      }));
+    }
+  }, [totalElements, paginationModel.pageSize, setMeta]);
 
+  //
   // 4. 이벤트 핸들러
   const handleSearch = useCallback(
     (payload: Record<string, string | number>) => {
@@ -265,7 +278,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   const handlePaginationChange = useCallback(
     (model: GridPaginationModel) => {
       if (enableStatePreservation) {
-        updateListState({ page: model.page, pageSize: model.pageSize });
+        updateListState({ page: model.page, size: model.pageSize });
       } else {
         setLocalPaginationModel(model);
       }
@@ -386,6 +399,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
         <DataGrid<T>
           rows={filteredRows}
           columns={processedColumns}
+          paginationMode={totalElements !== undefined ? 'server' : 'client'}
+          rowCount={totalElements}
           getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}
           isRowSelectable={isRowSelectable}

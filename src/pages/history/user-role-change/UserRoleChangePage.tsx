@@ -30,15 +30,13 @@ const UserRoleChangePage: React.FC = () => {
     [listState.searchFieldsState],
   );
 
-  const {
-    data: rows = [],
-    isLoading,
-    isFetching,
-  } = useUserRoleChanges({
+  const { data, isLoading, isFetching } = useUserRoleChanges({
     page: listState.page,
     size: listState.size,
     searchParams,
   });
+
+  const rows = data?.items || [];
 
   const isDataLoading = isLoading || isFetching;
 
