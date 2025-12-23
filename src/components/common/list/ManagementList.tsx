@@ -18,6 +18,7 @@ import { exportGridToExcel } from '@/utils/excelUtils';
 import type { SelectFieldOption } from '@/types/types';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import { parseSearchParams } from '@/utils/apiUtils';
+import { addRowNumber } from '@/utils/dataUtils';
 
 import { ALERT_MESSAGES } from '@/constants/message';
 
@@ -197,7 +198,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   totalElements,
 }: ManagementListProps<T>): JSX.Element => {
   // 1. 상태 관리 (URL vs Local)
-  const { listState, updateListState, setMeta } = useListState(defaultPageSize);
+  const { listState, updateListState, meta, setMeta } = useListState(defaultPageSize);
   const [localPaginationModel, setLocalPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: defaultPageSize,
@@ -243,6 +244,25 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
     paginationModel,
     searchParams,
   });
+
+  // No 생성 (내림차순)
+  const rowsWithNo = useMemo(() => {
+    const total = totalElements ?? meta.totalElements ?? filteredRows.length;
+    return addRowNumber(
+      filteredRows,
+      total,
+      paginationModel.page,
+      paginationModel.pageSize,
+      'desc',
+    );
+  }, [
+    filteredRows,
+    totalElements,
+    meta.totalElements,
+    paginationModel.page,
+    paginationModel.pageSize,
+  ]);
+
   // totalElements가 변경되면 meta 업데이트
   useEffect(() => {
     if (totalElements !== undefined) {
@@ -287,13 +307,13 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   );
 
   const handleExportAll = useCallback(async () => {
-    if (onExportAll) return onExportAll(filteredRows);
+    if (onExportAll) return onExportAll(rowsWithNo);
     await exportGridToExcel({
-      rows: filteredRows,
+      rows: rowsWithNo,
       columns: createProcessedColumns<T>({ columns, selectFields, dateFields, dateFormat }),
       exportFileName,
     });
-  }, [onExportAll, filteredRows, columns, selectFields, dateFields, dateFormat, exportFileName]);
+  }, [onExportAll, rowsWithNo, columns, selectFields, dateFields, dateFormat, exportFileName]);
 
   const handleRowClick = useCallback(
     (params: { id: GridRowId; row: T }) => {
@@ -317,49 +337,8 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
   const processedColumns = useMemo(() => {
     const processed = createProcessedColumns<T>({ columns, selectFields, dateFields, dateFormat });
 
-    // No 필드를 페이지네이션을 고려하여 동적으로 계산
-    return processed.map((col) => {
-      if (col.field === 'no') {
-        return {
-          ...col,
-          valueGetter: (params: { value: unknown; row: T }) => {
-            const { row } = params;
-
-            // row가 없으면 기본값 반환
-            if (!row) {
-              return '';
-            }
-
-            try {
-              // 페이지 번호와 페이지 크기를 고려하여 전체 목록에서의 순번 계산
-              const currentRowId = getRowId(row);
-              const rowIndex = filteredRows.findIndex((r) => {
-                try {
-                  const rowId = getRowId(r);
-                  return rowId === currentRowId;
-                } catch {
-                  return false;
-                }
-              });
-
-              // findIndex가 -1을 반환하면 (찾지 못한 경우) 기본값 반환
-              if (rowIndex === -1) {
-                return '';
-              }
-
-              // 숫자로 명확히 반환
-              const no = paginationModel.page * paginationModel.pageSize + rowIndex + 1;
-              return Number(no);
-            } catch (error) {
-              console.warn('No 필드 계산 중 오류:', error);
-              return '';
-            }
-          },
-        };
-      }
-      return col;
-    });
-  }, [columns, selectFields, dateFields, dateFormat, filteredRows, paginationModel, getRowId]);
+    return processed;
+  }, [columns, selectFields, dateFields, dateFormat]);
 
   const initialSearchValues = useMemo(() => {
     if (enableStatePreservation && listState.searchFieldsState) {
@@ -397,7 +376,7 @@ const ManagementList = <T extends GridValidRowModel = GridValidRowModel>({
 
       <Box sx={MANAGEMENT_LIST_GRID_WRAPPER_SX}>
         <DataGrid<T>
-          rows={filteredRows}
+          rows={rowsWithNo}
           columns={processedColumns}
           paginationMode={totalElements !== undefined ? 'server' : 'client'}
           rowCount={totalElements}

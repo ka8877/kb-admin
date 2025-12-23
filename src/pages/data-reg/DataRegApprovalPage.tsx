@@ -20,7 +20,6 @@ import { API_ENDPOINTS } from '@/constants/endpoints';
 import { useQueryClient } from '@tanstack/react-query';
 import { PAGE_TYPE } from '@/constants/options';
 
-import { addRowNumber } from '@/utils/dataUtils';
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 import {
@@ -139,8 +138,7 @@ const fetchApprovalRequests = async (
     errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
   });
 
-  // No 생성 (내림차순) - dataUtils의 addRowNumber 사용
-  return addRowNumber(response.data, response.data.length, 0, response.data.length, 'desc');
+  return response.data;
 };
 
 const DataRegApprovalPage: React.FC = () => {

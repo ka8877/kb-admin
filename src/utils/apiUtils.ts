@@ -156,7 +156,8 @@ const handleSuccessMessage = (
   // 2. 배치 결과인 경우 (totalCount, successCount, failCount)
   if (isBatchResult(data)) {
     const { totalCount, successCount, failCount } = data;
-    const message = `${totalCount}건 중 ${successCount}건 성공, ${failCount}건 실패`;
+    const prefix = providedSuccessMessage ? `${providedSuccessMessage} : ` : '';
+    const message = `${prefix}${totalCount}건 중 ${successCount}건 성공, ${failCount}건 실패`;
     toast.success(message, { toastId: `batch-${totalCount}-${successCount}-${failCount}` });
     return;
   }

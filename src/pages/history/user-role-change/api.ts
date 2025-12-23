@@ -1,7 +1,6 @@
 import { getApi, type ApiMeta } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserRoleChangeItem } from './type';
-import { addRowNumber } from '@/utils/dataUtils';
 import { FetchListParams } from '@/types/types';
 import {
   NO,
@@ -86,17 +85,8 @@ export const fetchUserRoleChanges = async (
 
   const items = transformUserRoleChanges(response.data);
 
-  // No 생성 (내림차순)
-  const itemsWithNo = addRowNumber(
-    items,
-    response.meta?.totalElements ?? items.length,
-    page - 1,
-    size,
-    'desc',
-  );
-
   return {
-    items: itemsWithNo,
+    items,
     meta: response.meta || null,
   };
 };

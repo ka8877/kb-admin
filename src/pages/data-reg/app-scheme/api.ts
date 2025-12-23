@@ -17,7 +17,6 @@ import { env } from '@/config/env';
 import { TOAST_MESSAGES } from '@/constants/message';
 import type { AppSchemeItem } from './types';
 import { toCompactFormat } from '@/utils/dateUtils';
-import { addRowNumber } from '@/utils/dataUtils';
 import type { Dayjs } from 'dayjs';
 import { TARGET_TYPE_APP, OUT_OF_SERVICE } from '@/constants/options';
 import type { ApprovalFormType, ApprovalRequestItem, FetchListParams } from '@/types/types';
@@ -141,17 +140,8 @@ export const fetchAppSchemes = async (
       ? response.data.map((item, index) => transformItem(item, { index }))
       : [];
 
-  // No 생성 (내림차순)
-  const itemsWithNo = addRowNumber(
-    items,
-    response.meta?.totalElements ?? items.length,
-    page,
-    size,
-    'desc',
-  );
-
   return {
-    items: itemsWithNo,
+    items,
     meta: response.meta || null,
   };
 };
@@ -562,6 +552,6 @@ export const deleteAppSchemes = async (itemIdsToDelete: (string | number)[]): Pr
 
   await postApi(API_ENDPOINTS.APP_SCHEME.DELETE_BATCH, itemIdsToDelete, {
     errorMessage: TOAST_MESSAGES.DELETE_FAILED,
-    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+    successMessage: '삭제 요청',
   });
 };

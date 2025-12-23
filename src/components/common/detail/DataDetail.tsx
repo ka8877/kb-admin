@@ -223,10 +223,10 @@ const DataDetail = <T extends GridValidRowModel = GridValidRowModel>({
       {!isEditMode && (
         <DataDetailActions
           onBack={onBack}
-          onEdit={canEdit && onSave ? handleEditClick : undefined}
-          onDelete={onDelete ? handleDeleteClick : undefined}
-          showEdit={canEdit && !!onSave}
-          showDelete={!!onDelete}
+          onEdit={data && canEdit && onSave ? handleEditClick : undefined}
+          onDelete={data && onDelete ? handleDeleteClick : undefined}
+          showEdit={!!data && canEdit && !!onSave}
+          showDelete={!!data && !!onDelete}
           isLocked={isLocked}
           isLoading={isLoading}
         />

@@ -1,7 +1,6 @@
 import { getApi, type ApiMeta } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import type { UserLoginItem } from './type';
-import { addRowNumber } from '@/utils/dataUtils';
 import { FetchListParams } from '@/types/types';
 import {
   NO,
@@ -78,18 +77,8 @@ export const fetchUserLogins = async (
 
   const items = transformUserLogins(response.data);
 
-  // No 생성 (내림차순)
-  // page는 1부터 시작하므로 0-based index로 변환하여 전달
-  const itemsWithNo = addRowNumber(
-    items,
-    response.meta?.totalElements ?? items.length,
-    page - 1,
-    size,
-    'desc',
-  );
-
   return {
-    items: itemsWithNo,
+    items,
     meta: response.meta || null,
   };
 };

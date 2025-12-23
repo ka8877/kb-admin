@@ -17,6 +17,7 @@ import { useListState } from '@/hooks/useListState';
 import { usePaginationRowSelection } from '@/hooks/usePaginationRowSelection';
 import type { SelectFieldOption } from '@/types/types';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
+import { addRowNumber } from '@/utils/dataUtils';
 
 import { ALERT_MESSAGES } from '@/constants/message';
 
@@ -177,9 +178,15 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
     });
   }, [data, searchField, searchQuery, enableClientSearch]);
 
+  // No 생성 (내림차순)
+  const rowsWithNo = useMemo(() => {
+    const total = filteredRows.length;
+    return addRowNumber(filteredRows, total, 0, paginationModel.pageSize, 'desc');
+  }, [filteredRows, paginationModel.pageSize]);
+
   // 페이지네이션을 고려한 행 선택 관리
   const { handleRowSelectionModelChange } = usePaginationRowSelection({
-    rows: filteredRows,
+    rows: rowsWithNo,
     paginationModel,
     getRowId,
     selectionModel,
@@ -334,7 +341,7 @@ const SimpleList = <T extends GridValidRowModel = GridValidRowModel>({
 
       <Box sx={SIMPLE_LIST_GRID_WRAPPER_SX}>
         <DataGrid<T>
-          rows={filteredRows}
+          rows={rowsWithNo}
           columns={processedColumns}
           getRowId={(r) => getRowId(r) as GridRowId}
           checkboxSelection={selectionMode}

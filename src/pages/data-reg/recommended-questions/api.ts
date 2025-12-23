@@ -15,7 +15,6 @@ import { API_ENDPOINTS } from '@/constants/endpoints';
 import { env } from '@/config/env';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { toCompactFormat } from '@/utils/dateUtils';
-import { addRowNumber } from '@/utils/dataUtils';
 import type { Dayjs } from 'dayjs';
 import { useLoadingStore } from '@/store/loading';
 import { TARGET_TYPE_RECOMMEND, OUT_OF_SERVICE } from '@/constants/options';
@@ -281,17 +280,8 @@ export const fetchRecommendedQuestions = async (
       ? response.data.map((item, index) => transformItem(item, { index }))
       : [];
 
-  // No 생성 (내림차순)
-  const itemsWithNo = addRowNumber(
-    items,
-    response.meta?.totalElements ?? items.length,
-    page,
-    size,
-    'desc',
-  );
-
   return {
-    items: itemsWithNo,
+    items,
     meta: response.meta || null,
   };
 };
@@ -700,7 +690,7 @@ export const deleteRecommendedQuestions = async (
 
   await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.DELETE_BATCH, itemIdsToDelete, {
     errorMessage: TOAST_MESSAGES.DELETE_FAILED,
-    successMessage: TOAST_MESSAGES.DELETE_SUCCESS,
+    successMessage: '삭제 요청',
   });
 };
 
