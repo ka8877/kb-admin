@@ -21,6 +21,8 @@ const MESSAGES = {
   DELETE_CONFIRM: '정말 삭제하시겠습니까?',
 } as const;
 
+const PROTECTED_PERMISSIONS = ['ADMIN', 'CRUD', 'VIEWER'];
+
 type PermissionFormProps = {
   permission: PermissionItem | null;
   isNew?: boolean;
@@ -183,7 +185,12 @@ const PermissionForm: React.FC<PermissionFormProps> = ({
                 variant="outlined"
                 color="error"
                 onClick={handleDelete}
-                disabled={disabled}
+                disabled={
+                  disabled ||
+                  (formData.permission_id
+                    ? PROTECTED_PERMISSIONS.includes(formData.permission_id)
+                    : false)
+                }
                 subType="d"
               >
                 삭제
