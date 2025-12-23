@@ -7,16 +7,16 @@ const HomePage = React.lazy(() => import('@pages/index'));
 
 // === 데이터 등록/노출 - 추천 질문 ===
 const RecommendedQuestionsPage = React.lazy(
-  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsPage'),
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsPage')
 );
 const RecommendedQuestionDetailPage = React.lazy(
-  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage'),
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsDetailPage')
 );
 const RecommendedQuestionsCreatePage = React.lazy(
-  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage'),
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsCreatePage')
 );
 const RecommendedQuestionsApprovalDetailPage = React.lazy(
-  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage'),
+  () => import('@pages/data-reg/recommended-questions/RecommendedQuestionsApprovalDetailPage')
 );
 
 // === 데이터 등록/노출 - 공통 결재 페이지 ===
@@ -25,32 +25,33 @@ const DataRegApprovalPage = React.lazy(() => import('@pages/data-reg/DataRegAppr
 // === 데이터 등록/노출 - 앱스킴 ===
 const AppSchemePage = React.lazy(() => import('@pages/data-reg/app-scheme/AppSchemePage'));
 const AppSchemeCreatePage = React.lazy(
-  () => import('@pages/data-reg/app-scheme/AppSchemeCreatePage'),
+  () => import('@pages/data-reg/app-scheme/AppSchemeCreatePage')
 );
 const AppSchemeDetailPage = React.lazy(
-  () => import('@pages/data-reg/app-scheme/AppSchemeDetailPage'),
+  () => import('@pages/data-reg/app-scheme/AppSchemeDetailPage')
 );
 const AppSchemeApprovalDetailPage = React.lazy(
-  () => import('@pages/data-reg/app-scheme/AppSchemeApprovalDetailPage'),
+  () => import('@pages/data-reg/app-scheme/AppSchemeApprovalDetailPage')
 );
 
 // === 관리 ===
 const CommonCodePage = React.lazy(() => import('@pages/management/common-code/CommonCodePage'));
 const AdminAuthPage = React.lazy(() => import('@pages/management/admin-auth/AdminAuthPage'));
 const AdminAuthEditPage = React.lazy(
-  () => import('@pages/management/admin-auth/AdminAuthEditPage'),
+  () => import('@pages/management/admin-auth/AdminAuthEditPage')
 );
 const MenuManagementPage = React.lazy(() => import('@pages/management/menu/MenuManagementPage'));
 const PermissionPage = React.lazy(() => import('@pages/management/permission/PermissionPage'));
 const ScreenPermissionPage = React.lazy(
-  () => import('@pages/management/screen-permission/ScreenPermissionPage'),
+  () => import('@pages/management/screen-permission/ScreenPermissionPage')
 );
 
 // === 이력 ===
 const UserLoginPage = React.lazy(() => import('@pages/history/login/UserLoginPage'));
 const UserRoleChangePage = React.lazy(
-  () => import('@/pages/history/user-role-change/UserRoleChangePage'),
+  () => import('@/pages/history/user-role-change/UserRoleChangePage')
 );
+const DataChangePage = React.lazy(() => import('@/pages/history/data-change/DataChangePage'));
 
 export type AppRoute = {
   path: string;
@@ -124,6 +125,7 @@ export const frontRoutes: AppRoute[] = [
   },
   { path: ROUTES.USER_LOGIN, Component: UserLoginPage },
   { path: ROUTES.USER_ROLE_CHANGE, Component: UserRoleChangePage },
+  { path: ROUTES.DATA_CHANGE, Component: DataChangePage },
 ];
 
 // Helper for validating DB-provided menu paths

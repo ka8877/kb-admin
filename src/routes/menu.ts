@@ -46,6 +46,7 @@ export const ROUTES = {
   HISTORY: '/history',
   USER_LOGIN: '/history/login',
   USER_ROLE_CHANGE: '/history/user-role-change',
+  DATA_CHANGE: '/history/data-change',
 } as const;
 
 // Firebase management/menu.json에서 동적으로 로드

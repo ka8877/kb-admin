@@ -1,0 +1,9 @@
+export const NO = 'no';
+export const ACTED_AT = 'acted_at';
+export const TABLE_NAME = 'table_name';
+export const PK_VALUE = 'pk_value';
+export const OPERATION = 'operation';
+export const DB_USER = 'db_user';
+export const BEFORE_DATA = 'before_data';
+export const AFTER_DATA = 'after_data';
+export const AUDIT_LOG_ID = 'audit_log_id'; // Assuming there is a PK for the log itself

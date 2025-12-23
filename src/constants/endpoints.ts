@@ -65,6 +65,11 @@ export const API_ENDPOINTS = {
     LIST: '/api/v1/login-history',
   },
 
+  // 데이터 변경 이력
+  AUDIT_LOG: {
+    LIST: '/api/v1/audit-logs',
+  },
+
   // 권한 관리
   PERMISSION: {
     BASE: '/management/permission',

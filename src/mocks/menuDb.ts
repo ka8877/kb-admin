@@ -188,6 +188,19 @@ class MenuMockDb {
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
     },
+    {
+      id: 14,
+      screen_id: 'DATA_CHANGE',
+      screen_name: '데이터 변경 이력',
+      path: '/history/data-change',
+      depth: 1,
+      order: 3,
+      parent_screen_id: 'HISTORY',
+      screen_type: '페이지',
+      display_yn: 'Y',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
   ];
 
   private nextId = 15;
@@ -209,7 +222,7 @@ class MenuMockDb {
   }
 
   async create(
-    item: Omit<MenuScreenItem, 'id' | 'created_at' | 'updated_at'>,
+    item: Omit<MenuScreenItem, 'id' | 'created_at' | 'updated_at'>
   ): Promise<MenuScreenItem> {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -227,7 +240,7 @@ class MenuMockDb {
 
   async update(
     id: string | number,
-    updates: Partial<Omit<MenuScreenItem, 'id' | 'created_at'>>,
+    updates: Partial<Omit<MenuScreenItem, 'id' | 'created_at'>>
   ): Promise<MenuScreenItem> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
