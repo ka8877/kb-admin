@@ -10,7 +10,6 @@ import { useLocation } from 'react-router-dom';
 import { useIsCurrentPath } from '@/hooks';
 import { ROUTES } from '@/routes/menu';
 import { useInactivityLogout } from '@/hooks/useInactivityLogout';
-import { handleLoginIpCheck } from '@/utils/keycloak';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 
 declare global {
@@ -66,11 +65,6 @@ const MainLayout = ({ children }: PropsWithChildren) => {
   const [menuRefreshTrigger, setMenuRefreshTrigger] = useState(0);
 
   useInactivityLogout();
-
-  // IP 체크
-  useEffect(() => {
-    if (user?.id) handleLoginIpCheck(user.id);
-  }, [user?.id]);
 
   // 메뉴 강제 리프레시 핸들러를 window 객체에 등록
   useEffect(() => {

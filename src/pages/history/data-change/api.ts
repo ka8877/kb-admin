@@ -16,7 +16,7 @@ import {
 
 const transformItem = (
   v: Partial<DataChangeItem> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number }
+  options: { index: number; fallbackId?: string | number },
 ): DataChangeItem => {
   const { index, fallbackId } = options;
 
@@ -42,56 +42,47 @@ const transformItem = (
 
 const transformDataChanges = (raw: unknown): DataChangeItem[] => {
   if (!raw) return [];
+
   if (Array.isArray(raw)) {
-    return raw.map((v, i) =>
-      transformItem(v as Partial<DataChangeItem> & Record<string, unknown>, { index: i })
-    );
+    return raw
+      .map((item, index) => {
+        if (!item) return null;
+        const v = item as Partial<DataChangeItem> & Record<string, unknown>;
+        return transformItem(v, { index });
+      })
+      .filter((item): item is DataChangeItem => item !== null);
   }
-  if (
-    typeof raw === 'object' &&
-    raw !== null &&
-    'content' in raw &&
-    Array.isArray((raw as { content: unknown[] }).content)
-  ) {
-    return (raw as { content: unknown[] }).content.map((v, i) =>
-      transformItem(v as Partial<DataChangeItem> & Record<string, unknown>, { index: i })
-    );
+
+  if (typeof raw === 'object' && raw !== null) {
+    const entries = Object.entries(raw as Record<string, unknown>);
+    return entries.map(([key, value], index) => {
+      const v = value as Partial<DataChangeItem> & Record<string, unknown>;
+      return transformItem(v, { index, fallbackId: key });
+    });
   }
+
   return [];
 };
 
 export const getDataChanges = async (
-  params: FetchListParams
-): Promise<{ items: DataChangeItem[]; meta: ApiMeta }> => {
-  const { page = 0, size = 20, searchParams } = params;
-  const queryParams = new URLSearchParams({
-    page: page.toString(),
-    size: size.toString(),
-    ...searchParams,
-  });
+  params?: FetchListParams,
+): Promise<{ items: DataChangeItem[]; meta: ApiMeta | null }> => {
+  const { page = 1, size = 20, searchParams = {} } = params || {};
 
-  type PageResponse = {
-    content: DataChangeItem[];
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
+  const apiParams = {
+    page,
+    size,
+    ...searchParams,
   };
 
-  const response = await getApi<PageResponse>(
-    `${API_ENDPOINTS.AUDIT_LOG.LIST}?${queryParams.toString()}`
-  );
+  const response = await getApi(API_ENDPOINTS.AUDIT_LOG.LIST, {
+    params: apiParams,
+  });
 
-  const pageData = response.data;
-  const items = transformDataChanges(pageData);
+  const items = transformDataChanges(response.data);
 
   return {
     items,
-    meta: {
-      totalElements: pageData?.totalElements || 0,
-      page: pageData?.number || 0,
-      size: pageData?.size || 20,
-      totalPages: pageData?.totalPages || 0,
-    },
+    meta: response.meta || null,
   };
 };

@@ -1,7 +1,5 @@
 import { keycloak } from '@/config/env';
 import { useAuthStore } from '@/store/auth';
-import { mapRolesToAppRole } from '@/utils/dataUtils';
-import { checkUserLoginIp } from '@/utils/loginCheckUtils';
 import { toast } from 'react-toastify';
 
 /**
@@ -17,21 +15,43 @@ export const initKeycloak = async (): Promise<boolean> => {
 
     if (authenticated && keycloak.token) {
       const { setToken, setUser } = useAuthStore.getState();
+
+      // 1. Keycloak 토큰 설정
       setToken(keycloak.token);
 
-      const profile = await keycloak.loadUserProfile();
-      const roles = keycloak.resourceAccess?.myclient.roles || [];
+      // 2. 백엔드 /login API 호출하여 사용자 프로필 조회
+      // TODO: API 연동 후 아래 주석 해제하고 하드코딩 제거
+      // const response = await fetchApi<AuthUser>({
+      //   method: 'POST',
+      //   endpoint: API_ENDPOINTS.AUTH.LOGIN,
+      // });
+      //
+      // if (response.success && response.data) {
+      //   const userData = response.data;
+      //   setUser(userData);
+      //
+      //   // 3. IP 체크 (세션당 1회)
+      //   await handleLoginIpCheck(userData);
+      // } else {
+      //   console.error('Login API failed:', response.message);
+      //   setUser(null);
+      // }
 
-      // 역할 매핑
-      const role = mapRolesToAppRole(roles);
+      // 임시 하드코딩 데이터
+      const userData = {
+        id: 'test-user-001',
+        name: '홍길동',
+        email: 'hong@example.com',
+        roles: ['ADMIN', 'USER'],
+        role: 'admin' as const,
+        lastLoginIp: '192.168.0.1',
+        lastLoginTime: '2023-12-15 10:00:00',
+        currentLoginIp: '192.168.0.2',
+      };
+      setUser(userData);
 
-      setUser({
-        id: profile.id || '',
-        name: profile.username || profile.firstName || 'User',
-        email: profile.email || '',
-        roles: roles,
-        role: role,
-      });
+      // 3. IP 체크 (세션당 1회)
+      await handleLoginIpCheck(userData);
     } else {
       // 인증되지 않은 경우 스토어 초기화 (기존 토큰 제거)
       const { setToken, setUser } = useAuthStore.getState();
@@ -58,13 +78,14 @@ export const loginKeycloak = () => {
  * Keycloak 로그아웃 처리
  */
 export const logoutKeycloak = () => {
-  // 로그아웃 시 IP 체크 플래그 초기화 (재로그인 시 다시 체크하기 위함)
-  Object.keys(sessionStorage).forEach((key) => {
-    if (key.startsWith('hasCheckedIp_')) {
-      sessionStorage.removeItem(key);
-    }
-  });
+  // 1. Zustand 스토어 초기화 (localStorage의 access_token도 함께 제거됨)
+  const { clear } = useAuthStore.getState();
+  clear();
 
+  // 2. sessionStorage 전체 초기화
+  sessionStorage.clear();
+
+  // 3. Keycloak 로그아웃
   keycloak.logout({
     redirectUri: window.location.origin + '/login',
   });
@@ -94,10 +115,15 @@ export const updateToken = async (minValidity = 70): Promise<string | undefined>
 
 /**
  * 로그인 시 IP 체크 및 알림 처리 (세션 당 1회)
- * @param userId 사용자 ID
+ * @param userData 사용자 정보 (IP 정보 포함)
  */
-export const handleLoginIpCheck = async (userId: string) => {
-  const storageKey = `hasCheckedIp_${userId}`;
+export const handleLoginIpCheck = async (userData: {
+  id: string;
+  lastLoginIp?: string;
+  lastLoginTime?: string;
+  currentLoginIp?: string;
+}) => {
+  const storageKey = `hasCheckedIp_${userData.id}`;
 
   // 이미 체크했다면 스킵
   if (sessionStorage.getItem(storageKey)) {
@@ -106,13 +132,18 @@ export const handleLoginIpCheck = async (userId: string) => {
   }
 
   try {
-    const ipCheckResult = await checkUserLoginIp(userId);
-    if (ipCheckResult.shouldAlert && ipCheckResult.message) {
-      // 로그인 IP 불일치 알림
-      toast.error(ipCheckResult.message, {
+    const { lastLoginIp, lastLoginTime, currentLoginIp } = userData;
+
+    // IP가 다를 경우 알림
+    if (lastLoginIp && currentLoginIp && currentLoginIp !== lastLoginIp) {
+      const message = `최종 접속 정보와 상이합니다.\n\n최종 접속 IP: ${lastLoginIp}\n최종 접속 시간: ${lastLoginTime || '알 수 없음'}\n현재 접속 IP: ${currentLoginIp}`;
+
+      toast.error(message, {
         toastId: 'login-ip-alert', // 중복 표시 방지
+        style: { whiteSpace: 'pre-line' },
       });
     }
+
     // 체크 완료 표시
     sessionStorage.setItem(storageKey, 'true');
   } catch (error) {

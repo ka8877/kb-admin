@@ -7,6 +7,9 @@ export type AuthUser = {
   email?: string;
   roles?: string[];
   role: UserRole;
+  lastLoginIp?: string;
+  lastLoginTime?: string;
+  currentLoginIp?: string;
 };
 
 export interface AuthState {

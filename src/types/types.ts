@@ -1,3 +1,12 @@
+// 공통 API 응답 타입
+export interface ApiResponse<T> {
+  success: boolean;
+  code: string;
+  message: string | null;
+  data: T;
+  meta: null;
+}
+
 import {
   DATA_DELETION,
   DATA_MODIFICATION,

@@ -7,6 +7,9 @@ import { SearchField } from '@/types/types';
 import { useSearchFieldValues } from './hooks/useSearchFieldValues';
 import TextGroupSearch from './components/TextGroupSearch';
 import AdvancedFilters from './components/AdvancedFilters';
+import { validateDateRange } from '@/utils/dataUtils';
+import { groupDateRangeFields, getDateFieldName } from './utils/searchFieldUtils';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
   columns?: GridColDef<T>[];
@@ -19,7 +22,6 @@ export type ListSearchProps<T extends GridValidRowModel = GridValidRowModel> = {
 };
 
 const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
-  columns = [],
   searchFields,
   onSearch,
   placeholder = '검색어를 입력하세요',
@@ -27,6 +29,7 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
   initialValues = {},
   onFieldChange,
 }: ListSearchProps<T>): JSX.Element => {
+  const { showAlert } = useAlertDialog();
   const {
     fieldValues,
     resolvedTextGroupSelectedFields,
@@ -74,9 +77,34 @@ const ListSearch = <T extends GridValidRowModel = GridValidRowModel>({
 
   // 검색 실행
   const handleSearch = useCallback(() => {
+    // dateRange 유효성 검사
+    if (searchFields) {
+      const dateRangeGroups = groupDateRangeFields(searchFields);
+      for (const baseField in dateRangeGroups) {
+        const group = dateRangeGroups[baseField];
+        if (group.start && group.end) {
+          const startDateField = getDateFieldName(group.start);
+          const endDateField = getDateFieldName(group.end);
+          const startValue = fieldValues[`${startDateField}_start`];
+          const endValue = fieldValues[`${endDateField}_end`];
+
+          if (
+            !validateDateRange(
+              startValue,
+              endValue,
+              showAlert,
+              `${group.start.label}이 ${group.end.label} 이전이어야 합니다.`,
+            )
+          ) {
+            return;
+          }
+        }
+      }
+    }
+
     const searchPayload = buildSearchPayload();
     onSearch(searchPayload);
-  }, [buildSearchPayload, onSearch]);
+  }, [buildSearchPayload, onSearch, searchFields, fieldValues, showAlert]);
 
   // textGroup 필드 변경 핸들러
   const handleTextGroupFieldChange = useCallback(

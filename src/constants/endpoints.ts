@@ -112,6 +112,7 @@ export const API_ENDPOINTS = {
 
   // 권한 확인
   AUTH: {
+    LOGIN: '/api/v1/auth/login',
     PERMISSION: (role: string) => `/role/${role}.json`,
   },
 

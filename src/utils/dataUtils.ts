@@ -6,6 +6,47 @@ import { UserRole } from '@/types/types';
  */
 
 /**
+ * 시작일과 종료일을 비교하여 유효성을 검사하는 함수
+ * 시작일이 종료일보다 이후이면 에러 메시지를 띄우고 false를 반환합니다.
+ *
+ * @param startDate 시작일 (string | Date)
+ * @param endDate 종료일 (string | Date)
+ * @param showAlert alert 함수
+ * @param message 에러 메시지 (기본값: '시작일은 종료일보다 클 수 없습니다.')
+ * @returns 유효하면 true, 유효하지 않으면 false
+ */
+export const validateDateRange = (
+  startDate: string | number,
+  endDate: string | number,
+  showAlert: (props: {
+    message: string;
+    severity?: 'error' | 'warning' | 'info' | 'success';
+  }) => void,
+  message: string = '시작일은 종료일보다 클 수 없습니다.',
+): boolean => {
+  // 둘 중 하나라도 값이 없으면 비교하지 않고 통과 (필수 입력 체크는 별도로 수행한다고 가정)
+  if (!startDate || !endDate) {
+    return true;
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // 날짜 형식이 유효하지 않은 경우 통과 (혹은 false 처리)
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return true;
+  }
+
+  // 시작일이 종료일보다 큰 경우 (같거나 작은 경우는 통과)
+  if (start > end) {
+    showAlert({ message, severity: 'error' });
+    return false;
+  }
+
+  return true;
+};
+
+/**
  * 두 객체를 비교하여 변경사항이 있는지 확인
  * @param originalData - 원본 데이터
  * @param editedData - 편집된 데이터
