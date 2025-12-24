@@ -89,6 +89,7 @@ const AdvancedFilters = memo(
                 onChange={(val) => onFieldChange(sf.field, val)}
                 size="small"
                 sx={{ minWidth: '200px', marginRight: 2, ...inputStyles }}
+                helperText={sf.helperText}
               />
             );
           }

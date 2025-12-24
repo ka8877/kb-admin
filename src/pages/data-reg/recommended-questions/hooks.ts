@@ -10,8 +10,6 @@ import {
   STATUS,
   DISPLAY_CTNT,
   QST_STYLE,
-  IMP_START_DATE,
-  IMP_END_DATE,
 } from '@/pages/data-reg/recommended-questions/data';
 
 type QuestionCategoryGroup = {
@@ -485,10 +483,13 @@ export const useSearchFields = (serviceNm?: string): SearchField[] => {
         label: '질문 카테고리',
         type: 'select',
         options: questionCategoryOptions,
+        helperText:
+          questionCategoryOptions.length === 0 ? '서비스명을 먼저 선택해주세요.' : undefined,
       },
       { field: STATUS, label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
       { field: AGE_GRP, label: '연령대', type: 'select', options: ageGroupOptions },
       { field: SHOW_U17, label: '17세 미만 여부', type: 'radio', options: yesNoOptions },
+      /*
       {
         field: 'imp_start',
         dataField: IMP_START_DATE,
@@ -502,7 +503,7 @@ export const useSearchFields = (serviceNm?: string): SearchField[] => {
         label: '노출 종료일시',
         type: 'dateRange',
         position: 'end',
-      },
+      }, */
     ],
     [serviceOptions, ageGroupOptions, questionCategoryOptions],
   );

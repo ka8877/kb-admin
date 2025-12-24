@@ -49,6 +49,7 @@ export const APPROVAL_STATUS_OPTIONS = [
 
 // **************결재 검색 페이지**************
 export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
+  /*
   {
     type: 'textGroup',
     fields: [
@@ -56,6 +57,7 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
       { field: 'payloadAfter', label: '변경 후 내용' },
     ],
   },
+   */
   {
     field: 'requestKind',
     label: '결재양식',
@@ -70,15 +72,15 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
   },
 
   {
-    field: 'createdAt_start',
-    dataField: 'createdAt',
+    field: 'requestedFrom',
+    dataField: 'requestedFrom',
     label: '요청일시 시작',
     type: 'dateRange',
     position: 'start',
   },
   {
-    field: 'createdAt_end',
-    dataField: 'createdAt',
+    field: 'requestedTo',
+    dataField: 'requestedTo',
     label: '요청일시 종료',
     type: 'dateRange',
     position: 'end',

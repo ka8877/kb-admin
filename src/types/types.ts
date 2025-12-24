@@ -72,6 +72,7 @@ export type SearchField =
       label: string;
       type: 'select';
       options: SearchFieldOption[];
+      helperText?: string;
     }
   | {
       field: string;

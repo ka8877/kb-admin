@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import type { SearchField } from '@/types/types';
 import { useSearchFieldNormalization } from './useSearchFieldNormalization';
-import { getOriginalIndex, getDateFieldName } from '../utils/searchFieldUtils';
+import { getOriginalIndex, getDateFieldName, extractBaseField } from '../utils/searchFieldUtils';
 
 /**
  * 검색 필드 값 관리 훅
@@ -37,8 +37,7 @@ export const useSearchFieldValues = (
   // normalizeResult.textGroupSelected가 변경되면 상태 업데이트
   if (Object.keys(normalizeResult.textGroupSelected).length > 0) {
     if (
-      JSON.stringify(textGroupSelectedFields) !==
-      JSON.stringify(normalizeResult.textGroupSelected)
+      JSON.stringify(textGroupSelectedFields) !== JSON.stringify(normalizeResult.textGroupSelected)
     ) {
       setTextGroupSelectedFields(normalizeResult.textGroupSelected);
     }
@@ -102,11 +101,20 @@ export const useSearchFieldValues = (
         }
       } else if (sf.type === 'dateRange') {
         const dateField = getDateFieldName(sf);
-        const startValue = fieldValues[`${dateField}_start`] || '';
-        const endValue = fieldValues[`${dateField}_end`] || '';
-        if (startValue || endValue) {
-          if (startValue) searchPayload[`${dateField}_start`] = startValue;
-          if (endValue) searchPayload[`${dateField}_end`] = endValue;
+        const baseField = extractBaseField(dateField);
+
+        if (sf.position === 'start') {
+          const val = fieldValues[`${dateField}_start`];
+          if (val) {
+            const key = dateField === baseField ? `${dateField}_start` : dateField;
+            searchPayload[key] = val;
+          }
+        } else if (sf.position === 'end') {
+          const val = fieldValues[`${dateField}_end`];
+          if (val) {
+            const key = dateField === baseField ? `${dateField}_end` : dateField;
+            searchPayload[key] = val;
+          }
         }
       } else {
         const value = fieldValues[sf.field];
@@ -127,4 +135,3 @@ export const useSearchFieldValues = (
     buildSearchPayload,
   };
 };
-

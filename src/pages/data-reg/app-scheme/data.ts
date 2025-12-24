@@ -36,6 +36,8 @@ export const searchFields: SearchField[] = [
   },
 
   { field: STATUS, label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
+
+  /*
   {
     field: 'start',
     dataField: START_DATE,
@@ -49,7 +51,7 @@ export const searchFields: SearchField[] = [
     label: '노출 종료일시',
     type: 'dateRange',
     position: 'end',
-  },
+  }, */
 ];
 
 // **************상세 페이지**************

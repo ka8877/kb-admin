@@ -15,10 +15,11 @@ import TextPopup from '@/components/common/popup/TextPopup';
 import { ROUTES } from '@/routes/menu';
 import ApprovalListActions from '@/components/common/actions/ApprovalListActions';
 import { ApprovalConfirmActions } from '@/components/common/actions/ApprovalConfirmActions';
-import { getApi, postApi } from '@/utils/apiUtils';
+import { getApi, postApi, parseSearchParams } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { useQueryClient } from '@tanstack/react-query';
 import { PAGE_TYPE } from '@/constants/options';
+import { useListState } from '@/hooks/useListState';
 
 import { APPROVAL_SEARCH_FIELDS, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { PAGE_TITLES } from '@/constants/pageTitle';
@@ -127,6 +128,7 @@ const transformApprovalRequests = (raw: unknown): ApprovalRequestItem[] => {
  */
 const fetchApprovalRequests = async (
   pageType: ApprovalPageType,
+  searchParams?: Record<string, string | number>,
 ): Promise<ApprovalRequestItem[]> => {
   const endpoint =
     pageType === APP_SCHEME
@@ -136,6 +138,7 @@ const fetchApprovalRequests = async (
   const response = await getApi<ApprovalRequestItem[]>(endpoint, {
     transform: transformApprovalRequests,
     errorMessage: '승인 요청 목록을 불러오지 못했습니다.',
+    params: searchParams,
   });
 
   return response.data;
@@ -144,6 +147,12 @@ const fetchApprovalRequests = async (
 const DataRegApprovalPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listState } = useListState(20);
+
+  const searchParams = useMemo(
+    () => parseSearchParams(listState.searchFieldsState),
+    [listState.searchFieldsState],
+  );
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState('');
@@ -203,8 +212,8 @@ const DataRegApprovalPage: React.FC = () => {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: approvalRequestKeys.list(pageType),
-    queryFn: () => fetchApprovalRequests(pageType),
+    queryKey: [...approvalRequestKeys.list(pageType), searchParams],
+    queryFn: () => fetchApprovalRequests(pageType, searchParams),
   });
 
   // isLoading 또는 isFetching 중 하나라도 true면 로딩 상태로 처리
