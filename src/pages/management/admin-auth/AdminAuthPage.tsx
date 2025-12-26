@@ -20,7 +20,7 @@ const AdminAuthPage: React.FC = () => {
   useEffect(() => {
     setIsLoading(true);
     fetchAdminAuthList()
-      .then((rows) => setData(rows))
+      .then((result) => setData(result.items))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -30,7 +30,7 @@ const AdminAuthPage: React.FC = () => {
 
   const handleRowClick = useCallback(
     (params: { id: string | number; row: RowItem }) => {
-      navigate(`${ROUTES.ADMIN_AUTH}/detail/${params.row.id}`);
+      navigate(`${ROUTES.ADMIN_AUTH}/detail/${params.row.kcUserId}`);
     },
     [navigate]
   );
@@ -138,7 +138,7 @@ const AdminAuthPage: React.FC = () => {
         <EditableList
           columns={listColumns}
           rows={data}
-          rowIdGetter={(r: RowItem) => r.id}
+          rowIdGetter={(r: RowItem) => r.kcUserId || r.no}
           defaultPageSize={25}
           pageSizeOptions={[10, 25, 50, 100]}
           onRowClick={handleRowClick}

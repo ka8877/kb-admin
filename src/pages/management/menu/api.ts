@@ -1,143 +1,111 @@
-// 메뉴 관리 Firebase API
-// common-code 패턴 참고
+// 메뉴 관리 API
+// API spec 3) 메뉴 섹션 기준으로 작성
 
-import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
-import { env } from '@/config';
-import type { MenuItem } from './types';
-
-// Firebase POST 응답 타입
-interface FirebasePostResponse {
-  name: string;
-}
-
-const menuBasePath = 'management/menu';
+import { getApi, postApi } from '@/utils/apiUtils';
+import { API_ENDPOINTS } from '@/constants/endpoints';
+import type { MenuItem, MenuItemDisplay } from './types';
 
 /**
- * MenuItem 변환 헬퍼 함수
+ * 메뉴 목록 조회
+ * API spec: GET /api/v1/menus?includeInactive=false
  */
-const transformMenuItem = (
-  v: Partial<MenuItem> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number }
-): MenuItem => {
-  const { fallbackId } = options;
+export const fetchMenus = async (params?: {
+  includeInactive?: boolean;
+}): Promise<MenuItemDisplay[]> => {
+  const { includeInactive = false } = params || {};
 
-  return {
-    menu_code: v.menu_code || '',
-    menu_name: v.menu_name || '',
-    menu_path: v.menu_path || null,
-    parent_menu_code: v.parent_menu_code || null,
-    sort_order: v.sort_order ?? 0,
-    is_active: v.is_active ?? 1,
-    created_by: v.created_by || 1,
-    created_at: v.created_at || new Date().toISOString(),
-    updated_by: v.updated_by || null,
-    updated_at: v.updated_at || null,
-    firebaseKey: v.firebaseKey || String(fallbackId || ''),
-  };
-};
-
-/**
- * 전체 메뉴 목록 조회
- */
-export const fetchMenus = async (): Promise<MenuItem[]> => {
-  const response = await getApi<Record<string, MenuItem>>(`${menuBasePath}.json`, {
-    baseURL: env.testURL,
+  const response = await getApi<MenuItem[]>(API_ENDPOINTS.MENU.LIST, {
+    params: { includeInactive },
     errorMessage: '메뉴 목록을 불러오지 못했습니다.',
   });
 
-  if (!response.data || typeof response.data !== 'object') {
-    return [];
-  }
+  const items = Array.isArray(response.data) ? response.data : [];
 
-  const menuArray: MenuItem[] = Object.entries(response.data).map(([firebaseKey, data], index) =>
-    transformMenuItem({ ...data, firebaseKey }, { index, fallbackId: firebaseKey })
-  );
+  // sortOrder로 정렬 후 화면 표시용 no 추가
+  return items
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((item, index) => ({
+      ...item,
+      no: index + 1,
+    }));
+};
 
-  // sort_order로 정렬
-  return menuArray.sort((a, b) => a.sort_order - b.sort_order);
+/**
+ * 메뉴 상세 조회
+ * API spec: GET /api/v1/menus/{menuId}
+ */
+export const fetchMenu = async (menuId: number): Promise<MenuItem> => {
+  const response = await getApi<MenuItem>(API_ENDPOINTS.MENU.DETAIL(menuId), {
+    errorMessage: '메뉴 상세 정보를 불러오지 못했습니다.',
+  });
+
+  return response.data;
 };
 
 /**
  * 메뉴 생성
+ * API spec: POST /api/v1/menus
  */
-export const createMenu = async (menuData: Omit<MenuItem, 'firebaseKey'>): Promise<MenuItem> => {
-  const response = await postApi<FirebasePostResponse>(
-    `${menuBasePath}.json`,
-    {
-      menu_code: menuData.menu_code,
-      menu_name: menuData.menu_name,
-      menu_path: menuData.menu_path,
-      parent_menu_code: menuData.parent_menu_code || null,
-      sort_order: menuData.sort_order,
-      is_active: menuData.is_active,
-      created_by: menuData.created_by || 1,
-      created_at: new Date().toISOString(),
-      updated_by: null,
-      updated_at: null,
-    },
-    {
-      baseURL: env.testURL,
-      errorMessage: '메뉴 생성에 실패했습니다.',
-      successMessage: '메뉴가 생성되었습니다.',
-    }
-  );
+export const createMenu = async (data: {
+  menuCode: string;
+  menuName: string;
+  menuPath: string | null;
+  parentMenuCode: string | null;
+  sortOrder: number;
+  isVisible: boolean;
+}): Promise<MenuItem> => {
+  const response = await postApi<MenuItem>(API_ENDPOINTS.MENU.CREATE, data, {
+    errorMessage: '메뉴 생성에 실패했습니다.',
+  });
 
-  const firebaseKey = response.data.name;
-
-  return {
-    ...menuData,
-    created_at: new Date().toISOString(),
-    updated_by: null,
-    updated_at: null,
-    firebaseKey,
-  };
+  return response.data;
 };
 
 /**
  * 메뉴 수정
+ * API spec: POST /api/v1/menus/{menuId}
  */
 export const updateMenu = async (
-  firebaseKey: string,
-  updates: Partial<MenuItem>
-): Promise<MenuItem> => {
-  const updateData = {
-    ...updates,
-    // menu_code는 빈 문자열로 덮어쓰지 않도록, 전달되면 값 사용, 아니면 제거
-    ...(updates.menu_code === undefined ? {} : { menu_code: updates.menu_code }),
-    updated_at: new Date().toISOString(),
-  };
-
-  await putApi(`${menuBasePath}/${firebaseKey}.json`, updateData, {
-    baseURL: env.testURL,
+  menuId: number,
+  data: {
+    menuName: string;
+    menuPath: string | null;
+    parentMenuCode: string | null;
+    sortOrder: number;
+    isVisible: boolean;
+  }
+): Promise<void> => {
+  await postApi(API_ENDPOINTS.MENU.UPDATE(menuId), data, {
     errorMessage: '메뉴 수정에 실패했습니다.',
-    successMessage: '메뉴가 수정되었습니다.',
   });
-
-  return {
-    ...(updates as MenuItem),
-    firebaseKey,
-    updated_at: updateData.updated_at,
-  };
 };
 
 /**
- * 메뉴 삭제
+ * 메뉴 비활성화
+ * API spec: POST /api/v1/menus/{menuId}/deactivate
  */
-export const deleteMenu = async (firebaseKey: string): Promise<void> => {
-  await deleteApi(`${menuBasePath}/${firebaseKey}.json`, {
-    baseURL: env.testURL,
-    errorMessage: '메뉴 삭제에 실패했습니다.',
-    successMessage: '메뉴가 삭제되었습니다.',
-  });
+export const deactivateMenu = async (menuId: number): Promise<void> => {
+  await postApi(
+    API_ENDPOINTS.MENU.DEACTIVATE(menuId),
+    {},
+    {
+      errorMessage: '메뉴 비활성화에 실패했습니다.',
+    }
+  );
 };
 
 /**
- * 메뉴 코드 중복 확인
+ * 메뉴 코드 중복 확인 (클라이언트측)
  */
 export const checkMenuCodeExists = async (
   menuCode: string,
-  excludeKey?: string
+  excludeMenuId?: number
 ): Promise<boolean> => {
-  const menus = await fetchMenus();
-  return menus.some((menu) => menu.menu_code === menuCode && menu.firebaseKey !== excludeKey);
+  const menus = await fetchMenus({ includeInactive: true });
+  return menus.some((menu) => menu.menuCode === menuCode && menu.menuId !== excludeMenuId);
+};
+
+// 하위 호환성을 위한 함수
+export const deleteMenu = async (menuId: number): Promise<void> => {
+  await deactivateMenu(menuId);
 };

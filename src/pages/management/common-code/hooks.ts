@@ -1,33 +1,25 @@
 // 공통코드 관련 React Query 훅
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { commonCodeKeys } from '@/constants/queryKey';
-import type {
-  CodeGroup,
-  CodeItem,
-  CodeGroupDisplay,
-  CodeItemDisplay,
-  ServiceMapping,
-  QuestionMapping,
-} from './types';
+import type { CodeGroupDisplay, CodeItemDisplay } from './types';
 import {
   fetchCodeGroups,
   fetchCodeGroup,
   createCodeGroup,
   updateCodeGroup,
-  deleteCodeGroup,
+  deactivateCodeGroup,
   fetchCodeItems,
   fetchCodeItem,
   createCodeItem,
   updateCodeItem,
-  deleteCodeItem,
-  deleteCodeItems,
+  deactivateCodeItem,
+  bulkDeactivateCodeItems,
+  reorderCodeItems,
   fetchServiceMappings,
   upsertServiceMapping,
-  deleteServiceMapping,
   fetchQuestionMappings,
-  createQuestionMapping,
-  deleteQuestionMapping,
-  deleteQuestionMappingsByService,
+  upsertQuestionMapping,
+  deleteMapping,
   type FetchCodeItemsParams,
 } from './api';
 
@@ -41,18 +33,18 @@ import {
 export const useCodeGroups = () => {
   return useQuery({
     queryKey: commonCodeKeys.codeGroups(),
-    queryFn: fetchCodeGroups,
+    queryFn: () => fetchCodeGroups(),
   });
 };
 
 /**
  * 코드그룹 상세 조회 훅
  */
-export const useCodeGroup = (codeGroupId: number | undefined) => {
+export const useCodeGroup = (groupCode: string | undefined) => {
   return useQuery({
-    queryKey: commonCodeKeys.codeGroupDetail(codeGroupId!),
-    queryFn: () => fetchCodeGroup(codeGroupId!),
-    enabled: !!codeGroupId,
+    queryKey: commonCodeKeys.codeGroupDetail(groupCode!),
+    queryFn: () => fetchCodeGroup(groupCode!),
+    enabled: !!groupCode,
   });
 };
 
@@ -78,39 +70,35 @@ export const useUpdateCodeGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      codeGroupId,
-      data,
-      firebaseKey,
-    }: {
-      codeGroupId: number;
-      data: Partial<CodeGroup>;
-      firebaseKey?: string;
-    }) => updateCodeGroup(codeGroupId, data, firebaseKey),
+    mutationFn: ({ groupCode, data }: { groupCode: string; data: { groupName: string } }) =>
+      updateCodeGroup(groupCode, data),
     onSuccess: (_, variables) => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeGroups() });
       queryClient.invalidateQueries({
-        queryKey: commonCodeKeys.codeGroupDetail(variables.codeGroupId),
+        queryKey: commonCodeKeys.codeGroupDetail(variables.groupCode),
       });
     },
   });
 };
 
 /**
- * 코드그룹 삭제 뮤테이션 훅
+ * 코드그룹 비활성화 뮤테이션 훅
  */
-export const useDeleteCodeGroup = () => {
+export const useDeactivateCodeGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteCodeGroup,
+    mutationFn: (groupCode: string) => deactivateCodeGroup(groupCode),
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeGroups() });
     },
   });
 };
+
+// 하위 호환성
+export const useDeleteCodeGroup = useDeactivateCodeGroup;
 
 // ======================
 // 코드아이템 (cm_code_item) Hooks
@@ -122,8 +110,8 @@ export const useDeleteCodeGroup = () => {
 export const useCodeItems = (params?: FetchCodeItemsParams) => {
   return useQuery({
     queryKey: commonCodeKeys.codeItemsList(params),
-    queryFn: () => fetchCodeItems(params),
-    enabled: params === undefined || params.codeGroupId !== undefined, // params가 없거나 codeGroupId가 있을 때 활성화
+    queryFn: () => params && fetchCodeItems(params),
+    enabled: !!params?.groupCode, // groupCode가 있을 때만 활성화
   });
 };
 
@@ -145,7 +133,13 @@ export const useCreateCodeItem = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createCodeItem,
+    mutationFn: ({
+      groupCode,
+      data,
+    }: {
+      groupCode: string;
+      data: { code: string; codeName: string; sortOrder: number };
+    }) => createCodeItem(groupCode, data),
     onSuccess: () => {
       // 코드아이템 목록 쿼리 무효화하여 자동 리패칭
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
@@ -160,8 +154,13 @@ export const useUpdateCodeItem = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ codeItemId, data }: { codeItemId: number; data: Partial<CodeItem> }) =>
-      updateCodeItem(codeItemId, data),
+    mutationFn: ({
+      codeItemId,
+      data,
+    }: {
+      codeItemId: number;
+      data: { code: string; codeName: string; sortOrder: number };
+    }) => updateCodeItem(codeItemId, data),
     onSuccess: (_, variables) => {
       // 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
@@ -173,14 +172,13 @@ export const useUpdateCodeItem = () => {
 };
 
 /**
- * 코드아이템 삭제 뮤테이션 훅
+ * 코드아이템 비활성화 뮤테이션 훅
  */
-export const useDeleteCodeItem = () => {
+export const useDeactivateCodeItem = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ codeItemId, firebaseKey }: { codeItemId: number; firebaseKey?: string }) =>
-      deleteCodeItem(codeItemId, firebaseKey),
+    mutationFn: (codeItemId: number) => deactivateCodeItem(codeItemId),
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
@@ -189,19 +187,44 @@ export const useDeleteCodeItem = () => {
 };
 
 /**
- * 여러 코드아이템 삭제 뮤테이션 훅
+ * 여러 코드아이템 일괄 비활성화 뮤테이션 훅
  */
-export const useDeleteCodeItems = () => {
+export const useBulkDeactivateCodeItems = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteCodeItems,
+    mutationFn: (codeItemIds: number[]) => bulkDeactivateCodeItems(codeItemIds),
     onSuccess: () => {
       // 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
     },
   });
 };
+
+/**
+ * 코드아이템 정렬순서 일괄 저장 뮤테이션 훅
+ */
+export const useReorderCodeItems = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      groupCode,
+      items,
+    }: {
+      groupCode: string;
+      items: Array<{ codeItemId: number; sortOrder: number }>;
+    }) => reorderCodeItems(groupCode, items),
+    onSuccess: () => {
+      // 목록 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: commonCodeKeys.codeItemsLists() });
+    },
+  });
+};
+
+// 하위 호환성
+export const useDeleteCodeItem = useDeactivateCodeItem;
+export const useDeleteCodeItems = useBulkDeactivateCodeItems;
 
 // ======================
 // ServiceMapping (서비스코드 ↔ 서비스명) Hooks
@@ -238,7 +261,7 @@ export const useDeleteServiceMapping = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteServiceMapping,
+    mutationFn: (firebaseKey: string) => deleteMapping(firebaseKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceMappings'] });
     },
@@ -252,21 +275,21 @@ export const useDeleteServiceMapping = () => {
 /**
  * 질문 매핑 목록 조회 훅
  */
-export const useQuestionMappings = (params?: { serviceCodeItemId?: number }) => {
+export const useQuestionMappings = () => {
   return useQuery({
-    queryKey: ['questionMappings', params],
-    queryFn: () => fetchQuestionMappings(params),
+    queryKey: ['questionMappings'],
+    queryFn: () => fetchQuestionMappings(),
   });
 };
 
 /**
- * 질문 매핑 생성 뮤테이션 훅
+ * 질문 매핑 생성/수정 뮤테이션 훅
  */
-export const useCreateQuestionMapping = () => {
+export const useUpsertQuestionMapping = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createQuestionMapping,
+    mutationFn: upsertQuestionMapping,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
     },
@@ -280,21 +303,7 @@ export const useDeleteQuestionMapping = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteQuestionMapping,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
-    },
-  });
-};
-
-/**
- * 특정 서비스의 모든 질문 매핑 삭제 뮤테이션 훅
- */
-export const useDeleteQuestionMappingsByService = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteQuestionMappingsByService,
+    mutationFn: (firebaseKey: string) => deleteMapping(firebaseKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
     },

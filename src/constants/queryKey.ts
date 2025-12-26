@@ -66,11 +66,10 @@ export const commonCodeKeys = {
   all: [COMMON_CODE] as const,
   // 코드그룹 (cm_code_group)
   codeGroups: () => [...commonCodeKeys.all, 'code-groups'] as const,
-  codeGroupDetail: (codeGroupId: number) =>
-    [...commonCodeKeys.all, 'code-group', codeGroupId] as const,
+  codeGroupDetail: (groupCode: string) => [...commonCodeKeys.all, 'code-group', groupCode] as const,
   // 코드아이템 (cm_code_item)
   codeItemsLists: () => [...commonCodeKeys.all, 'code-items', 'list'] as const,
-  codeItemsList: (params?: { codeGroupId?: number; isActive?: number }) =>
+  codeItemsList: (params?: { groupCode?: string; includeInactive?: boolean }) =>
     [...commonCodeKeys.codeItemsLists(), params] as const,
   codeItemDetail: (codeItemId: number) => [...commonCodeKeys.all, 'code-item', codeItemId] as const,
   // 코드매핑 (cm_code_mapping)

@@ -1,62 +1,86 @@
 // frontend/src/mocks/adminAuthDb.ts
-import type { AdminAuthItem, RowItem } from '../pages/management/admin-auth/types';
+import type { UserAccountApiItem } from '../pages/management/admin-auth/types';
 
-let mockData: AdminAuthItem[] = [
+let mockData: UserAccountApiItem[] = [
   {
-    id: 1,
-    user_name: '홍길동',
-    position: '팀장',
-    team_1st: '개발팀',
-    team_2nd: '프론트엔드',
-    use_permission: 'ADMIN',
-    approval_permission: '결재자',
-    status: '활성',
+    kcUserId: 1,
+    oidcSub: 'sub-001',
+    username: 'hong.gildong',
+    email: 'hong.gildong@example.com',
+    hrEmployeeId: 1001,
+    empNo: 'E001',
+    empName: '홍길동',
+    deptCode: 'D001',
+    deptName1: '개발팀',
+    deptName2: '프론트엔드',
+    jobTitleCode: 'J01',
+    jobTitleName: '팀장',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00',
+    updatedAt: '2024-01-01T00:00:00',
+    roleCodes: ['ROLE_ADMIN'],
   },
   {
-    id: 2,
-    user_name: '김철수',
-    position: '과장',
-    team_1st: '개발팀',
-    team_2nd: '백엔드',
-    use_permission: 'OPERATOR',
-    approval_permission: '요청자',
-    status: '활성',
+    kcUserId: 2,
+    oidcSub: 'sub-002',
+    username: 'kim.chulsoo',
+    email: 'kim.chulsoo@example.com',
+    hrEmployeeId: 1002,
+    empNo: 'E002',
+    empName: '김철수',
+    deptCode: 'D001',
+    deptName1: '개발팀',
+    deptName2: '백엔드',
+    jobTitleCode: 'J02',
+    jobTitleName: '과장',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00',
+    updatedAt: '2024-01-01T00:00:00',
+    roleCodes: ['ROLE_OPERATOR'],
   },
   {
-    id: 3,
-    user_name: '이영희',
-    position: '대리',
-    team_1st: '기획팀',
-    team_2nd: 'UX/UI',
-    use_permission: 'VIEWER',
-    approval_permission: '요청자',
-    status: '비활성',
+    kcUserId: 3,
+    oidcSub: 'sub-003',
+    username: 'lee.younghee',
+    email: 'lee.younghee@example.com',
+    hrEmployeeId: 1003,
+    empNo: 'E003',
+    empName: '이영희',
+    deptCode: 'D002',
+    deptName1: '기획팀',
+    deptName2: 'UX/UI',
+    jobTitleCode: 'J03',
+    jobTitleName: '대리',
+    isActive: false,
+    createdAt: '2024-01-01T00:00:00',
+    updatedAt: '2024-01-01T00:00:00',
+    roleCodes: ['ROLE_VIEWER'],
   },
 ];
 
 let idCounter = 4;
 
 export const adminAuthMockDb = {
-  async listAll(): Promise<RowItem[]> {
+  async listAll(): Promise<UserAccountApiItem[]> {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    return mockData.map((item, idx) => ({ ...item, no: idx + 1 }));
+    return [...mockData];
   },
 
-  async getById(id: number): Promise<AdminAuthItem | null> {
+  async getById(id: number): Promise<UserAccountApiItem | null> {
     await new Promise((resolve) => setTimeout(resolve, 50));
-    return mockData.find((item) => item.id === id) || null;
+    return mockData.find((item) => item.kcUserId === id) || null;
   },
 
-  async create(data: Omit<AdminAuthItem, 'id'>): Promise<AdminAuthItem> {
+  async create(data: Omit<UserAccountApiItem, 'kcUserId'>): Promise<UserAccountApiItem> {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const newItem: AdminAuthItem = { ...data, id: idCounter++ };
+    const newItem: UserAccountApiItem = { ...data, kcUserId: idCounter++ };
     mockData.push(newItem);
     return newItem;
   },
 
-  async update(id: number, data: Partial<AdminAuthItem>): Promise<AdminAuthItem> {
+  async update(id: number, data: Partial<UserAccountApiItem>): Promise<UserAccountApiItem> {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const index = mockData.findIndex((item) => item.id === id);
+    const index = mockData.findIndex((item) => item.kcUserId === id);
     if (index === -1) throw new Error('Not found');
     mockData[index] = { ...mockData[index], ...data };
     return mockData[index];
@@ -64,6 +88,6 @@ export const adminAuthMockDb = {
 
   async delete(id: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    mockData = mockData.filter((item) => item.id !== id);
+    mockData = mockData.filter((item) => item.kcUserId !== id);
   },
 };

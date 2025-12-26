@@ -1,38 +1,36 @@
 // 공통코드 관리 그리드 컬럼 정의
 import { GridColDef } from '@mui/x-data-grid';
-import { IconButton, Stack } from '@mui/material';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import type { CodeGroupDisplay, CodeItemDisplay } from '../types';
+import { NO, GROUP_CODE, GROUP_NAME, CODE, CODE_NAME, SORT_ORDER, IS_ACTIVE } from '../data';
 
 /**
  * 코드그룹 (대분류) 컬럼
  */
 export const codeGroupColumns: GridColDef<CodeGroupDisplay>[] = [
   {
-    field: 'no',
+    field: NO,
     headerName: 'No',
     width: 60,
     align: 'center',
     headerAlign: 'center',
   },
   {
-    field: 'group_code',
+    field: GROUP_CODE,
     headerName: '그룹코드',
     width: 180,
   },
   {
-    field: 'group_name',
+    field: GROUP_NAME,
     headerName: '그룹명',
     flex: 1,
   },
   {
-    field: 'is_active',
+    field: IS_ACTIVE,
     headerName: '사용여부',
     width: 100,
     align: 'center',
     headerAlign: 'center',
-    renderCell: (params) => (params.value === 0 ? '미사용' : '사용'),
+    renderCell: (params) => (params.value ? '사용' : '미사용'),
   },
 ];
 
@@ -41,29 +39,29 @@ export const codeGroupColumns: GridColDef<CodeGroupDisplay>[] = [
  */
 export const codeItemColumns: GridColDef<CodeItemDisplay>[] = [
   {
-    field: 'sort_order',
+    field: SORT_ORDER,
     headerName: '정렬순서',
     width: 100,
     align: 'center',
     headerAlign: 'center',
   },
   {
-    field: 'code',
+    field: CODE,
     headerName: '코드',
     width: 150,
   },
   {
-    field: 'code_name',
+    field: CODE_NAME,
     headerName: '코드명',
     flex: 1,
   },
   {
-    field: 'is_active',
+    field: IS_ACTIVE,
     headerName: '사용여부',
     width: 100,
     align: 'center',
     headerAlign: 'center',
-    renderCell: (params) => (params.value === 0 ? '미사용' : '사용'),
+    renderCell: (params) => (params.value ? '사용' : '미사용'),
   },
 ];
 

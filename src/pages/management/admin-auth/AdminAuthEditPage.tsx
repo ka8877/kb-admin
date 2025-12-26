@@ -16,7 +16,7 @@ import Section from '@/components/layout/Section';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ROUTES } from '@/routes/menu';
 import { ALERT_MESSAGES } from '@/constants/message';
-import { fetchAdminAuthList, createAdminAuth, updateAdminAuth, deleteAdminAuth } from './api';
+import { fetchAdminAuthList, bulkSaveUsers, bulkRemoveUsers } from './api';
 import { fetchPermissions as fetchPermissionList } from '../permission/api';
 
 type LocalRow = RowItem & { isNew?: boolean };
@@ -151,7 +151,7 @@ const AdminAuthEditPage: React.FC = () => {
 
     fetchAdminAuthList().then((data) => {
       if (!mounted) return;
-      setRows(data as LocalRow[]);
+      setRows(data.items as LocalRow[]);
       setLoading(false);
     });
 
@@ -164,13 +164,12 @@ const AdminAuthEditPage: React.FC = () => {
     setRows((prev) => prev.map((r) => (r.no === oldRow.no ? newRow : r)));
 
     const changed =
-      newRow.user_name !== oldRow.user_name ||
-      newRow.position !== oldRow.position ||
-      newRow.team_1st !== oldRow.team_1st ||
-      newRow.team_2nd !== oldRow.team_2nd ||
-      newRow.use_permission !== oldRow.use_permission ||
-      newRow.approval_permission !== oldRow.approval_permission ||
-      newRow.status !== oldRow.status;
+      newRow.username !== oldRow.username ||
+      newRow.empName !== oldRow.empName ||
+      newRow.deptName !== oldRow.deptName ||
+      newRow.email !== oldRow.email ||
+      JSON.stringify(newRow.roleCodes) !== JSON.stringify(oldRow.roleCodes) ||
+      newRow.isActive !== oldRow.isActive;
 
     if (changed) modifiedRef.current.add(newRow.no);
 
@@ -182,14 +181,14 @@ const AdminAuthEditPage: React.FC = () => {
     const tempNo = currentMax + 1;
     const newRow: LocalRow = {
       no: tempNo,
-      id: tempNo,
-      user_name: '',
-      position: '',
-      team_1st: '',
-      team_2nd: '',
-      use_permission: 'VIEWER',
-      approval_permission: '요청자',
-      status: '활성',
+      kcUserId: null as any,
+      username: '',
+      email: '',
+      empNo: '',
+      empName: '',
+      deptName: '',
+      roleCodes: ['ROLE_VIEWER'],
+      isActive: true,
       isNew: true,
     };
     setRows((prev) => [newRow, ...prev]);
@@ -233,86 +232,41 @@ const AdminAuthEditPage: React.FC = () => {
         const rowsToValidate = rows.filter((r) => ids.includes(r.no));
 
         rowsToValidate.forEach((row) => {
-          // 이용권한은 권한관리 목록을 기준으로 체크
-          const up = String(row.use_permission || '').toUpperCase();
-          const normalized = permissionCodeByName[up] ?? up;
-          if (!allowedPermissionCodes.has(normalized)) {
-            validationErrors.push(
-              `${row.no}번 행: 올바른 이용권한을 선택해주세요 (${permissionOptions.join(', ')})`
-            );
+          // 기본 validation
+          if (!row.username || !row.email) {
+            validationErrors.push(`${row.no}번 행: 사용자명과 이메일은 필수입니다.`);
           }
 
-          const validationResult = AdminAuthValidator.validateAll({
-            user_name: row.user_name,
-            position: row.position,
-            team_1st: row.team_1st,
-            team_2nd: row.team_2nd,
-            use_permission: normalized,
-            approval_permission: row.approval_permission,
-            status: row.status,
-          });
+          if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+            validationErrors.push(`${row.no}번 행: 올바른 이메일 형식이 아닙니다.`);
+          }
 
-          if (!validationResult.isValid) {
-            validationErrors.push(`${row.no}번 행: ${validationResult.errors.join(', ')}`);
+          if (!row.roleCodes || row.roleCodes.length === 0) {
+            validationErrors.push(`${row.no}번 행: 최소 1개의 권한을 선택해야 합니다.`);
           }
         });
 
         // Validation 실패 시
         if (validationErrors.length > 0) {
-          const hasControlChar = validationErrors.some((err) =>
-            err.includes('알 수 없는 제어 문자')
-          );
-          const hasMissingField = validationErrors.some((err) => err.includes('필수입니다'));
-
-          if (hasControlChar) {
-            await showAlert({
-              message: ALERT_MESSAGES.VALIDATION_CONTROL_CHAR,
-              severity: 'error',
-            });
-          } else if (hasMissingField) {
-            await showAlert({
-              message: ALERT_MESSAGES.VALIDATION_MISSING_REQUIRED,
-              severity: 'error',
-            });
-          } else {
-            await showAlert({
-              message: validationErrors.join('\n'),
-              severity: 'error',
-            });
-          }
+          await showAlert({
+            message: validationErrors.join('\n'),
+            severity: 'error',
+          });
           setLoading(false);
           return;
         }
 
-        // Validation 성공 시 저장
-        await Promise.all(
-          ids.map(async (id) => {
-            const row = rows.find((r) => r.no === id);
-            if (!row) return null;
+        // Validation 성공 시 bulk save
+        const itemsToSave = rowsToValidate.map((row) => ({
+          kcUserId: row.isNew ? undefined : row.kcUserId,
+          username: row.username,
+          email: row.email,
+          empNo: row.empNo || '',
+          isActive: row.isActive,
+          roleCodes: row.roleCodes,
+        }));
 
-            // 권한 코드 정규화 (소문자/별칭 입력 방지)
-            const normalizePermission = (code: string): string => {
-              const upper = (code || '').toUpperCase();
-              return permissionCodeByName[upper] ?? upper;
-            };
-
-            const normalizedUsePerm = normalizePermission(row.use_permission as string);
-
-            if (row.isNew) {
-              await createAdminAuth({
-                user_name: row.user_name,
-                position: row.position,
-                team_1st: row.team_1st,
-                team_2nd: row.team_2nd,
-                use_permission: normalizedUsePerm,
-                approval_permission: row.approval_permission,
-                status: row.status,
-              });
-            } else {
-              await updateAdminAuth(row.id, { ...row, use_permission: normalizedUsePerm });
-            }
-          })
-        );
+        await bulkSaveUsers(itemsToSave as any);
       }
 
       modifiedRef.current.clear();
@@ -326,7 +280,7 @@ const AdminAuthEditPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [rows, navigate, showAlert, allowedPermissionCodes, permissionCodeByName, permissionOptions]);
+  }, [rows, navigate, showAlert, bulkSaveUsers]);
 
   const handleSelectionModelChange = useCallback((newModel: (string | number)[]) => {
     setSelectionModel(newModel);
@@ -342,15 +296,28 @@ const AdminAuthEditPage: React.FC = () => {
       setLoading(true);
       const nos = Array.isArray(ids) ? ids : [ids];
 
-      for (const id of nos) {
-        const row = rows.find((r) => r.no === Number(id));
-        if (!row) continue;
+      const rowsToDelete = rows.filter((r) => nos.includes(r.no));
+      const newRows = rowsToDelete.filter((r) => r.isNew);
+      const existingRows = rowsToDelete.filter((r) => !r.isNew && r.kcUserId);
 
-        if (row.isNew) {
-          setRows((prev) => prev.filter((r) => r.no !== row.no));
-        } else {
-          await deleteAdminAuth(row.id);
-          setRows((prev) => prev.filter((r) => r.id !== row.id));
+      // 새로 추가된 행은 로컬에서만 삭제
+      if (newRows.length > 0) {
+        setRows((prev) => prev.filter((r) => !newRows.some((nr) => nr.no === r.no)));
+      }
+
+      // 기존 데이터는 API 호출
+      if (existingRows.length > 0) {
+        try {
+          const kcUserIds = existingRows
+            .map((r) => r.kcUserId)
+            .filter((id): id is number => id !== undefined);
+          await bulkRemoveUsers(kcUserIds);
+          setRows((prev) => prev.filter((r) => !existingRows.some((er) => er.no === r.no)));
+        } catch {
+          await showAlert({
+            message: '사용자 삭제에 실패했습니다.',
+            severity: 'error',
+          });
         }
       }
 
@@ -358,7 +325,7 @@ const AdminAuthEditPage: React.FC = () => {
       setSelectionMode(false);
       setLoading(false);
     },
-    [rows]
+    [rows, bulkRemoveUsers, showAlert]
   );
 
   return (
@@ -402,7 +369,7 @@ const AdminAuthEditPage: React.FC = () => {
           loading={loading}
           isCellEditable={(params) => params.field !== 'no'}
           defaultPageSize={25}
-          ghostLabelGetter={(r) => ({ title: r.user_name, subtitle: r.position })}
+          ghostLabelGetter={(r) => ({ title: r.username, subtitle: r.empName })}
         />
 
         <DeleteConfirmBar

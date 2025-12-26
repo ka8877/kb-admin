@@ -36,7 +36,7 @@ const ListSelect: React.FC<ListSelectProps> = ({ params, options }) => {
         console.debug('Cell not in edit mode:', error);
       }
     },
-    [params],
+    [params]
   );
 
   const handleClose = useCallback(() => {
@@ -69,11 +69,14 @@ const ListSelect: React.FC<ListSelectProps> = ({ params, options }) => {
         },
       }}
     >
-      {options.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
-          {option.label}
-        </MenuItem>
-      ))}
+      {options.map((option) => {
+        const stringValue = String(option.value);
+        return (
+          <MenuItem key={stringValue} value={stringValue}>
+            {option.label}
+          </MenuItem>
+        );
+      })}
     </Select>
   );
 };

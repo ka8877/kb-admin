@@ -6,12 +6,12 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import type { MenuItem as MenuItemType } from '../types';
 
 const INITIAL_FORM_DATA: Partial<MenuItemType> = {
-  menu_code: '',
-  menu_name: '',
-  menu_path: null,
-  sort_order: 1,
-  parent_menu_code: undefined,
-  is_active: 0,
+  menuCode: '',
+  menuName: '',
+  menuPath: null,
+  sortOrder: 1,
+  parentMenuCode: undefined,
+  isActive: false,
 };
 
 const DISPLAY_OPTIONS = [
@@ -45,12 +45,12 @@ const MenuForm: React.FC<MenuFormProps> = ({
   useEffect(() => {
     if (menuItem) {
       setFormData({
-        menu_code: menuItem.menu_code,
-        menu_name: menuItem.menu_name,
-        menu_path: menuItem.menu_path,
-        sort_order: menuItem.sort_order,
-        parent_menu_code: menuItem.parent_menu_code || undefined,
-        is_active: menuItem.is_active,
+        menuCode: menuItem.menuCode,
+        menuName: menuItem.menuName,
+        menuPath: menuItem.menuPath,
+        sortOrder: menuItem.sortOrder,
+        parentMenuCode: menuItem.parentMenuCode || undefined,
+        isActive: menuItem.isActive,
       });
     } else if (isNew) {
       setFormData(INITIAL_FORM_DATA);
@@ -59,7 +59,14 @@ const MenuForm: React.FC<MenuFormProps> = ({
   }, [menuItem, isNew]);
 
   const handleChange = useCallback((field: keyof MenuItemType, value: string | number | null) => {
-    setFormData((prev: Partial<MenuItemType>) => ({ ...prev, [field]: value }));
+    let processedValue: string | number | boolean | null = value;
+
+    // isActive는 boolean으로 변환
+    if (field === 'isActive') {
+      processedValue = value === 1 || value === '1';
+    }
+
+    setFormData((prev: Partial<MenuItemType>) => ({ ...prev, [field]: processedValue }));
     // 필드 변경 시 해당 필드의 에러 제거
     setErrors((prev) => {
       const newErrors = { ...prev };
@@ -70,27 +77,25 @@ const MenuForm: React.FC<MenuFormProps> = ({
 
   const handleSave = useCallback(async () => {
     // 필수 필드 체크
-    if (!formData.menu_code || !formData.menu_name) {
+    if (!formData.menuCode || !formData.menuName) {
       setErrors({
-        menu_code: !formData.menu_code ? '메뉴 코드를 입력하세요' : '',
-        menu_name: !formData.menu_name ? '메뉴명을 입력하세요' : '',
+        menuCode: !formData.menuCode ? '메뉴 코드를 입력하세요' : '',
+        menuName: !formData.menuName ? '메뉴명을 입력하세요' : '',
       });
       return;
     }
 
     const savedData: MenuItemType = {
-      menu_code: formData.menu_code,
-      menu_name: formData.menu_name,
-      menu_path: formData.menu_path || null,
-      sort_order: formData.sort_order || 1,
-      parent_menu_code: formData.parent_menu_code || null,
-      is_active: formData.is_active || 0,
-      created_by: menuItem?.created_by || 1,
-      created_at: menuItem?.created_at || new Date().toISOString(),
-      updated_by: 1,
-      updated_at: new Date().toISOString(),
-      firebaseKey: menuItem?.firebaseKey || undefined,
-    };
+      ...(menuItem?.menuId && { menuId: menuItem.menuId }),
+      menuCode: formData.menuCode,
+      menuName: formData.menuName,
+      menuPath: formData.menuPath || null,
+      sortOrder: formData.sortOrder || 1,
+      parentMenuCode: formData.parentMenuCode || null,
+      depth: menuItem?.depth || 1,
+      isVisible: menuItem?.isVisible ?? true,
+      isActive: formData.isActive ?? true,
+    } as MenuItemType;
 
     onSave(savedData);
   }, [formData, menuItem, onSave]);
@@ -101,7 +106,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
         title: '삭제 확인',
         message: '정말 삭제하시겠습니까?',
         onConfirm: () => {
-          onDelete(menuItem.firebaseKey || '');
+          onDelete(menuItem.menuId || 0);
         },
       });
     }
@@ -112,7 +117,7 @@ const MenuForm: React.FC<MenuFormProps> = ({
   }
 
   // 상위 메뉴 선택 옵션 (자기 자신은 제외)
-  const parentOptions = allMenuItems.filter((item) => item.firebaseKey !== menuItem?.firebaseKey);
+  const parentOptions = allMenuItems.filter((item) => item.menuId !== menuItem?.menuId);
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -128,12 +133,12 @@ const MenuForm: React.FC<MenuFormProps> = ({
           <TextField
             fullWidth
             size="small"
-            value={formData.menu_code || ''}
-            onChange={(e) => handleChange('menu_code', e.target.value)}
+            value={formData.menuCode || ''}
+            onChange={(e) => handleChange('menuCode', e.target.value)}
             placeholder="메뉴 코드를 입력하세요"
             disabled={!isNew || disabled}
-            error={!!errors.menu_code}
-            helperText={errors.menu_code}
+            error={!!errors.menuCode}
+            helperText={errors.menuCode}
           />
         </Box>
 
@@ -144,12 +149,12 @@ const MenuForm: React.FC<MenuFormProps> = ({
           <TextField
             fullWidth
             size="small"
-            value={formData.menu_name || ''}
-            onChange={(e) => handleChange('menu_name', e.target.value)}
+            value={formData.menuName || ''}
+            onChange={(e) => handleChange('menuName', e.target.value)}
             placeholder="메뉴명을 입력하세요"
             disabled={disabled}
-            error={!!errors.menu_name}
-            helperText={errors.menu_name}
+            error={!!errors.menuName}
+            helperText={errors.menuName}
           />
         </Box>
 
@@ -160,12 +165,12 @@ const MenuForm: React.FC<MenuFormProps> = ({
           <TextField
             fullWidth
             size="small"
-            value={formData.menu_path || ''}
-            onChange={(e) => handleChange('menu_path', e.target.value)}
+            value={formData.menuPath || ''}
+            onChange={(e) => handleChange('menuPath', e.target.value)}
             placeholder="/management/menu"
             disabled={disabled}
-            error={!!errors.menu_path}
-            helperText={errors.menu_path}
+            error={!!errors.menuPath}
+            helperText={errors.menuPath}
           />
         </Box>
 
@@ -177,12 +182,12 @@ const MenuForm: React.FC<MenuFormProps> = ({
             fullWidth
             size="small"
             type="number"
-            value={formData.sort_order ?? 1}
-            onChange={(e) => handleChange('sort_order', parseInt(e.target.value) || 1)}
+            value={formData.sortOrder ?? 1}
+            onChange={(e) => handleChange('sortOrder', parseInt(e.target.value) || 1)}
             disabled={disabled}
             inputProps={{ min: 1 }}
-            error={!!errors.sort_order}
-            helperText={errors.sort_order}
+            error={!!errors.sortOrder}
+            helperText={errors.sortOrder}
           />
         </Box>
 
@@ -194,18 +199,18 @@ const MenuForm: React.FC<MenuFormProps> = ({
             select
             fullWidth
             size="small"
-            value={formData.parent_menu_code || ''}
-            onChange={(e) => handleChange('parent_menu_code', e.target.value || null)}
+            value={formData.parentMenuCode || ''}
+            onChange={(e) => handleChange('parentMenuCode', e.target.value || null)}
             disabled={disabled}
-            error={!!errors.parent_menu_code}
-            helperText={errors.parent_menu_code}
+            error={!!errors.parentMenuCode}
+            helperText={errors.parentMenuCode}
           >
             <MenuItem value="">
               <em>없음 (최상위)</em>
             </MenuItem>
             {parentOptions.map((option) => (
-              <MenuItem key={option.firebaseKey} value={option.menu_code}>
-                {option.menu_name} ({option.menu_code})
+              <MenuItem key={option.menuId} value={option.menuCode}>
+                {option.menuName} ({option.menuCode})
               </MenuItem>
             ))}
           </TextField>
@@ -219,11 +224,11 @@ const MenuForm: React.FC<MenuFormProps> = ({
             select
             fullWidth
             size="small"
-            value={formData.is_active || 0}
-            onChange={(e) => handleChange('is_active', parseInt(e.target.value))}
+            value={formData.isActive ? 1 : 0}
+            onChange={(e) => handleChange('isActive', e.target.value)}
             disabled={isNew || disabled}
-            error={!!errors.is_active}
-            helperText={isNew ? '화면 추가 후 표시로 변경' : errors.is_active}
+            error={!!errors.isActive}
+            helperText={isNew ? '화면 추가 후 표시로 변경' : errors.isActive}
           >
             {DISPLAY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
