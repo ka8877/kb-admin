@@ -698,7 +698,7 @@ export const deleteRecommendedQuestions = async (
  * 모든 코드 아이템 조회
  */
 export const fetchCodeItems = async (): Promise<CodeItem[]> => {
-  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS_ALL, {
     errorMessage: '코드 아이템 목록을 불러오는데 실패했습니다.',
   });
 
