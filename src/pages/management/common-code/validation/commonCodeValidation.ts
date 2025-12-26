@@ -70,13 +70,10 @@ export class CodeGroupValidator {
   }
 
   // 필드별 validation 결과 반환
-  static validateByField(data: {
-    group_code?: string;
-    group_name?: string;
-  }): FieldValidationResult {
+  static validateByField(data: { groupCode?: string; groupName?: string }): FieldValidationResult {
     return {
-      group_code: this.validateGroupCode(data.group_code),
-      group_name: this.validateGroupName(data.group_name),
+      groupCode: this.validateGroupCode(data.groupCode),
+      groupName: this.validateGroupName(data.groupName),
     };
   }
 }
@@ -137,10 +134,10 @@ export class CodeItemValidator {
   }
 
   // 필드별 validation 결과 반환
-  static validateByField(data: { code?: string; code_name?: string }): FieldValidationResult {
+  static validateByField(data: { code?: string; codeName?: string }): FieldValidationResult {
     return {
       code: this.validateCode(data.code),
-      code_name: this.validateCodeName(data.code_name),
+      codeName: this.validateCodeName(data.codeName),
     };
   }
 }

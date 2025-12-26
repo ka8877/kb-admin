@@ -1,18 +1,18 @@
 // 메뉴 데이터를 계층 구조로 변환하는 유틸리티
-import type { MenuScreenItem } from '@/pages/management/menu/types';
+import type { MenuItem as MenuItemType } from '@/pages/management/menu/types';
 import type { MenuItem } from '@/routes/menu';
 
 /**
  * Mock DB의 평면 메뉴 데이터를 계층 구조로 변환
  */
-export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
-  // display_yn = 'Y'인 항목만 필터링
-  const visibleItems = menuItems.filter((item) => item.display_yn === 'Y');
+export const buildMenuTree = (menuItems: MenuItemType[]): MenuItem[] => {
+  // isVisible = true인 항목만 필터링
+  const visibleItems = menuItems.filter((item) => item.isVisible);
 
-  // ID로 빠른 조회를 위한 맵
-  const itemMap = new Map<string, MenuScreenItem>();
+  // menuCode로 빠른 조회를 위한 맵
+  const itemMap = new Map<string, MenuItemType>();
   visibleItems.forEach((item) => {
-    itemMap.set(item.screen_id, item);
+    itemMap.set(item.menuCode, item);
   });
 
   // 결과 트리
@@ -22,34 +22,34 @@ export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
   // 각 항목을 MenuItem 형식으로 변환하고 부모-자식 관계 구성
   visibleItems.forEach((item) => {
     const menuItem: MenuItem = {
-      label: item.screen_name,
-      path: item.path,
+      label: item.menuName,
+      path: item.menuPath || '',
     };
 
-    if (!item.parent_screen_id) {
-      // 최상위 메뉴 (depth 0)
+    if (!item.parentMenuCode) {
+      // 최상위 메뉴
       tree.push(menuItem);
-      childrenMap.set(item.screen_id, []);
+      childrenMap.set(item.menuCode, []);
     } else {
       // 하위 메뉴
-      if (!childrenMap.has(item.parent_screen_id)) {
-        childrenMap.set(item.parent_screen_id, []);
+      if (!childrenMap.has(item.parentMenuCode)) {
+        childrenMap.set(item.parentMenuCode, []);
       }
-      childrenMap.get(item.parent_screen_id)!.push(menuItem);
-      childrenMap.set(item.screen_id, []);
+      childrenMap.get(item.parentMenuCode)!.push(menuItem);
+      childrenMap.set(item.menuCode, []);
     }
   });
 
   // 자식 항목을 부모에 연결
-  const attachChildren = (menuItem: MenuItem, screenId: string) => {
-    const children = childrenMap.get(screenId);
+  const attachChildren = (menuItem: MenuItem, menuCode: string) => {
+    const children = childrenMap.get(menuCode);
     if (children && children.length > 0) {
       menuItem.children = children;
       // 재귀적으로 자식의 자식도 연결
       children.forEach((child) => {
-        const childScreenItem = visibleItems.find((item) => item.path === child.path);
-        if (childScreenItem) {
-          attachChildren(child, childScreenItem.screen_id);
+        const childMenuItem = visibleItems.find((item) => item.menuPath === child.path);
+        if (childMenuItem) {
+          attachChildren(child, childMenuItem.menuCode);
         }
       });
     }
@@ -57,15 +57,15 @@ export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
 
   // 트리의 각 노드에 자식 연결
   visibleItems.forEach((item) => {
-    if (!item.parent_screen_id) {
-      const menuItem = tree.find((m) => m.path === item.path);
+    if (!item.parentMenuCode) {
+      const menuItem = tree.find((m) => m.path === item.menuPath);
       if (menuItem) {
-        attachChildren(menuItem, item.screen_id);
+        attachChildren(menuItem, item.menuCode);
       }
     }
   });
 
-  // order 순으로 정렬
+  // sortOrder 순으로 정렬
   const sortByOrder = (items: MenuItem[]) => {
     items.forEach((item) => {
       if (item.children) {
@@ -73,9 +73,9 @@ export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
       }
     });
     items.sort((a, b) => {
-      const aItem = visibleItems.find((i) => i.path === a.path);
-      const bItem = visibleItems.find((i) => i.path === b.path);
-      return (aItem?.order || 0) - (bItem?.order || 0);
+      const aItem = visibleItems.find((i) => i.menuPath === a.path);
+      const bItem = visibleItems.find((i) => i.menuPath === b.path);
+      return (aItem?.sortOrder || 0) - (bItem?.sortOrder || 0);
     });
   };
 
@@ -85,8 +85,8 @@ export const buildMenuTree = (menuItems: MenuScreenItem[]): MenuItem[] => {
 };
 
 /**
- * depth 0 메뉴만 반환 (헤더용)
+ * depth 1 메뉴만 반환 (최상위 메뉴)
  */
-export const getTopLevelMenus = (menuItems: MenuScreenItem[]): MenuItem[] => {
+export const getTopLevelMenus = (menuItems: MenuItemType[]): MenuItem[] => {
   return buildMenuTree(menuItems);
 };

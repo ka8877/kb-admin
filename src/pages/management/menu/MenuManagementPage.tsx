@@ -36,7 +36,6 @@ const MenuManagementPage: React.FC = () => {
     return menus.map((item, index) => ({
       ...item,
       no: index + 1,
-      id: item.firebaseKey,
     })) as MenuItemDisplay[];
   }, [menus]);
 
@@ -61,13 +60,12 @@ const MenuManagementPage: React.FC = () => {
       try {
         if (isNewMode) {
           await createMenuMutation.mutateAsync({
-            menu_code: menuItem.menu_code,
-            menu_name: menuItem.menu_name,
-            menu_path: menuItem.menu_path || null,
-            parent_menu_code: menuItem.parent_menu_code || null,
-            sort_order: menuItem.sort_order || 1,
-            is_active: menuItem.is_active,
-            created_by: 1,
+            menuCode: menuItem.menuCode,
+            menuName: menuItem.menuName,
+            menuPath: menuItem.menuPath || null,
+            parentMenuCode: menuItem.parentMenuCode || null,
+            sortOrder: menuItem.sortOrder || 1,
+            isVisible: menuItem.isVisible ?? true,
           });
           showAlert({
             title: '완료',
@@ -76,14 +74,13 @@ const MenuManagementPage: React.FC = () => {
           });
         } else {
           await updateMenuMutation.mutateAsync({
-            firebaseKey: String(menuItem.firebaseKey),
-            updates: {
-              menu_code: menuItem.menu_code, // 누락 시 빈 값으로 저장되는 것 방지
-              menu_name: menuItem.menu_name,
-              menu_path: menuItem.menu_path || null,
-              parent_menu_code: menuItem.parent_menu_code || null,
-              sort_order: menuItem.sort_order || 1,
-              is_active: menuItem.is_active,
+            menuId: menuItem.menuId!,
+            data: {
+              menuName: menuItem.menuName,
+              menuPath: menuItem.menuPath || null,
+              parentMenuCode: menuItem.parentMenuCode || null,
+              sortOrder: menuItem.sortOrder || 1,
+              isVisible: menuItem.isVisible ?? true,
             },
           });
           showAlert({
@@ -104,13 +101,13 @@ const MenuManagementPage: React.FC = () => {
         });
       }
     },
-    [isNewMode, createMenuMutation, updateMenuMutation, showAlert],
+    [isNewMode, createMenuMutation, updateMenuMutation, showAlert]
   );
 
   const handleDelete = useCallback(
     async (id: string | number) => {
       try {
-        await deleteMenuMutation.mutateAsync(String(id));
+        await deleteMenuMutation.mutateAsync(Number(id));
         showAlert({
           title: '완료',
           message: MESSAGES.DELETE_SUCCESS,
@@ -127,7 +124,7 @@ const MenuManagementPage: React.FC = () => {
         });
       }
     },
-    [deleteMenuMutation, showAlert],
+    [deleteMenuMutation, showAlert]
   );
 
   return (
@@ -147,7 +144,7 @@ const MenuManagementPage: React.FC = () => {
         <EditableList<MenuItemDisplay>
           rows={allMenus}
           columns={menuColumns}
-          rowIdGetter={(r: MenuItemDisplay) => r.firebaseKey || r.id || ''}
+          rowIdGetter={(r: MenuItemDisplay) => r.menuId || ''}
           defaultPageSize={DEFAULT_PAGE_SIZE}
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           onRowClick={handleRowClick}

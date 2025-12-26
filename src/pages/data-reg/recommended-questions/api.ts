@@ -93,7 +93,7 @@ export interface CodeMapping {
  */
 const transformItem = (
   v: Partial<RecommendedQuestionItem> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number },
+  options: { index: number; fallbackId?: string | number }
 ): RecommendedQuestionItem => {
   const { index, fallbackId } = options;
 
@@ -154,7 +154,7 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
  */
 const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
-  items: RecommendedQuestionItem[],
+  items: RecommendedQuestionItem[]
 ): Promise<void> => {
   // 각 item마다 개별 결재 요청 생성 (1:1 관계)
   for (const item of items) {
@@ -166,7 +166,7 @@ const sendApprovalRequest = async (
       [item], // 단건 배열로 전달
       item[DISPLAY_CTNT] || '추천질문',
       TARGET_TYPE_RECOMMEND,
-      targetId,
+      targetId
     );
   }
 };
@@ -259,7 +259,7 @@ export const transformToApiFormat = (inputData: {
  * 추천질문 목록 조회
  */
 export const fetchRecommendedQuestions = async (
-  params?: FetchListParams,
+  params?: FetchListParams
 ): Promise<{ items: RecommendedQuestionItem[]; meta: ApiMeta | null }> => {
   const { page = 0, size = 20, searchParams = {} } = params || {};
 
@@ -272,7 +272,7 @@ export const fetchRecommendedQuestions = async (
         ...searchParams,
       },
       errorMessage: TOAST_MESSAGES.LOAD_DATA_FAILED,
-    },
+    }
   );
 
   const items =
@@ -290,13 +290,13 @@ export const fetchRecommendedQuestions = async (
  * 추천질문 상세 조회
  */
 export const fetchRecommendedQuestion = async (
-  id: string | number,
+  id: string | number
 ): Promise<RecommendedQuestionItem> => {
   const response = await getApi<Partial<RecommendedQuestionItem> & Record<string, unknown>>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.DETAIL(id),
     {
       errorMessage: TOAST_MESSAGES.LOAD_DETAIL_FAILED,
-    },
+    }
   );
 
   // Firebase 응답 데이터를 RecommendedQuestionItem으로 변환
@@ -307,7 +307,7 @@ export const fetchRecommendedQuestion = async (
  * 승인 요청 정보 조회
  */
 export const fetchApprovalRequest = async (
-  approvalId: string | number,
+  approvalId: string | number
 ): Promise<ApprovalRequestItem> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
   const response = await getApi<Record<string, unknown>>(endpoint, {
@@ -355,7 +355,7 @@ export const fetchApprovalRequest = async (
  * 승인 요청 상세 조회 (결재 요청에 포함된 추천질문 목록)
  */
 export const fetchApprovalDetailQuestions = async (
-  approvalId: string | number,
+  approvalId: string | number
 ): Promise<RecommendedQuestionItem[]> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL_LIST(approvalId);
 
@@ -372,14 +372,14 @@ export const fetchApprovalDetailQuestions = async (
  * 추천질문 생성
  */
 export const createRecommendedQuestion = async (
-  data: Partial<RecommendedQuestionItem>,
+  data: Partial<RecommendedQuestionItem>
 ): Promise<RecommendedQuestionItem> => {
   const response = await postApi<RecommendedQuestionItem>(
     API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE,
     data,
     {
       errorMessage: TOAST_MESSAGES.SAVE_FAILED,
-    },
+    }
   );
 
   return response.data;
@@ -390,7 +390,7 @@ export const createRecommendedQuestion = async (
  * @param items - 생성할 추천질문 아이템 배열
  */
 export const createRecommendedQuestionsBatch = async (
-  items: Partial<RecommendedQuestionItem>[],
+  items: Partial<RecommendedQuestionItem>[]
 ): Promise<void> => {
   if (items.length === 0) {
     return;
@@ -410,7 +410,7 @@ export const createRecommendedQuestionsBatch = async (
 export const updateApprovalRequestStatus = async (
   approvalId: string | number,
   status: string,
-  processDate?: string,
+  processDate?: string
 ): Promise<void> => {
   const endpoint = API_ENDPOINTS.RECOMMENDED_QUESTIONS.APPROVAL_DETAIL(approvalId);
 
@@ -495,7 +495,7 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
   const updates: { [key: string]: Partial<RecommendedQuestionItem> } = {};
   const createPath = API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE.replace(/^\//, '').replace(
     '.json',
-    '',
+    ''
   );
 
   items.forEach((item) => {
@@ -659,7 +659,7 @@ const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promis
  */
 export const updateRecommendedQuestion = async (
   id: string | number,
-  data: Partial<RecommendedQuestionItem>,
+  data: Partial<RecommendedQuestionItem>
 ): Promise<void> => {
   await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.UPDATE(id), data, {
     errorMessage: TOAST_MESSAGES.UPDATE_FAILED,
@@ -682,7 +682,7 @@ export const deleteRecommendedQuestion = async (id: string | number): Promise<vo
  * @param itemIdsToDelete - 삭제할 아이템 ID 배열
  */
 export const deleteRecommendedQuestions = async (
-  itemIdsToDelete: (string | number)[],
+  itemIdsToDelete: (string | number)[]
 ): Promise<void> => {
   if (itemIdsToDelete.length === 0) {
     return;

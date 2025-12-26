@@ -12,12 +12,12 @@ type CommonCodeItem = {
 /**
  * 공통 코드 아이템 목록 조회 API
  */
-const fetchCommonCodeItems = async (): Promise<CommonCodeItem[]> => {
+const fetchCommonCodeItems = async (groupCode: string): Promise<CommonCodeItem[]> => {
   const response = await getApi<CommonCodeItem[] | Record<string, CommonCodeItem>>(
-    API_ENDPOINTS.COMMON_CODE.CODE_ITEMS,
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEMS(groupCode),
     {
       errorMessage: '공통 코드 목록을 불러오지 못했습니다.',
-    },
+    }
   );
 
   if (Array.isArray(response.data)) {
@@ -36,18 +36,18 @@ const fetchCommonCodeItems = async (): Promise<CommonCodeItem[]> => {
  */
 export const useCommonCodeOptions = (
   codeGroupId: string | number,
-  useCodeAsValue: boolean = false,
+  useCodeAsValue: boolean = false
 ) => {
   return useQuery({
     queryKey: ['commonCodeItems', codeGroupId, useCodeAsValue],
-    queryFn: fetchCommonCodeItems,
+    queryFn: () => fetchCommonCodeItems(String(codeGroupId)),
     select: (items: CommonCodeItem[]) => {
       const targetGroupId = String(codeGroupId);
 
       return items
         .filter(
           (item) =>
-            item && String(item.code_group_id) === targetGroupId && Number(item.is_active) === 1,
+            item && String(item.code_group_id) === targetGroupId && Number(item.is_active) === 1
         )
         .map((item) => ({
           label: item.code_name || '',
