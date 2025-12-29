@@ -33,9 +33,14 @@ import { updateToken } from '@/utils/keycloak';
 const getCommonHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = {};
 
+  // Authorization 헤더 추가
   if (keycloak.token) {
-    // TODO 로그인 개발 후 주석 제거
-    //  headers['Authorization'] = `Bearer ${keycloak.token}`;
+    headers['Authorization'] = `Bearer ${keycloak.token}`;
+  }
+
+  // 사용자 ID 헤더 추가 (선택 사항 - 요청자 식별용)
+  if (keycloak.tokenParsed?.sub) {
+    headers['X-KC-USER-ID'] = keycloak.tokenParsed.sub;
   }
 
   return headers;
@@ -260,10 +265,9 @@ export const fetchApi = async <T = unknown>(
     if (rawData && typeof rawData === 'object' && 'success' in rawData) {
       const apiResponse = rawData as ApiResponse;
       if (!apiResponse.success) {
-        throw new ApiError(
-          apiResponse.message || '요청 처리에 실패했습니다.',
-          !!apiResponse.message,
-        );
+        // 서버에서 내려온 message를 우선적으로 사용
+        const errorMsg = apiResponse.message || providedErrorMessage || '요청 처리에 실패했습니다.';
+        throw new ApiError(errorMsg, !!apiResponse.message);
       }
 
       const apiResponseData = rawData as ApiResponse<T>;
@@ -297,6 +301,7 @@ export const fetchApi = async <T = unknown>(
   } catch (error) {
     let message = '';
     if (error instanceof ApiError && error.isServerMessage) {
+      // 서버에서 내려온 메시지를 그대로 사용
       message = error.message;
     } else if (providedErrorMessage) {
       message = providedErrorMessage;
@@ -306,7 +311,7 @@ export const fetchApi = async <T = unknown>(
       message = TOAST_MESSAGES.LOAD_DATA_FAILED;
     }
 
-    // 중복 토스트 방지를 위해 toastId 설정
+    // 에러 메시지를 toast로 표시
     toast.error(message, { toastId: `${endpoint}-${message}-${method}` });
 
     if (error instanceof Error) {

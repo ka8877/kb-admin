@@ -263,7 +263,7 @@ export const createAppSchemesBatch = async (
     return;
   }
 
-  const response = await postApi<BatchResult>(API_ENDPOINTS.APP_SCHEME.CREATE, items, {
+  const response = await postApi<BatchResult>(API_ENDPOINTS.APP_SCHEME.BULK_CREATE, items, {
     errorMessage: TOAST_MESSAGES.SAVE_FAILED,
   });
 

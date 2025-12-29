@@ -11,6 +11,7 @@ import { parseSearchParams } from '@/utils/apiUtils';
 import MediumButton from '@/components/common/button/MediumButton';
 import { LABELS } from '@/constants/label';
 import { exportGridToExcel } from '@/utils/excelUtils';
+import { USER_LOGIN_HISTORY_SEARCH_FIELDS } from '@/constants/options';
 
 const selectFieldsConfig = {
   result: resultOptions,
@@ -56,6 +57,7 @@ const UserLoginPage: React.FC = () => {
         rowIdGetter={LOGIN_HISTORY_ID}
         defaultPageSize={20}
         enableStatePreservation={true}
+        searchFields={USER_LOGIN_HISTORY_SEARCH_FIELDS}
         selectFields={selectFieldsConfig}
         isLoading={isDataLoading}
       />

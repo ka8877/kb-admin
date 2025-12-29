@@ -7,23 +7,25 @@ import TextPopup from '@/components/common/popup/TextPopup';
 import type { UserRoleChangeItem } from './type';
 import { userRoleChangeColumns } from './components/columns/columns';
 import { changeTypeOptions } from './data';
-import { useUserRoleChanges } from './hooks';
+import { useUserRoleChanges, useSearchFields } from './hooks';
 import { useListState } from '@/hooks/useListState';
 import { parseSearchParams } from '@/utils/apiUtils';
 import MediumButton from '@/components/common/button/MediumButton';
 import { LABELS } from '@/constants/label';
 import { exportGridToExcel } from '@/utils/excelUtils';
-import { HISTORY_ID, BEFORE_STATE, AFTER_STATE } from './data';
-
-const selectFieldsConfig = {
-  changeType: changeTypeOptions,
-};
+import { HISTORY_ID, BEFORE_STATE, AFTER_STATE, ROLE_CODE } from './data';
 
 const UserRoleChangePage: React.FC = () => {
   const { listState } = useListState(20);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState('');
   const [popupTitle, setPopupTitle] = useState('');
+
+  const searchFields = useSearchFields();
+
+  const selectFieldsConfig = {
+    changeType: changeTypeOptions,
+  };
 
   const searchParams = useMemo(
     () => parseSearchParams(listState.searchFieldsState),
@@ -69,6 +71,7 @@ const UserRoleChangePage: React.FC = () => {
         rows={rows}
         rowIdGetter={HISTORY_ID}
         enableStatePreservation={true}
+        searchFields={searchFields}
         selectFields={selectFieldsConfig}
         onCellClick={handleCellClick}
         isLoading={isDataLoading}

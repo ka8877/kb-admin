@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
+import { useQueries } from '@tanstack/react-query';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import { SERVICE_CD } from '@/pages/data-reg/recommended-questions/data';
 import { yesNoOptions } from '@/constants/options';
@@ -9,10 +10,10 @@ import { useRecommendedQuestionValidator } from '@/pages/data-reg/recommended-qu
 import {
   useCreateRecommendedQuestionsBatch,
   useExcelSelectFieldsData,
-  useQuestionMappingData,
   useServiceDataConverter,
+  fetchQuestionCategoriesByService,
 } from '@/pages/data-reg/recommended-questions/hooks';
-import { transformToApiFormat, type CodeItem } from '@/pages/data-reg/recommended-questions/api';
+import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
 import { ROUTES } from '@/routes/menu';
 import { excludeFields } from '@/pages/data-reg/recommended-questions/data';
 import { APPROVAL_RETURN_URL } from '@/constants/options';
@@ -29,7 +30,6 @@ import {
   AGE_GRP,
   SHOW_U17,
 } from '@/pages/data-reg/recommended-questions/data';
-import { CODE_GROUP_ID_SERVICE_CD, CODE_GRUOP_ID_SERVICE_NM } from '@/constants/options';
 
 const ApprovalExcelUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -38,8 +38,26 @@ const ApprovalExcelUpload: React.FC = () => {
   const { validateAll } = useRecommendedQuestionValidator();
   const { getServiceData } = useServiceDataConverter();
 
-  // 서비스 코드별 질문 카테고리 옵션 맵 로드 (공통 훅 사용)
-  const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
+  // 서비스 옵션을 메모이제이션
+  const serviceOptions = useMemo(() => selectFieldsData[SERVICE_NM] || [], [selectFieldsData]);
+
+  // 모든 서비스 코드에 대한 질문 카테고리를 useQueries로 동시에 로드
+  const questionCategoryQueries = useQueries({
+    queries: serviceOptions.map((service) => ({
+      queryKey: ['questionCategories', service.value],
+      queryFn: () => fetchQuestionCategoriesByService(service.value),
+      staleTime: 1000 * 60 * 5,
+    })),
+  });
+
+  // 질문 카테고리 캐시 생성
+  const questionCategoriesCache = useMemo(() => {
+    const cache: Record<string, { label: string; value: string }[]> = {};
+    serviceOptions.forEach((service, index) => {
+      cache[service.value] = questionCategoryQueries[index]?.data || [];
+    });
+    return cache;
+  }, [serviceOptions, questionCategoryQueries]);
 
   // 템플릿용 컬럼 (엑셀 파일용 - no 제외, serviceNm을 serviceCd로 교체)
   const templateColumns: GridColDef[] = useMemo(() => {
@@ -150,66 +168,14 @@ const ApprovalExcelUpload: React.FC = () => {
     [selectFieldsData],
   );
 
-  // 서비스 코드에 따른 질문 카테고리 옵션 getter (공통 훅 사용)
-  const getQuestionCategoryOptionsByService = useCallback(
-    (serviceCode: string | undefined) => {
-      if (!serviceCode || !codeItems.length) return [];
-
-      let serviceCodeItem: CodeItem | undefined;
-
-      // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
-      serviceCodeItem = codeItems.find(
-        (item) =>
-          item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
-          (item.code === serviceCode || item.code_name === serviceCode),
-      );
-
-      // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
-      if (!serviceCodeItem) {
-        const serviceNameItem = codeItems.find(
-          (item) =>
-            item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
-            (item.code === serviceCode || item.code_name === serviceCode),
-        );
-
-        if (serviceNameItem) {
-          const serviceMapping = serviceMappings.find(
-            (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
-          );
-          if (serviceMapping) {
-            serviceCodeItem = codeItems.find(
-              (item) => item.firebaseKey === serviceMapping.child_code_item_id,
-            );
-          }
-        }
-      }
-
-      if (!serviceCodeItem) return [];
-
-      // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
-      const relatedQuestionMappings = questionMappings.filter(
-        (m) => m.parent_code_item_id === serviceCodeItem!.firebaseKey,
-      );
-
-      const questionCategoryIds = new Set(relatedQuestionMappings.map((m) => m.child_code_item_id));
-
-      // 4. qst_ctgr 아이템 정보 반환
-      return codeItems
-        .filter((item) => questionCategoryIds.has(item.firebaseKey))
-        .map((item) => ({
-          label: item.code_name,
-          value: item.code_name,
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label));
-    },
-    [codeItems, serviceMappings, questionMappings],
-  );
-
-  // 동적 질문 카테고리 옵션 getter
+  // 동적 질문 카테고리 옵션 getter (캐시된 데이터 사용)
   const dynamicQuestionCategoryOptionsGetter = useCallback(
-    (row: Record<string, unknown>) =>
-      getQuestionCategoryOptionsByService(row[SERVICE_CD] as string),
-    [getQuestionCategoryOptionsByService],
+    (row: Record<string, unknown>) => {
+      const serviceCode = row[SERVICE_CD] as string;
+      if (!serviceCode) return [];
+      return questionCategoriesCache[serviceCode] || [];
+    },
+    [questionCategoriesCache],
   );
 
   // 서비스 코드가 변경되면 질문 카테고리 초기화

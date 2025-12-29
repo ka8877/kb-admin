@@ -6,6 +6,9 @@ import {
   NO,
   LOGIN_HISTORY_ID,
   KC_USER_ID,
+  USERNAME,
+  EMP_NO,
+  EMP_NAME,
   LOGIN_AT,
   LOGOUT_AT,
   LOGIN_IP,
@@ -23,16 +26,18 @@ const transformItem = (
 
   return {
     [NO]: v[NO] ?? index + 1,
-    [LOGIN_HISTORY_ID]:
-      v[LOGIN_HISTORY_ID] ?? (v[LOGIN_HISTORY_ID] as string) ?? String(fallbackId ?? index + 1),
-    [KC_USER_ID]: v[KC_USER_ID] ?? (v[KC_USER_ID] as string) ?? '',
-    [LOGIN_AT]: v[LOGIN_AT] ?? (v[LOGIN_AT] as string) ?? '',
-    [LOGOUT_AT]: v[LOGOUT_AT] ?? (v[LOGOUT_AT] as string) ?? null,
-    [LOGIN_IP]: v[LOGIN_IP] ?? (v[LOGIN_IP] as string) ?? '',
-    [LOGOUT_IP]: v[LOGOUT_IP] ?? (v[LOGOUT_IP] as string) ?? null,
-    [USER_AGENT]: v[USER_AGENT] ?? (v[USER_AGENT] as string) ?? null,
-    [RESULT]: v[RESULT] ?? '',
-    [FAIL_REASON]: v[FAIL_REASON] ?? (v[FAIL_REASON] as string) ?? null,
+    [LOGIN_HISTORY_ID]: Number(v[LOGIN_HISTORY_ID] ?? fallbackId ?? index + 1),
+    [KC_USER_ID]: Number(v[KC_USER_ID] ?? 0),
+    [USERNAME]: (v[USERNAME] as string) ?? '',
+    [EMP_NO]: (v[EMP_NO] as string) ?? '',
+    [EMP_NAME]: (v[EMP_NAME] as string) ?? '',
+    [LOGIN_AT]: (v[LOGIN_AT] as string) ?? '',
+    [LOGOUT_AT]: (v[LOGOUT_AT] as string | null) ?? null,
+    [LOGIN_IP]: (v[LOGIN_IP] as string) ?? '',
+    [LOGOUT_IP]: (v[LOGOUT_IP] as string | null) ?? null,
+    [USER_AGENT]: (v[USER_AGENT] as string | null) ?? null,
+    [RESULT]: (v[RESULT] as string) ?? '',
+    [FAIL_REASON]: (v[FAIL_REASON] as string | null) ?? null,
   };
 };
 

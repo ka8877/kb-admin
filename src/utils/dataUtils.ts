@@ -1,9 +1,32 @@
 import { ROLE_ADMIN, ROLE_NONE, ROLE_CRUD, ROLE_VIEWER } from '@/constants/options';
-import { UserRole } from '@/types/types';
+import { UserRole, CommonCodeItem } from '@/types/types';
 
 /**
  * 데이터 변경사항 체크 유틸리티
  */
+
+/**
+ * 공통코드 배열을 { label, value } 형태의 옵션 배열로 변환
+ * @param codeItems - 공통코드 아이템 배열
+ * @param useCodeNameAsValue - value에 codeName을 사용할지 여부 (기본값: false, code 사용)
+ * @returns { label: codeName, value: code | codeName } 형태의 옵션 배열
+ */
+export const convertCommonCodeToOptions = (
+  codeItems: CommonCodeItem[],
+  useCodeNameAsValue: boolean = false,
+): { label: string; value: string }[] => {
+  if (!Array.isArray(codeItems)) {
+    return [];
+  }
+
+  return codeItems
+    .filter((item) => item.isActive) // 활성화된 항목만 포함
+    .sort((a, b) => a.sortOrder - b.sortOrder) // sortOrder 기준 정렬
+    .map((item) => ({
+      label: item.codeName,
+      value: useCodeNameAsValue ? item.codeName : item.code,
+    }));
+};
 
 /**
  * 시작일과 종료일을 비교하여 유효성을 검사하는 함수

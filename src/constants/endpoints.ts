@@ -7,9 +7,10 @@ export const API_ENDPOINTS = {
     BASE: '/api/v1/recommended-questions',
     DETAIL: (id: string | number) => `/api/v1/recommended-questions/${id}`,
     CREATE: '/api/v1/recommended-questions',
+    BULK_CREATE: '/api/v1/recommended-questions/bulk-create',
     UPDATE: (id: string | number) => `/api/v1/recommended-questions/${id}`,
     DELETE: (id: string | number) => `/api/v1/recommended-questions/${id}/remove`,
-    DELETE_BATCH: '/api/v1/recommended-questions/remove',
+    DELETE_BATCH: '/api/v1/recommended-questions/bulk-remove',
     APPROVAL: '/approval/recommended-questions.json',
     APPROVAL_LIST: '/api/v1/recommended-questions/approval-queue',
     APPROVAL_DETAIL: (id: string | number) => `/approval/recommended-questions/${id}.json`,
@@ -23,9 +24,10 @@ export const API_ENDPOINTS = {
     LIST: '/data-reg/app-scheme.json',
     DETAIL: (id: string | number) => `/api/v1/app-schemes/${id}`,
     CREATE: '/api/v1/app-schemes',
+    BULK_CREATE: '/api/v1/app-schemes/bulk-create',
     UPDATE: (id: string | number) => `/api/v1/app-schemes/${id}`,
     DELETE: (id: string | number) => `/api/v1/app-schemes/${id}/remove`,
-    DELETE_BATCH: '/api/v1/app-schemes/remove',
+    DELETE_BATCH: '/api/v1/app-schemes/bulk-remove',
     APPROVAL_LIST: '/api/v1/app-schemes/approval-queue',
     APPROVAL_DETAIL: (id: string | number) => `/approval/app-scheme/${id}.json`,
     APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
@@ -34,14 +36,16 @@ export const API_ENDPOINTS = {
   // 공통코드 관련 (cm_code_group, cm_code_item, cm_code_mapping)
   COMMON_CODE: {
     BASE: '/management/common-code',
+    // 질문 카테고리 조회 (서비스 코드별) - 새로운 API
+    QUESTION_CATEGORIES: '/api/v1/common-codes/mappings/qst-categories',
     // 코드그룹 (cm_code_group)
     CODE_GROUPS: '/management/common-code/code-groups.json',
     CODE_GROUP_DETAIL: (id: number) => `/management/common-code/code-groups/${id}.json`,
     CODE_GROUP_CREATE: '/management/common-code/code-groups.json',
     CODE_GROUP_UPDATE: (id: number | string) => `/management/common-code/code-groups/${id}.json`,
     CODE_GROUP_DELETE: (id: number | string) => `/management/common-code/code-groups/${id}.json`,
-    // 코드아이템 (cm_code_item)
-    CODE_ITEMS: '/management/common-code/code-items.json',
+    // 코드아이템 (cm_code_item) - 새로운 API
+    CODE_ITEMS: (groupCode: string | number) => `/api/v1/common-codes/groups/${groupCode}/items`,
     CODE_ITEM_DETAIL: (id: number | string) => `/management/common-code/code-items/${id}.json`,
     CODE_ITEM_CREATE: '/management/common-code/code-items.json',
     CODE_ITEM_UPDATE: (id: number | string) => `/management/common-code/code-items/${id}.json`,
@@ -56,13 +60,18 @@ export const API_ENDPOINTS = {
   // 사용자 역할 변경 이력
   USER_ROLE_CHANGE: {
     BASE: '/history/user-role-change',
-    LIST: '/api/v1/user-role-change-history',
+    LIST: '/api/v1/histories/user-role-changes',
+  },
+
+  // 권한(Role)
+  ROLES: {
+    LIST: '/api/v1/roles',
   },
 
   // 로그인 이력
   USER_LOGIN: {
     BASE: '/history/login',
-    LIST: '/api/v1/login-history',
+    LIST: '/api/v1/histories/logins',
   },
 
   // 데이터 변경 이력

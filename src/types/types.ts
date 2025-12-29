@@ -70,6 +70,17 @@ export type SearchFieldOption = {
   value: string | number;
 };
 
+/**
+ * 공통코드 아이템 타입
+ */
+export type CommonCodeItem = {
+  codeItemId: number;
+  code: string;
+  codeName: string;
+  sortOrder: number;
+  isActive: boolean;
+};
+
 export type ValidationResult = {
   isValid: boolean;
   message?: string;

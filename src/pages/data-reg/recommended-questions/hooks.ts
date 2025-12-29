@@ -36,12 +36,10 @@ import {
   updateRecommendedQuestion,
   deleteRecommendedQuestion,
   deleteRecommendedQuestions,
-  type CodeItem,
 } from '@/pages/data-reg/recommended-questions/api';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
 import { useCommonCodeOptions } from '@/hooks';
 import {
-  CODE_GROUP_ID_SERVICE_CD,
   CODE_GRUOP_ID_SERVICE_NM,
   CODE_GROUP_ID_AGE,
   yesNoOptions,
@@ -49,6 +47,10 @@ import {
   CODE_GROUP_ID_QST_CTGR,
   statusOptions,
 } from '@/constants/options';
+import { getApi } from '@/utils/apiUtils';
+import { API_ENDPOINTS } from '@/constants/endpoints';
+import { CommonCodeItem } from '@/types/types';
+import { convertCommonCodeToOptions } from '@/utils/dataUtils';
 
 /**
  * 질문 카테고리 그룹 옵션을 로드하는 공통 훅
@@ -320,62 +322,44 @@ export const useQuestionMappingData = () => {
 };
 
 /**
+ * 서비스 코드별 질문 카테고리 조회 (공통 함수)
+ * 훅과 validation 등에서 모두 사용 가능
+ */
+export const fetchQuestionCategoriesByService = async (
+  serviceCode: string,
+): Promise<{ label: string; value: string }[]> => {
+  try {
+    if (!serviceCode) return [];
+
+    const response = await getApi<CommonCodeItem[]>(API_ENDPOINTS.COMMON_CODE.QUESTION_CATEGORIES, {
+      params: { serviceCd: serviceCode },
+    });
+
+    if (Array.isArray(response.data)) {
+      return convertCommonCodeToOptions(response.data);
+    }
+    return [];
+  } catch (error) {
+    console.error('질문 카테고리 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
  * 서비스명에 따라 동적으로 질문 카테고리 목록을 반환하는 훅
- * (DB 매핑 구조 기반: service_nm -> service_cd -> qst_ctgr)
+ * (API 호출 방식: service_nm -> service_cd -> qst_ctgr)
  */
 export const useQuestionCategoriesByService = (serviceInput: string | undefined) => {
-  const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
+  console.log('🔍 serviceInput:', serviceInput);
 
-  return useMemo(() => {
-    if (!serviceInput || !codeItems.length) return [];
+  const { data: questionCategories = [] } = useQuery({
+    queryKey: ['questionCategories', serviceInput],
+    queryFn: () => fetchQuestionCategoriesByService(serviceInput || ''),
+    enabled: !!serviceInput,
+    staleTime: 1000 * 60 * 5, // 5분간 캐시
+  });
 
-    let serviceCodeItem: CodeItem | undefined;
-
-    // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
-    serviceCodeItem = codeItems.find(
-      (item) =>
-        item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
-        (item.code === serviceInput || item.code_name === serviceInput),
-    );
-
-    // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
-    if (!serviceCodeItem) {
-      const serviceNameItem = codeItems.find(
-        (item) =>
-          item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
-          (item.code === serviceInput || item.code_name === serviceInput),
-      );
-
-      if (serviceNameItem) {
-        const serviceMapping = serviceMappings.find(
-          (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
-        );
-        if (serviceMapping) {
-          serviceCodeItem = codeItems.find(
-            (item) => item.firebaseKey === serviceMapping.child_code_item_id,
-          );
-        }
-      }
-    }
-
-    if (!serviceCodeItem) return [];
-
-    // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
-    const relatedQuestionMappings = questionMappings.filter(
-      (m) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
-    );
-
-    const questionCategoryIds = new Set(relatedQuestionMappings.map((m) => m.child_code_item_id));
-
-    // 4. qst_ctgr 아이템 정보 반환
-    return codeItems
-      .filter((item) => questionCategoryIds.has(item.firebaseKey))
-      .map((item) => ({
-        label: item.code_name,
-        value: item.code_name,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [serviceInput, codeItems, serviceMappings, questionMappings]);
+  return questionCategories;
 };
 
 /**
@@ -383,7 +367,7 @@ export const useQuestionCategoriesByService = (serviceInput: string | undefined)
  * 서비스 코드와 연령대 옵션을 동적으로 로드하여 반환
  */
 export const useExcelReferenceData = () => {
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM, true);
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
   const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
 
@@ -410,7 +394,7 @@ export const useSelectFieldsData = () => {
 };
 
 export const useExcelSelectFieldsData = () => {
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM, true);
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
   const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
 
@@ -428,10 +412,10 @@ export const useExcelSelectFieldsData = () => {
  * 입력값(코드 또는 명)에 따라 매칭되는 서비스 코드와 서비스명을 반환
  */
 export const useServiceDataConverter = () => {
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM, true);
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
 
   const getServiceData = useCallback(
-    (input: string) => {
+    (input: string): { serviceCd: string; serviceNm: string } => {
       if (!input) return { serviceCd: '', serviceNm: '' };
 
       // 1. 코드로 찾기 (value가 input과 일치)

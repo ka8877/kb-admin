@@ -6,19 +6,19 @@
  */
 
 import { useCommonCodeOptions } from '@/hooks';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { fetchQuestionCategoriesByService } from '@/pages/data-reg/recommended-questions/hooks';
 import {
   CODE_GROUP_ID_QST_CTGR,
   CODE_GRUOP_ID_SERVICE_NM,
   CODE_GROUP_ID_AGE,
-  CODE_GROUP_ID_SERVICE_CD,
   IN_SERVICE,
   OUT_OF_SERVICE,
 } from '@/constants/options';
 import { isValidDate, toISOString } from '@/utils/dateUtils';
 import type { ValidationResult } from '@/types/types';
 import { COMMON_CODE } from '@/constants/commonCode';
-import { useQuestionMappingData } from '@/pages/data-reg/recommended-questions/hooks';
 // 공통 validation 규칙 인터페이스
 export interface RecommendedQuestionData {
   serviceNm?: string | null;
@@ -229,10 +229,27 @@ export const validateStatus = (value: string | null | undefined): ValidationResu
  * 추천질문 Validation Hook
  */
 export const useRecommendedQuestionValidator = () => {
-  const { data: _serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
   const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
-  const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
+
+  // 모든 서비스 코드에 대한 질문 카테고리를 useQueries로 동시에 로드
+  const questionCategoryQueries = useQueries({
+    queries: serviceOptions.map((service) => ({
+      queryKey: ['questionCategories', service.value],
+      queryFn: () => fetchQuestionCategoriesByService(service.value),
+      staleTime: 1000 * 60 * 5,
+    })),
+  });
+
+  // 질문 카테고리 캐시 생성 (서비스별 카테고리 매핑)
+  const questionCategoriesCache = useMemo(() => {
+    const cache: Record<string, { label: string; value: string }[]> = {};
+    serviceOptions.forEach((service, index) => {
+      cache[service.value] = questionCategoryQueries[index]?.data || [];
+    });
+    return cache;
+  }, [serviceOptions, questionCategoryQueries]);
 
   const validateServiceName = useCallback((value: string | null | undefined): ValidationResult => {
     if (!value || value.trim() === '') {
@@ -259,63 +276,22 @@ export const useRecommendedQuestionValidator = () => {
         return { isValid: false, message: '질문 카테고리는 필수입니다' };
       }
 
-      // 서비스명이 있는 경우 동적으로 카테고리 검증
-      if (data?.serviceNm && codeItems.length > 0) {
-        const serviceInput = data.serviceNm;
-        let serviceCodeItem: (typeof codeItems)[0] | undefined;
+      // 서비스명이 있는 경우 해당 서비스의 카테고리만 검증 (캐시 사용)
+      if (data?.serviceNm) {
+        const validCategories = questionCategoriesCache[data.serviceNm] || [];
+        const validCategoryValues = validCategories.map((c) => c.value);
 
-        // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
-        serviceCodeItem = codeItems.find(
-          (item) =>
-            item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
-            (item.code === serviceInput || item.code_name === serviceInput),
-        );
-
-        // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
-        if (!serviceCodeItem) {
-          const serviceNameItem = codeItems.find(
-            (item) =>
-              item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
-              (item.code === serviceInput || item.code_name === serviceInput),
-          );
-
-          if (serviceNameItem) {
-            const serviceMapping = serviceMappings.find(
-              (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
-            );
-            if (serviceMapping) {
-              serviceCodeItem = codeItems.find(
-                (item) => item.firebaseKey === serviceMapping.child_code_item_id,
-              );
-            }
-          }
+        if (validCategories.length > 0 && !validCategoryValues.includes(value)) {
+          return {
+            isValid: false,
+            message: '해당 서비스에 존재하지 않는 질문 카테고리입니다',
+          };
         }
 
-        if (serviceCodeItem) {
-          // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
-          const relatedQuestionMappings = questionMappings.filter(
-            (m) => m.parent_code_item_id === serviceCodeItem.firebaseKey,
-          );
-
-          const questionCategoryIds = new Set(
-            relatedQuestionMappings.map((m) => m.child_code_item_id),
-          );
-
-          // 4. 유효한 카테고리 목록 추출
-          const validCategories = codeItems
-            .filter((item) => questionCategoryIds.has(item.firebaseKey))
-            .map((item) => item.code_name); // value는 code_name을 사용한다고 가정 (hooks.ts 참고)
-
-          if (!validCategories.includes(value)) {
-            return { isValid: false, message: '해당 서비스에 존재하지 않는 질문 카테고리입니다' };
-          }
-
-          return { isValid: true };
-        }
+        return { isValid: true };
       }
 
-      // 서비스명이 없거나 매핑 데이터가 아직 로드되지 않은 경우 기존 방식대로 전체 목록에서 검증
-      // 또는 서비스명이 없으면 검증을 스킵할 수도 있지만, 여기서는 전체 목록 체크 유지
+      // 서비스명이 없는 경우 전체 목록에서 검증
       const validCategories = questionCategoryOptions.map((option) => option.value);
 
       if (!validCategories.includes(value)) {
@@ -328,7 +304,7 @@ export const useRecommendedQuestionValidator = () => {
 
       return { isValid: true };
     },
-    [questionCategoryOptions, codeItems, serviceMappings, questionMappings],
+    [questionCategoryOptions, questionCategoriesCache],
   );
 
   const validateAgeGroup = useCallback(

@@ -3,6 +3,9 @@ import {
   NO,
   LOGIN_HISTORY_ID,
   KC_USER_ID,
+  USERNAME,
+  EMP_NO,
+  EMP_NAME,
   LOGIN_AT,
   LOGOUT_AT,
   LOGIN_IP,
@@ -14,8 +17,11 @@ import {
 
 export type UserLoginItem = {
   [NO]: number;
-  [LOGIN_HISTORY_ID]: string; // 로그인이력 PK
-  [KC_USER_ID]: string; // 사용자 FK IX(복합)
+  [LOGIN_HISTORY_ID]: number; // 로그인이력 PK
+  [KC_USER_ID]: number; // 사용자 FK IX(복합)
+  [USERNAME]: string; // 사용자명
+  [EMP_NO]: string; // 사번
+  [EMP_NAME]: string; // 직원명
   [LOGIN_AT]: string; // 로그인 시각 IX(복합)
   [LOGOUT_AT]: string | null; // 로그아웃 시각
   [LOGIN_IP]: string; // 로그인 IP

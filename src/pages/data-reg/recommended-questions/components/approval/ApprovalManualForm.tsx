@@ -47,7 +47,7 @@ type FormData = {
   [PARENT_ID]?: string;
   [PARENT_NM]?: string;
   [AGE_GRP]?: string;
-  [SHOW_U17]: string;
+  [SHOW_U17]: boolean;
   [IMP_START_DATE]: Dayjs | null;
   [IMP_END_DATE]: Dayjs | null;
 };
@@ -56,7 +56,7 @@ const ApprovalManualForm: React.FC = () => {
   const navigate = useNavigate();
   const { showConfirm } = useConfirmDialog();
   const createMutation = useCreateRecommendedQuestion();
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM, true);
+  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
 
   const { getServiceData } = useServiceDataConverter();
@@ -85,7 +85,7 @@ const ApprovalManualForm: React.FC = () => {
       [PARENT_ID]: '',
       [PARENT_NM]: '',
       [AGE_GRP]: '',
-      [SHOW_U17]: '',
+      [SHOW_U17]: false,
       [IMP_START_DATE]: dayjs().add(30, 'minute'), // 현재 일시 + 30분
       [IMP_END_DATE]: dayjs('9999-12-31 00:00'), // 9999-12-31 0시로 초기화
     },
@@ -387,9 +387,9 @@ const ApprovalManualForm: React.FC = () => {
               render={({ field }) => (
                 <RadioInput
                   label="17세 미만 노출 여부"
-                  value={field.value || ''}
+                  value={field.value ? 'Y' : 'N'}
                   options={yesNoOptions}
-                  onChange={field.onChange}
+                  onChange={(value) => field.onChange(value === 'Y')}
                   required
                   row
                   error={hasTriedSubmit && !!errors[SHOW_U17]}

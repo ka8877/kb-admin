@@ -95,7 +95,7 @@ export const useRecommendedQuestionYupSchema = () => {
           }),
 
         showU17: yup
-          .string()
+          .boolean()
           .nullable()
           .test('showU17', function (value) {
             const result = validateShowU17(value);

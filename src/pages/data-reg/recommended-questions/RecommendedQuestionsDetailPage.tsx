@@ -3,7 +3,6 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RecommendedQuestionItem } from '@/pages/data-reg/recommended-questions/types';
-import type { CodeItem } from '@/pages/data-reg/recommended-questions/api';
 import DataDetail from '@/components/common/detail/DataDetail';
 import PageHeader from '@/components/common/PageHeader';
 import { toast } from 'react-toastify';
@@ -31,9 +30,9 @@ import {
   useRecommendedQuestion,
   useUpdateRecommendedQuestion,
   useDeleteRecommendedQuestion,
-  useQuestionMappingData,
   useSelectFieldsData,
   useServiceDataConverter,
+  useQuestionCategoriesByService,
 } from '@/pages/data-reg/recommended-questions/hooks';
 import { recommendedQuestionColumns } from '@/pages/data-reg/recommended-questions/components/columns/columns';
 import { useRecommendedQuestionValidator } from '@/pages/data-reg/recommended-questions/validation/recommendedQuestionValidation';
@@ -41,7 +40,6 @@ import { TOAST_MESSAGES } from '@/constants/message';
 import { ROUTES } from '@/routes/menu';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 import { QST_ID, SERVICE_NM } from '@/pages/data-reg/recommended-questions/data';
-import { CODE_GRUOP_ID_SERVICE_NM, CODE_GROUP_ID_SERVICE_CD } from '@/constants/options';
 
 const RecommendedQuestionDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,6 +51,9 @@ const RecommendedQuestionDetailPage: React.FC = () => {
   const { getServiceData } = useServiceDataConverter();
 
   const { data, isLoading, refetch } = useRecommendedQuestion(id);
+
+  // 현재 데이터의 서비스명에 따라 질문 카테고리 옵션 로드
+  const questionCategoryOptions = useQuestionCategoriesByService(data?.[SERVICE_NM]);
 
   const handleBack = React.useCallback(() => {
     navigate(ROUTES.RECOMMENDED_QUESTIONS);
@@ -95,67 +96,12 @@ const RecommendedQuestionDetailPage: React.FC = () => {
     [id, updateMutation, refetch, getServiceData],
   );
 
-  // 서비스 코드별 질문 카테고리 옵션 맵 로드
-  const { codeItems, serviceMappings, questionMappings } = useQuestionMappingData();
-
   // editedData의 serviceNm에 따라 동적으로 카테고리 옵션 반환
   const dynamicSelectFieldsConfig = React.useMemo(
     () => ({
-      qstCtgr: (editedData?: RecommendedQuestionItem) => {
-        const serviceInput = editedData?.[SERVICE_NM];
-        if (!serviceInput || !codeItems.length) return [];
-
-        let serviceCodeItem: CodeItem | undefined;
-
-        // 1. 입력값이 service_cd 그룹의 코드나 이름과 일치하는지 확인 (직접 매핑)
-        serviceCodeItem = codeItems.find(
-          (item) =>
-            item.code_group_id === CODE_GROUP_ID_SERVICE_CD &&
-            (item.code === serviceInput || item.code_name === serviceInput),
-        );
-
-        // 2. 일치하는 service_cd가 없다면, service_nm 그룹에서 찾아서 매핑 확인 (간접 매핑)
-        if (!serviceCodeItem) {
-          const serviceNameItem = codeItems.find(
-            (item) =>
-              item.code_group_id === CODE_GRUOP_ID_SERVICE_NM &&
-              (item.code === serviceInput || item.code_name === serviceInput),
-          );
-
-          if (serviceNameItem) {
-            const serviceMapping = serviceMappings.find(
-              (m) => m.parent_code_item_id === serviceNameItem.firebaseKey,
-            );
-            if (serviceMapping) {
-              serviceCodeItem = codeItems.find(
-                (item) => item.firebaseKey === serviceMapping.child_code_item_id,
-              );
-            }
-          }
-        }
-
-        if (!serviceCodeItem) return [];
-
-        // 3. service_cd 아이템과 매핑된 qst_ctgr 아이템들 찾기
-        const relatedQuestionMappings = questionMappings.filter(
-          (m) => m.parent_code_item_id === serviceCodeItem!.firebaseKey,
-        );
-
-        const questionCategoryIds = new Set(
-          relatedQuestionMappings.map((m) => m.child_code_item_id),
-        );
-
-        // 4. qst_ctgr 아이템 정보 반환
-        return codeItems
-          .filter((item) => questionCategoryIds.has(item.firebaseKey))
-          .map((item) => ({
-            label: item.code_name,
-            value: item.code_name,
-          }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      },
+      qstCtgr: () => questionCategoryOptions,
     }),
-    [codeItems, serviceMappings, questionMappings],
+    [questionCategoryOptions],
   );
 
   // 동적 셀렉트 필드의 의존성 설정: qstCtgr는 serviceNm에 의존

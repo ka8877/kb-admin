@@ -87,6 +87,40 @@ export const APPROVAL_SEARCH_FIELDS: SearchField[] = [
   },
 ];
 
+// **************로그인 이력 검색 페이지**************
+export const USER_LOGIN_HISTORY_SEARCH_FIELDS: SearchField[] = [
+  {
+    type: 'textGroup',
+    fields: [
+      { field: 'username', label: '사용자명' },
+      { field: 'empNo', label: '사번' },
+    ],
+  },
+  {
+    field: 'result',
+    label: '로그인 결과',
+    type: 'select',
+    options: [
+      { label: '성공', value: 'SUCCESS' },
+      { label: '실패', value: 'FAIL' },
+    ],
+  },
+  {
+    field: 'fromAt',
+    dataField: 'fromAt',
+    label: '조회 시작일시',
+    type: 'dateRange',
+    position: 'start',
+  },
+  {
+    field: 'toAt',
+    dataField: 'toAt',
+    label: '조회 종료일시',
+    type: 'dateRange',
+    position: 'end',
+  },
+];
+
 /**
  * SessionStorage key for preserving approval page navigation state
  */
@@ -95,11 +129,13 @@ export const APPROVAL_RETURN_URL = 'approval_return_url' as const;
 
 export const IN_SERVICE = 'in_service' as const;
 export const OUT_OF_SERVICE = 'out_of_service' as const;
+export const REMOVED = 'removed' as const;
 
 // 데이터 등록 반영 상태 옵션 데이터
 export const statusOptions = [
   { label: '서비스 중', value: IN_SERVICE },
   { label: '서비스 종료', value: OUT_OF_SERVICE },
+  { label: '삭제됨', value: REMOVED },
 ];
 
 // 예 아니오 옵션 데이터
