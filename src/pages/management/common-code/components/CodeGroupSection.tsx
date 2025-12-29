@@ -38,7 +38,7 @@ const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, sele
   const deleteItemsMutation = useDeleteCodeItems();
 
   const { data: codeItems = [] } = useCodeItems(
-    selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined
+    selectedGroup ? { groupCode: selectedGroup.groupCode } : undefined
   );
 
   const [isGroupFormOpen, setIsGroupFormOpen] = useState(false);
@@ -62,21 +62,16 @@ const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, sele
 
   const checkGroupCodeDuplicate = useCallback(
     (groupCode: string) => {
-      return codeGroups.some((item) => item.group_code === groupCode);
+      return codeGroups.some((item) => item.groupCode === groupCode);
     },
     [codeGroups]
   );
 
   const handleSaveGroup = useCallback(
-    async (
-      data: Omit<
-        CodeGroup,
-        'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-      >
-    ) => {
+    async (data: Omit<CodeGroup, 'codeGroupId'>) => {
       try {
         if (isNewGroup) {
-          if (checkGroupCodeDuplicate(data.group_code)) {
+          if (checkGroupCodeDuplicate(data.groupCode)) {
             showAlert({
               title: ALERT_TITLES.NOTIFICATION,
               message: ALERT_MESSAGES.GROUP_CODE_ALREADY_EXISTS,
@@ -92,9 +87,8 @@ const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, sele
           });
         } else if (selectedGroup) {
           await updateGroupMutation.mutateAsync({
-            codeGroupId: selectedGroup.code_group_id,
-            data,
-            firebaseKey: selectedGroup.firebaseKey,
+            groupCode: selectedGroup.groupCode,
+            data: { groupName: data.groupName },
           });
           showAlert({
             title: ALERT_TITLES.SUCCESS,
@@ -123,46 +117,40 @@ const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, sele
     ]
   );
 
-  const handleDeleteGroup = useCallback(
-    async (codeGroupId: number) => {
-      if (!selectedGroup) return;
+  const handleDeleteGroup = useCallback(async () => {
+    if (!selectedGroup) return;
 
-      try {
-        const relatedItems = codeItems.filter(
-          (item) => item.code_group_id === selectedGroup.code_group_id
-        );
-
-        if (relatedItems.length > 0) {
-          const itemsToDelete = relatedItems.map((item) => ({
-            codeItemId: item.code_item_id,
-            firebaseKey: item.firebaseKey,
-          }));
-          await deleteItemsMutation.mutateAsync(itemsToDelete);
-        }
-
-        await deleteGroupMutation.mutateAsync({
-          codeGroupId,
-          firebaseKey: selectedGroup.firebaseKey,
-        });
-
-        onGroupSelect(null);
-        setIsGroupFormOpen(false);
-        showAlert({
-          title: ALERT_TITLES.SUCCESS,
-          message: getCodeGroupDeleteSuccessMessage(relatedItems.length),
-          severity: 'success',
-        });
-      } catch (error) {
-        console.error('Failed to delete code group:', error);
-        showAlert({
-          title: ALERT_TITLES.ERROR,
-          message: TOAST_MESSAGES.CODE_GROUP_DELETE_FAILED,
-          severity: 'error',
-        });
+    try {
+      if (codeItems.length > 0) {
+        const codeItemIds = codeItems.map((item) => item.codeItemId);
+        await deleteItemsMutation.mutateAsync(codeItemIds);
       }
-    },
-    [selectedGroup, codeItems, deleteItemsMutation, deleteGroupMutation, showAlert, onGroupSelect]
-  );
+
+      await deleteGroupMutation.mutateAsync(selectedGroup.groupCode);
+
+      onGroupSelect(null);
+      setIsGroupFormOpen(false);
+      showAlert({
+        title: ALERT_TITLES.SUCCESS,
+        message: getCodeGroupDeleteSuccessMessage(codeItems.length),
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to delete code group:', error);
+      showAlert({
+        title: ALERT_TITLES.ERROR,
+        message: TOAST_MESSAGES.CODE_GROUP_DELETE_FAILED,
+        severity: 'error',
+      });
+    }
+  }, [
+    selectedGroup,
+    codeItems,
+    deleteItemsMutation,
+    deleteGroupMutation,
+    showAlert,
+    onGroupSelect,
+  ]);
 
   const handleCancelForm = useCallback(() => {
     setIsGroupFormOpen(false);
@@ -185,7 +173,7 @@ const CodeGroupSection: React.FC<CodeGroupSectionProps> = ({ onGroupSelect, sele
             rows={codeGroups}
             isLoading={isGroupLoading}
             onRowClick={handleGroupRowClick}
-            rowIdGetter={(row) => row.code_group_id || 0}
+            rowIdGetter={(row) => row.codeGroupId || 0}
             autoHeight={false}
           />
         </Box>

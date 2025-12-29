@@ -152,7 +152,7 @@ const transformRecommendedQuestions = (raw: unknown): RecommendedQuestionItem[] 
 /**
  * 승인 요청 API 호출 (1:1 관계로 각 item마다 개별 결재 요청 생성)
  */
-const _sendApprovalRequest = async (
+const sendApprovalRequest = async (
   approvalForm: ApprovalFormType,
   items: RecommendedQuestionItem[],
 ): Promise<void> => {
@@ -396,7 +396,7 @@ export const createRecommendedQuestionsBatch = async (
     return;
   }
 
-  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.BULK_CREATE, items, {
+  await postApi(API_ENDPOINTS.RECOMMENDED_QUESTIONS.CREATE, items, {
     errorMessage: TOAST_MESSAGES.SAVE_FAILED,
   });
 };
@@ -485,7 +485,7 @@ export const lockRecommendedQuestions = async (ids: (string | number)[]): Promis
  * 승인된 항목들을 실제 데이터로 등록 (data_registration인 경우)
  * @param items - 등록할 추천질문 아이템 배열 (qst_id 포함)
  */
-const _createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
+const createApprovedQuestions = async (items: RecommendedQuestionItem[]): Promise<void> => {
   if (items.length === 0) {
     console.log('🔍 createApprovedQuestions: items가 비어있음');
     return;
@@ -696,12 +696,23 @@ export const deleteRecommendedQuestions = async (
 
 /**
  * 모든 코드 아이템 조회
- * @deprecated 새로운 API는 groupCode를 필요로 합니다. 대신 fetchCommonCodeItems를 사용하세요.
  */
 export const fetchCodeItems = async (): Promise<CodeItem[]> => {
-  // Deprecated: 임시로 빈 배열 반환
-  console.warn('fetchCodeItems is deprecated. Use fetchCommonCodeItems instead.');
-  return [];
+  const response = await getApi<unknown>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS, {
+    errorMessage: '코드 아이템 목록을 불러오는데 실패했습니다.',
+  });
+
+  let items: CodeItem[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data as CodeItem[];
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    // Firebase 객체 형태를 배열로 변환하면서 key를 firebaseKey로 주입
+    items = Object.entries(response.data as Record<string, CodeItem>).map(([key, value]) => ({
+      ...value,
+      firebaseKey: key,
+    }));
+  }
+  return items;
 };
 
 /**

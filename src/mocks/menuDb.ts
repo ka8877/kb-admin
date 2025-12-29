@@ -1,211 +1,112 @@
 // 메뉴 관리 Mock Database
-import type { MenuScreenItem } from '@/pages/management/menu/types';
+import type { MenuItem } from '@/pages/management/menu/types';
 
 class MenuMockDb {
-  private data: MenuScreenItem[] = [
-    // === 기본 페이지 ===
+  private data: MenuItem[] = [
     {
-      id: 1,
-      screen_id: 'HOME',
-      screen_name: '홈',
-      path: '/',
-      depth: 0,
-      order: 1,
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-
-    // === 데이터 등록/노출 ===
-    {
-      id: 2,
-      screen_id: 'DATA_REG',
-      screen_name: '데이터 등록/노출',
-      path: '/data-reg',
-      depth: 0,
-      order: 2,
-      screen_type: '메뉴',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 3,
-      screen_id: 'RECOMMENDED_QUESTIONS',
-      screen_name: '추천 질문',
-      path: '/data-reg/recommended-questions',
+      menuId: 1,
+      menuCode: 'HOME',
+      menuName: '홈',
+      menuPath: '/',
+      parentMenuCode: null,
       depth: 1,
-      order: 1,
-      parent_screen_id: 'DATA_REG',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      sortOrder: 1,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 4,
-      screen_id: 'APP_SCHEME',
-      screen_name: '앱스킴',
-      path: '/data-reg/app-scheme',
+      menuId: 2,
+      menuCode: 'DATA_REG',
+      menuName: '데이터 등록/노출',
+      menuPath: '/data-reg',
+      parentMenuCode: null,
       depth: 1,
-      order: 2,
-      parent_screen_id: 'DATA_REG',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-
-    // === 관리 ===
-    {
-      id: 5,
-      screen_id: 'MANAGEMENT',
-      screen_name: '관리',
-      path: '/management',
-      depth: 0,
-      order: 3,
-      screen_type: '메뉴',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      sortOrder: 2,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 6,
-      screen_id: 'COMMON_CODE',
-      screen_name: '공통 코드 관리',
-      path: '/management/common-code',
+      menuId: 3,
+      menuCode: 'RECOMMENDED_QUESTIONS',
+      menuName: '추천 질문',
+      menuPath: '/data-reg/recommended-questions',
+      parentMenuCode: 'DATA_REG',
+      depth: 2,
+      sortOrder: 1,
+      isVisible: true,
+      isActive: true,
+    },
+    {
+      menuId: 4,
+      menuCode: 'APP_SCHEME',
+      menuName: '앱스킴',
+      menuPath: '/data-reg/app-scheme',
+      parentMenuCode: 'DATA_REG',
+      depth: 2,
+      sortOrder: 2,
+      isVisible: true,
+      isActive: true,
+    },
+    {
+      menuId: 5,
+      menuCode: 'MANAGEMENT',
+      menuName: '관리',
+      menuPath: '/management',
+      parentMenuCode: null,
       depth: 1,
-      order: 1,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      sortOrder: 3,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 7,
-      screen_id: 'CODE_HIERARCHY',
-      screen_name: '코드 계층 관리',
-      path: '/management/code-hierarchy',
-      depth: 1,
-      order: 2,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'N',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      menuId: 6,
+      menuCode: 'COMMON_CODE',
+      menuName: '공통 코드 관리',
+      menuPath: '/management/common-code',
+      parentMenuCode: 'MANAGEMENT',
+      depth: 2,
+      sortOrder: 1,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 8,
-      screen_id: 'ADMIN_AUTH',
-      screen_name: '사용자 관리',
-      path: '/management/admin-auth',
-      depth: 1,
-      order: 3,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      menuId: 7,
+      menuCode: 'ADMIN_AUTH',
+      menuName: '사용자 관리',
+      menuPath: '/management/admin-auth',
+      parentMenuCode: 'MANAGEMENT',
+      depth: 2,
+      sortOrder: 2,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 9,
-      screen_id: 'MENU_MANAGEMENT',
-      screen_name: '메뉴 관리',
-      path: '/management/menu',
-      depth: 1,
-      order: 4,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      menuId: 8,
+      menuCode: 'MENU_MANAGEMENT',
+      menuName: '메뉴 관리',
+      menuPath: '/management/menu',
+      parentMenuCode: 'MANAGEMENT',
+      depth: 2,
+      sortOrder: 3,
+      isVisible: true,
+      isActive: true,
     },
     {
-      id: 10,
-      screen_id: 'PERMISSION_MANAGEMENT',
-      screen_name: '권한 관리',
-      path: '/management/permission',
-      depth: 1,
-      order: 6,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 14,
-      screen_id: 'SCREEN_PERMISSION',
-      screen_name: '화면 권한 관리',
-      path: '/management/screen-permission',
-      depth: 1,
-      order: 5,
-      parent_screen_id: 'MANAGEMENT',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-
-    // === 이력 ===
-    {
-      id: 11,
-      screen_id: 'HISTORY',
-      screen_name: '이력',
-      path: '/history',
-      depth: 0,
-      order: 4,
-      screen_type: '메뉴',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 12,
-      screen_id: 'USER_LOGIN',
-      screen_name: '로그인 이력',
-      path: '/history/login',
-      depth: 1,
-      order: 1,
-      parent_screen_id: 'HISTORY',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 13,
-      screen_id: 'USER_ROLE_CHANGE',
-      screen_name: '사용자 역할 변경 이력',
-      path: '/history/user-role-change',
-      depth: 1,
-      order: 2,
-      parent_screen_id: 'HISTORY',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 14,
-      screen_id: 'DATA_CHANGE',
-      screen_name: '데이터 변경 이력',
-      path: '/history/data-change',
-      depth: 1,
-      order: 3,
-      parent_screen_id: 'HISTORY',
-      screen_type: '페이지',
-      display_yn: 'Y',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
+      menuId: 9,
+      menuCode: 'PERMISSION',
+      menuName: '권한 관리',
+      menuPath: '/management/permission',
+      parentMenuCode: 'MANAGEMENT',
+      depth: 2,
+      sortOrder: 4,
+      isVisible: true,
+      isActive: true,
     },
   ];
 
-  private nextId = 15;
+  private idCounter = 10;
 
-  async listAll(): Promise<MenuScreenItem[]> {
+  async listAll(): Promise<MenuItem[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve([...this.data]);
@@ -213,24 +114,21 @@ class MenuMockDb {
     });
   }
 
-  async findById(id: string | number): Promise<MenuScreenItem | undefined> {
+  async getById(id: number): Promise<MenuItem | null> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(this.data.find((item) => item.id === id));
-      }, 100);
+        const item = this.data.find((d) => d.menuId === id);
+        resolve(item || null);
+      }, 50);
     });
   }
 
-  async create(
-    item: Omit<MenuScreenItem, 'id' | 'created_at' | 'updated_at'>
-  ): Promise<MenuScreenItem> {
+  async create(data: Omit<MenuItem, 'menuId'>): Promise<MenuItem> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const newItem: MenuScreenItem = {
-          ...item,
-          id: this.nextId++,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+        const newItem: MenuItem = {
+          ...data,
+          menuId: this.idCounter++,
         };
         this.data.push(newItem);
         resolve(newItem);
@@ -238,34 +136,26 @@ class MenuMockDb {
     });
   }
 
-  async update(
-    id: string | number,
-    updates: Partial<Omit<MenuScreenItem, 'id' | 'created_at'>>
-  ): Promise<MenuScreenItem> {
+  async update(id: number, data: Partial<MenuItem>): Promise<MenuItem> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const index = this.data.findIndex((item) => item.id === id);
+        const index = this.data.findIndex((d) => d.menuId === id);
         if (index === -1) {
-          reject(new Error('Menu item not found'));
+          reject(new Error('Menu not found'));
           return;
         }
-
-        this.data[index] = {
-          ...this.data[index],
-          ...updates,
-          updated_at: new Date().toISOString(),
-        };
+        this.data[index] = { ...this.data[index], ...data };
         resolve(this.data[index]);
       }, 100);
     });
   }
 
-  async delete(id: string | number): Promise<void> {
+  async delete(id: number): Promise<void> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const index = this.data.findIndex((item) => item.id === id);
+        const index = this.data.findIndex((d) => d.menuId === id);
         if (index === -1) {
-          reject(new Error('Menu item not found'));
+          reject(new Error('Menu not found'));
           return;
         }
         this.data.splice(index, 1);
@@ -274,12 +164,12 @@ class MenuMockDb {
     });
   }
 
-  async reorder(orderedIds: (string | number)[]): Promise<void> {
+  async reorder(orderedIds: number[]): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const reordered: MenuScreenItem[] = [];
+        const reordered: MenuItem[] = [];
         orderedIds.forEach((id) => {
-          const item = this.data.find((d) => d.id === id);
+          const item = this.data.find((d) => d.menuId === id);
           if (item) reordered.push(item);
         });
         this.data = reordered;

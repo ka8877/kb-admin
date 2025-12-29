@@ -79,44 +79,46 @@ export const API_ENDPOINTS = {
     LIST: '/api/v1/audit-logs',
   },
 
-  // 권한 관리
+  // 권한 관리 (auth_role)
   PERMISSION: {
     BASE: '/management/permission',
-    LIST: '/management/permission.json',
-    DETAIL: (id: string | number) => `/management/permission/${id}.json`,
-    CREATE: '/management/permission.json',
-    UPDATE: (id: string | number) => `/management/permission/${id}.json`,
-    DELETE: (id: string | number) => `/management/permission/${id}.json`,
+    LIST: '/api/v1/roles',
+    DETAIL: (roleId: number) => `/api/v1/roles/${roleId}`,
+    CREATE: '/api/v1/roles',
+    UPDATE: (roleId: number) => `/api/v1/roles/${roleId}`,
+    DEACTIVATE: (roleId: number) => `/api/v1/roles/${roleId}/deactivate`,
+    DELETE: (roleId: number) => `/api/v1/roles/${roleId}/deactivate`, // DEACTIVATE 별칭
   },
 
-  // 관리자 사용자 관리
+  // 관리자 사용자 관리 (kc_user_account)
   ADMIN_AUTH: {
     BASE: '/management/admin-auth',
-    LIST: '/management/admin-auth.json',
-    DETAIL: (id: string | number) => `/management/admin-auth/${id}.json`,
-    CREATE: '/management/admin-auth.json',
-    UPDATE: (id: string | number) => `/management/admin-auth/${id}.json`,
-    DELETE: (id: string | number) => `/management/admin-auth/${id}.json`,
+    LIST: '/api/v1/users',
+    DETAIL: (id: string | number) => `/api/v1/users/${id}`,
+    BULK_SAVE: '/api/v1/users/bulk-save',
+    BULK_REMOVE: '/api/v1/users/bulk-remove',
   },
 
-  // 화면 권한 관리
+  // 화면 권한 관리 (role_menu_access)
   SCREEN_PERMISSION: {
     BASE: '/management/screen-permission',
-    LIST: (permissionId: number) => `/management/screen-permission/${permissionId}.json`,
-    SAVE_BULK: (permissionId: number) => `/management/screen-permission/${permissionId}/bulk.json`,
+    LIST: (roleCode: string) => `/api/v1/roles/${roleCode}/menu-access`,
+    SAVE_BULK: (roleCode: string) => `/api/v1/roles/${roleCode}/menu-access`,
+    // DELETE는 API spec에 없으므로 기존 유지
     DELETE: (permissionId: number, menuId: number) =>
       `/management/screen-permission/${permissionId}/${menuId}.json`,
   },
 
-  // 메뉴 관리
+  // 메뉴 관리 (ui_menu)
   MENU: {
     BASE: '/management/menu',
-    LIST: '/management/menu.json',
+    LIST: '/api/v1/menus',
+    DETAIL: (menuId: number) => `/api/v1/menus/${menuId}`,
+    CREATE: '/api/v1/menus',
+    UPDATE: (menuId: number) => `/api/v1/menus/${menuId}`,
+    DEACTIVATE: (menuId: number) => `/api/v1/menus/${menuId}/deactivate`,
+    // 트리 구조 조회는 기존 유지 (API spec에 명시 안됨)
     TREE: '/management/menu/tree.json',
-    DETAIL: (id: string | number) => `/management/menu/${id}.json`,
-    CREATE: '/management/menu.json',
-    UPDATE: (id: string | number) => `/management/menu/${id}.json`,
-    DELETE: (id: string | number) => `/management/menu/${id}.json`,
   },
 
   // 권한 확인

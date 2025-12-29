@@ -1,21 +1,22 @@
 // 메뉴 관리 React Query 훅
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchMenus, createMenu, updateMenu, deleteMenu, checkMenuCodeExists } from './api';
+import { fetchMenus, createMenu, updateMenu, deactivateMenu, checkMenuCodeExists } from './api';
 import type { MenuItem } from './types';
 
 const menuKeys = {
   all: ['menus'] as const,
   lists: () => [...menuKeys.all, 'list'] as const,
+  detail: (menuId: number) => [...menuKeys.all, 'detail', menuId] as const,
 };
 
 /**
  * 전체 메뉴 목록 조회 훅
  */
-export const useMenus = () => {
+export const useMenus = (params?: { includeInactive?: boolean }) => {
   return useQuery({
     queryKey: menuKeys.lists(),
-    queryFn: fetchMenus,
+    queryFn: () => fetchMenus(params),
   });
 };
 
@@ -26,7 +27,7 @@ export const useCreateMenu = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Omit<MenuItem, 'firebaseKey'>) => createMenu(data),
+    mutationFn: createMenu,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: menuKeys.lists() });
     },
@@ -40,8 +41,19 @@ export const useUpdateMenu = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ firebaseKey, updates }: { firebaseKey: string; updates: Partial<MenuItem> }) =>
-      updateMenu(firebaseKey, updates),
+    mutationFn: ({
+      menuId,
+      data,
+    }: {
+      menuId: number;
+      data: {
+        menuName: string;
+        menuPath: string | null;
+        parentMenuCode: string | null;
+        sortOrder: number;
+        isVisible: boolean;
+      };
+    }) => updateMenu(menuId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: menuKeys.lists() });
     },
@@ -49,13 +61,13 @@ export const useUpdateMenu = () => {
 };
 
 /**
- * 메뉴 삭제 뮤테이션 훅
+ * 메뉴 비활성화 뮤테이션 훅
  */
-export const useDeleteMenu = () => {
+export const useDeactivateMenu = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (firebaseKey: string) => deleteMenu(firebaseKey),
+    mutationFn: (menuId: number) => deactivateMenu(menuId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: menuKeys.lists() });
     },
@@ -67,7 +79,10 @@ export const useDeleteMenu = () => {
  */
 export const useCheckMenuCode = () => {
   return useMutation({
-    mutationFn: ({ menuCode, excludeKey }: { menuCode: string; excludeKey?: string }) =>
-      checkMenuCodeExists(menuCode, excludeKey),
+    mutationFn: ({ menuCode, excludeMenuId }: { menuCode: string; excludeMenuId?: number }) =>
+      checkMenuCodeExists(menuCode, excludeMenuId),
   });
 };
+
+// 하위 호환성
+export const useDeleteMenu = useDeactivateMenu;

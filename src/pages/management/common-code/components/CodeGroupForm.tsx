@@ -10,21 +10,16 @@ import Section from '@/components/layout/Section';
 type CodeGroupFormProps = {
   selectedItem: CodeGroup | null;
   isNew: boolean;
-  onSave: (
-    item: Omit<
-      CodeGroup,
-      'code_group_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-    >,
-  ) => void;
+  onSave: (item: Omit<CodeGroup, 'codeGroupId'>) => void;
   onCancel: () => void;
   onDelete: (codeGroupId: number) => void;
   disabled?: boolean;
 };
 
 const INITIAL_DATA = {
-  group_code: '',
-  group_name: '',
-  is_active: 1,
+  groupCode: '',
+  groupName: '',
+  isActive: true,
 };
 
 const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
@@ -42,9 +37,9 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
   useEffect(() => {
     if (selectedItem) {
       setFormData({
-        group_code: selectedItem.group_code,
-        group_name: selectedItem.group_name,
-        is_active: selectedItem.is_active,
+        groupCode: selectedItem.groupCode,
+        groupName: selectedItem.groupName,
+        isActive: selectedItem.isActive,
       });
     } else if (isNew) {
       setFormData(INITIAL_DATA);
@@ -52,7 +47,7 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
     setFieldErrors({});
   }, [selectedItem, isNew]);
 
-  const handleChange = useCallback((field: string, value: string | number) => {
+  const handleChange = useCallback((field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: '' }));
   }, []);
@@ -84,7 +79,7 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
         title: CONFIRM_TITLES.DELETE,
         message: CONFIRM_MESSAGES.DELETE_CODE_GROUP,
         onConfirm: () => {
-          onDelete(selectedItem.code_group_id);
+          onDelete(selectedItem.codeGroupId);
         },
       });
     }
@@ -111,13 +106,13 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
               fullWidth
               size="small"
               label="그룹코드"
-              value={formData.group_code || ''}
-              onChange={(e) => handleChange('group_code', e.target.value)}
+              value={formData.groupCode || ''}
+              onChange={(e) => handleChange('groupCode', e.target.value)}
               disabled={disabled}
               placeholder="예: SERVICE_TYPE"
               required
-              error={!!fieldErrors.group_code}
-              helperText={fieldErrors.group_code}
+              error={!!fieldErrors.groupCode}
+              helperText={fieldErrors.groupCode}
             />
           </Box>
           <Box sx={{ flex: 1 }}>
@@ -125,13 +120,13 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
               fullWidth
               size="small"
               label="그룹명"
-              value={formData.group_name || ''}
-              onChange={(e) => handleChange('group_name', e.target.value)}
+              value={formData.groupName || ''}
+              onChange={(e) => handleChange('groupName', e.target.value)}
               disabled={disabled}
               placeholder="예: 서비스 타입"
               required
-              error={!!fieldErrors.group_name}
-              helperText={fieldErrors.group_name}
+              error={!!fieldErrors.groupName}
+              helperText={fieldErrors.groupName}
             />
           </Box>
         </Stack>
@@ -142,13 +137,13 @@ const CodeGroupForm: React.FC<CodeGroupFormProps> = ({
             fullWidth
             size="small"
             label="사용여부"
-            value={formData.is_active}
-            onChange={(e) => handleChange('is_active', Number(e.target.value))}
+            value={formData.isActive ? '1' : '0'}
+            onChange={(e) => handleChange('isActive', e.target.value === '1')}
             disabled={disabled}
             required
           >
-            <MenuItem value={1}>사용</MenuItem>
-            <MenuItem value={0}>미사용</MenuItem>
+            <MenuItem value="1">사용</MenuItem>
+            <MenuItem value="0">미사용</MenuItem>
           </TextField>
         </Box>
 

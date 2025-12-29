@@ -15,9 +15,8 @@ import { useAlertDialog } from '@/hooks/useAlertDialog';
 import { ALERT_TITLES } from '@/constants/message';
 import {
   useCodeItems,
-  useServiceMappings,
   useQuestionMappings,
-  useCreateQuestionMapping,
+  useUpsertQuestionMapping,
   useDeleteQuestionMapping,
 } from '../hooks';
 
@@ -30,73 +29,65 @@ const QuestionMappingSection: React.FC = () => {
   const { showAlert } = useAlertDialog();
 
   // 데이터 로드
-  const { data: allCodeItems = [] } = useCodeItems();
-  const serviceCodeItems = allCodeItems.filter((item) => item.group_code === 'service_cd');
-  const questionCategoryItems = allCodeItems.filter((item) => item.group_code === 'qst_ctgr');
-  const { data: serviceMappings = [] } = useServiceMappings();
+  const { data: serviceCdItems = [] } = useCodeItems({ groupCode: 'service_cd' });
+  const { data: qstCtgrItems = [] } = useCodeItems({ groupCode: 'qst_ctgr' });
+  const serviceCodeItems = serviceCdItems;
+  const questionCategoryItems = qstCtgrItems;
   const { data: questionMappings = [] } = useQuestionMappings();
 
-  const createMappingMutation = useCreateQuestionMapping();
+  const upsertMappingMutation = useUpsertQuestionMapping();
   const deleteMappingMutation = useDeleteQuestionMapping();
 
-  const [selectedServiceFirebaseKey, setSelectedServiceFirebaseKey] = useState<string | null>(null);
-  const [selectedQuestionKeys, setSelectedQuestionKeys] = useState<Set<string>>(new Set());
+  const [selectedServiceFirebaseKey, setSelectedServiceFirebaseKey] = useState<number | null>(null);
+  const [selectedQuestionKeys, setSelectedQuestionKeys] = useState<Set<number>>(new Set());
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
   // 서비스 목록 (서비스명 포함)
   const services = useMemo(() => {
     return serviceCodeItems.map((item) => {
-      // child_code_item_id가 현재 service_cd의 firebaseKey인 매핑 찾기
-      const serviceMapping = serviceMappings.find((m) => m.child_code_item_id === item.firebaseKey);
-
-      // parent_code_item_id로 service_nm 찾기
-      const serviceNameItem = serviceMapping
-        ? allCodeItems.find((ci) => ci.firebaseKey === serviceMapping.parent_code_item_id)
-        : null;
-
       return {
-        firebaseKey: item.firebaseKey || '',
-        service_code: item.code_name, // service_cd의 code_name이 서비스코드
-        service_name: serviceNameItem?.code_name || item.code_name, // service_nm의 code_name이 서비스명
-        is_active: item.is_active,
+        codeItemId: item.codeItemId,
+        serviceCode: item.codeName, // service_cd의 codeName이 서비스코드
+        serviceName: item.codeName, // 기본적으로 codeName 사용
+        isActive: item.isActive,
       };
     });
-  }, [serviceCodeItems, serviceMappings, allCodeItems]);
+  }, [serviceCodeItems]);
 
-  // 선택된 서비스에 매핑된 질문 카테고리 firebaseKey 목록
+  // 선택된 서비스에 매핑된 질문 카테고리 codeItemId 목록
   const mappedQuestionKeys = useMemo(() => {
-    if (!selectedServiceFirebaseKey) return new Set<string>();
+    if (!selectedServiceFirebaseKey) return new Set<number>();
 
     const mapped = questionMappings
       .filter((m) => m.parent_code_item_id === selectedServiceFirebaseKey)
-      .map((m) => String(m.child_code_item_id));
+      .map((m) => Number(m.child_code_item_id));
 
     return new Set(mapped);
   }, [selectedServiceFirebaseKey, questionMappings]);
 
-  // 다른 서비스에 매핑된 질문 카테고리 firebaseKey 목록
+  // 다른 서비스에 매핑된 질문 카테고리 codeItemId 목록
   const otherServiceMappedKeys = useMemo(() => {
-    if (!selectedServiceFirebaseKey) return new Set<string>();
+    if (!selectedServiceFirebaseKey) return new Set<number>();
 
     const otherMapped = questionMappings
       .filter((m) => m.parent_code_item_id !== selectedServiceFirebaseKey)
-      .map((m) => String(m.child_code_item_id));
+      .map((m) => Number(m.child_code_item_id));
 
     return new Set(otherMapped);
   }, [selectedServiceFirebaseKey, questionMappings]);
 
   // 질문 카테고리가 매핑된 서비스명 찾기
-  const getQuestionMappedServiceName = (questionKey: string): string | null => {
+  const getQuestionMappedServiceName = (questionKey: number): string | null => {
     const mapping = questionMappings.find(
       (m) =>
-        String(m.child_code_item_id) === questionKey &&
+        Number(m.child_code_item_id) === questionKey &&
         m.parent_code_item_id !== selectedServiceFirebaseKey
     );
 
     if (!mapping) return null;
 
-    const service = services.find((s) => s.firebaseKey === mapping.parent_code_item_id);
-    return service?.service_name || null;
+    const service = services.find((s) => s.codeItemId === Number(mapping.parent_code_item_id));
+    return service?.serviceName || null;
   };
 
   // 서비스 선택 시 현재 매핑된 질문 목록으로 초기화
@@ -106,17 +97,17 @@ const QuestionMappingSection: React.FC = () => {
     }
   }, [selectedServiceFirebaseKey, mappedQuestionKeys]);
 
-  const handleServiceSelect = (serviceFirebaseKey: string) => {
-    setSelectedServiceFirebaseKey(serviceFirebaseKey);
+  const handleServiceSelect = (serviceCodeItemId: number) => {
+    setSelectedServiceFirebaseKey(serviceCodeItemId);
   };
 
-  const handleQuestionToggle = (questionFirebaseKey: string, checked: boolean) => {
+  const handleQuestionToggle = (questionCodeItemId: number, checked: boolean) => {
     setSelectedQuestionKeys((prev) => {
       const newSet = new Set(prev);
       if (checked) {
-        newSet.add(questionFirebaseKey);
+        newSet.add(questionCodeItemId);
       } else {
-        newSet.delete(questionFirebaseKey);
+        newSet.delete(questionCodeItemId);
       }
       return newSet;
     });
@@ -134,7 +125,7 @@ const QuestionMappingSection: React.FC = () => {
 
       // 추가
       for (const questionKey of toAdd) {
-        await createMappingMutation.mutateAsync({
+        await upsertMappingMutation.mutateAsync({
           mapping_type: 'QUESTION',
           parent_code_item_id: selectedServiceFirebaseKey,
           child_code_item_id: questionKey,
@@ -148,7 +139,7 @@ const QuestionMappingSection: React.FC = () => {
         const mapping = questionMappings.find(
           (m) =>
             m.parent_code_item_id === selectedServiceFirebaseKey &&
-            m.child_code_item_id === questionKey
+            Number(m.child_code_item_id) === questionKey
         );
 
         if (mapping?.firebaseKey) {
@@ -178,11 +169,11 @@ const QuestionMappingSection: React.FC = () => {
     const keyword = searchKeyword.toLowerCase();
     return questionCategoryItems.filter(
       (item) =>
-        item.code_name.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword)
+        item.codeName.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword)
     );
   }, [questionCategoryItems, searchKeyword]);
 
-  const selectedService = services.find((s) => s.firebaseKey === selectedServiceFirebaseKey);
+  const selectedService = services.find((s) => s.codeItemId === selectedServiceFirebaseKey);
   const hasChanges =
     selectedServiceFirebaseKey &&
     (selectedQuestionKeys.size !== mappedQuestionKeys.size ||
@@ -199,11 +190,11 @@ const QuestionMappingSection: React.FC = () => {
           <Stack spacing={1}>
             {services.map((service) => (
               <MediumButton
-                key={service.firebaseKey}
+                key={service.codeItemId}
                 variant={
-                  selectedServiceFirebaseKey === service.firebaseKey ? 'contained' : 'outlined'
+                  selectedServiceFirebaseKey === service.codeItemId ? 'contained' : 'outlined'
                 }
-                onClick={() => handleServiceSelect(service.firebaseKey)}
+                onClick={() => handleServiceSelect(service.codeItemId)}
                 sx={{
                   justifyContent: 'flex-start',
                   textAlign: 'left',
@@ -212,10 +203,10 @@ const QuestionMappingSection: React.FC = () => {
               >
                 <Box>
                   <Typography variant="body2" fontWeight="bold">
-                    {service.service_name}
+                    {service.serviceName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {service.service_code}
+                    {service.serviceCode}
                   </Typography>
                 </Box>
               </MediumButton>
@@ -236,14 +227,14 @@ const QuestionMappingSection: React.FC = () => {
                 }}
               >
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                  {selectedService.service_name}의 질문 카테고리
+                  {selectedService.serviceName}의 질문 카테고리
                 </Typography>
                 <MediumButton
                   variant="contained"
                   onClick={handleApply}
                   disabled={
                     !hasChanges ||
-                    createMappingMutation.isPending ||
+                    upsertMappingMutation.isPending ||
                     deleteMappingMutation.isPending
                   }
                   subType="u"
@@ -261,7 +252,7 @@ const QuestionMappingSection: React.FC = () => {
               <Box sx={{ flex: 1, overflow: 'auto' }}>
                 <Stack spacing={1}>
                   {filteredQuestionItems.map((question) => {
-                    const questionKey = question.firebaseKey || '';
+                    const questionKey = question.codeItemId;
                     const isMappedToOther = otherServiceMappedKeys.has(questionKey);
                     const mappedServiceName = isMappedToOther
                       ? getQuestionMappedServiceName(questionKey)
@@ -274,7 +265,7 @@ const QuestionMappingSection: React.FC = () => {
                             checked={selectedQuestionKeys.has(questionKey)}
                             onChange={(e) => handleQuestionToggle(questionKey, e.target.checked)}
                             disabled={
-                              createMappingMutation.isPending ||
+                              upsertMappingMutation.isPending ||
                               deleteMappingMutation.isPending ||
                               isMappedToOther
                             }
@@ -287,7 +278,7 @@ const QuestionMappingSection: React.FC = () => {
                                 variant="body2"
                                 sx={{ color: isMappedToOther ? 'text.disabled' : 'inherit' }}
                               >
-                                {question.code_name}
+                                {question.codeName}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {question.code}

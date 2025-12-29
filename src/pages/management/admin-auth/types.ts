@@ -1,16 +1,53 @@
 // frontend/src/pages/management/admin-auth/types.ts
 
-export type AdminAuthItem = {
-  id: number | string;
-  user_name: string; // 사용자명
-  position: string; // 직책
-  team_1st: string; // 1차팀
-  team_2nd: string; // 2차팀
-  use_permission: string; // 이용권한 (권한관리 데이터 기준, 동적 코드 허용)
-  approval_permission: '요청자' | '결재자'; // 결재권한
-  status: '활성' | '비활성'; // 활성여부
+/**
+ * API 응답 사용자 타입 (kc_user_account)
+ * API spec 문서의 1) 사용자 섹션 참조
+ */
+export type UserAccountApiItem = {
+  kcUserId: number;
+  oidcSub: string;
+  username: string;
+  email: string;
+  hrEmployeeId: number | null;
+  empNo: string | null;
+  empName: string | null;
+  deptCode: string | null;
+  deptName1: string | null;
+  deptName2: string | null;
+  jobTitleCode: string | null;
+  jobTitleName: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  roleCodes: string[];
 };
 
-export type RowItem = AdminAuthItem & {
+/**
+ * 그리드에서 사용하는 Row 타입
+ */
+export type RowItem = {
   no: number;
+  kcUserId: number | null; // 신규 생성 시 null
+  username: string;
+  email: string;
+  empNo: string;
+  empName: string;
+  deptName: string; // deptName1 + deptName2 조합
+  roleCodes: string[]; // 권한 코드 배열
+  isActive: boolean;
+};
+
+/**
+ * 기존 타입 호환을 위한 AdminAuthItem (deprecated)
+ */
+export type AdminAuthItem = {
+  id: number | string;
+  user_name: string;
+  position: string;
+  team_1st: string;
+  team_2nd: string;
+  use_permission: string;
+  approval_permission: '요청자' | '결재자';
+  status: '활성' | '비활성';
 };

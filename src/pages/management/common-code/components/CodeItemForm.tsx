@@ -13,23 +13,17 @@ type CodeItemFormProps = {
   selectedCodeGroupId: number | null;
   groupCode?: string; // 코드그룹 코드 (service_nm 등)
   initialSortOrder?: number; // 추가 시 기본 정렬순서
-  onSave: (
-    item: Omit<
-      CodeItem,
-      'code_item_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-    >,
-  ) => void;
+  onSave: (item: Omit<CodeItem, 'codeItemId'>) => void;
   onCancel: () => void;
   onDelete: (codeItemId: number) => void;
   disabled?: boolean;
 };
 
 const INITIAL_DATA = {
-  code_group_id: 0,
   code: '',
-  code_name: '',
-  sort_order: 0,
-  is_active: 1,
+  codeName: '',
+  sortOrder: 0,
+  isActive: true,
 };
 
 const CodeItemForm: React.FC<CodeItemFormProps> = ({
@@ -50,23 +44,21 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
   useEffect(() => {
     if (selectedItem) {
       setFormData({
-        code_group_id: selectedItem.code_group_id,
         code: selectedItem.code,
-        code_name: selectedItem.code_name,
-        sort_order: selectedItem.sort_order,
-        is_active: selectedItem.is_active,
+        codeName: selectedItem.codeName,
+        sortOrder: selectedItem.sortOrder,
+        isActive: selectedItem.isActive,
       });
     } else if (isNew && selectedCodeGroupId !== null && selectedCodeGroupId !== undefined) {
       setFormData({
         ...INITIAL_DATA,
-        code_group_id: selectedCodeGroupId,
-        sort_order: initialSortOrder,
+        sortOrder: initialSortOrder,
       });
     }
     setFieldErrors({});
   }, [selectedItem, isNew, selectedCodeGroupId, initialSortOrder]);
 
-  const handleChange = useCallback((field: string, value: string | number | null) => {
+  const handleChange = useCallback((field: string, value: string | number | boolean | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: '' }));
   }, []);
@@ -98,7 +90,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
         title: CONFIRM_TITLES.DELETE,
         message: CONFIRM_MESSAGES.DELETE,
         onConfirm: () => {
-          onDelete(selectedItem.code_item_id);
+          onDelete(selectedItem.codeItemId);
         },
       });
     }
@@ -125,13 +117,13 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               fullWidth
               size="small"
               label="코드명"
-              value={formData.code_name || ''}
-              onChange={(e) => handleChange('code_name', e.target.value)}
+              value={formData.codeName || ''}
+              onChange={(e) => handleChange('codeName', e.target.value)}
               disabled={disabled}
               placeholder="코드명 입력"
               required
-              error={!!fieldErrors.code_name}
-              helperText={fieldErrors.code_name}
+              error={!!fieldErrors.codeName}
+              helperText={fieldErrors.codeName}
             />
           </Box>
           <Box sx={{ flex: 1 }}>
@@ -140,8 +132,8 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               size="small"
               label="정렬순서"
               type="number"
-              value={formData.sort_order}
-              onChange={(e) => handleChange('sort_order', Number(e.target.value))}
+              value={formData.sortOrder}
+              onChange={(e) => handleChange('sortOrder', Number(e.target.value))}
               disabled={disabled}
             />
           </Box>
@@ -154,13 +146,13 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               fullWidth
               size="small"
               label="사용여부"
-              value={formData.is_active}
-              onChange={(e) => handleChange('is_active', Number(e.target.value))}
+              value={formData.isActive ? '1' : '0'}
+              onChange={(e) => handleChange('isActive', e.target.value === '1')}
               disabled={disabled}
               required
             >
-              <MenuItem value={1}>사용</MenuItem>
-              <MenuItem value={0}>미사용</MenuItem>
+              <MenuItem value="1">사용</MenuItem>
+              <MenuItem value="0">미사용</MenuItem>
             </TextField>
           </Box>
           <Box sx={{ flex: 1 }}>

@@ -97,7 +97,7 @@ export const useRecommendedQuestionYupSchema = () => {
         showU17: yup
           .boolean()
           .nullable()
-          .test('showU17', function (value) {
+          .test('showU17', function (value: any) {
             const result = validateShowU17(value);
             return result.isValid || this.createError({ message: result.message });
           }),
@@ -110,7 +110,7 @@ export const useRecommendedQuestionYupSchema = () => {
             // 등록용이므로 현재 일시 체크 포함
             const result = validateImpStartDateForCreate(
               value as string | Date | null | undefined,
-              formData,
+              formData
             );
             return result.isValid || this.createError({ message: result.message });
           }),
@@ -124,6 +124,6 @@ export const useRecommendedQuestionYupSchema = () => {
             return result.isValid || this.createError({ message: result.message });
           }),
       }),
-    [validateServiceName, validateQuestionCategory, validateAgeGroup],
+    [validateServiceName, validateQuestionCategory, validateAgeGroup]
   );
 };

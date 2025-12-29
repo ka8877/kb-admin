@@ -699,9 +699,22 @@ export const deleteRecommendedQuestions = async (
  * @deprecated 새로운 API는 groupCode를 필요로 합니다. 대신 fetchCommonCodeItems를 사용하세요.
  */
 export const fetchCodeItems = async (): Promise<CodeItem[]> => {
-  // Deprecated: 임시로 빈 배열 반환
-  console.warn('fetchCodeItems is deprecated. Use fetchCommonCodeItems instead.');
-  return [];
+  // 임시: 빈 문자열로 호출 (실제로는 이 함수를 사용하지 말아야 함)
+  const response = await getApi<unknown>('/management/common-code/code-items.json', {
+    errorMessage: '코드 아이템 목록을 불러오는데 실패했습니다.',
+  });
+
+  let items: CodeItem[] = [];
+  if (Array.isArray(response.data)) {
+    items = response.data as CodeItem[];
+  } else if (typeof response.data === 'object' && response.data !== null) {
+    // Firebase 객체 형태를 배열로 변환하면서 key를 firebaseKey로 주입
+    items = Object.entries(response.data as Record<string, CodeItem>).map(([key, value]) => ({
+      ...value,
+      firebaseKey: key,
+    }));
+  }
+  return items;
 };
 
 /**

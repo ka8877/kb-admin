@@ -9,20 +9,17 @@ import {
   ALERT_TITLES,
   ALERT_MESSAGES,
   TOAST_MESSAGES,
-  CONFIRM_TITLES,
-  CONFIRM_MESSAGES,
   getCodeItemDeleteSuccessMessage,
 } from '@/constants/message';
 import type { CodeItem, CodeItemDisplay, CodeGroupDisplay } from '../types';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import {
   useCodeItems,
-  useCodeGroups,
   useCreateCodeItem,
   useUpdateCodeItem,
   useDeleteCodeItem,
   useDeleteCodeItems,
-  useUpsertServiceMapping,
+  useReorderCodeItems,
 } from '../hooks';
 
 interface CodeItemSectionProps {
@@ -37,31 +34,30 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
     data: codeItems = [],
     isLoading: isItemLoading,
     refetch: refetchCodeItems,
-  } = useCodeItems(selectedGroup ? { codeGroupId: selectedGroup.code_group_id } : undefined);
+  } = useCodeItems(selectedGroup ? { groupCode: selectedGroup.groupCode } : undefined);
 
-  const { data: codeGroups = [] } = useCodeGroups();
   const createItemMutation = useCreateCodeItem();
   const updateItemMutation = useUpdateCodeItem();
   const deleteItemMutation = useDeleteCodeItem();
   const deleteItemsMutation = useDeleteCodeItems();
-  const upsertServiceMappingMutation = useUpsertServiceMapping();
+  const reorderItemsMutation = useReorderCodeItems();
 
   const [selectedItem, setSelectedItem] = useState<CodeItemDisplay | null>(null);
   const [isItemFormOpen, setIsItemFormOpen] = useState(false);
   const [isNewItem, setIsNewItem] = useState(false);
-  const [isItemSortMode, setIsItemSortMode] = useState(false); // 순서 편집 모드
+  const [isItemSortMode, setIsItemSortMode] = useState(false); // 정렬 편집 모드
   const [isItemSelectionMode, setIsItemSelectionMode] = useState(false); // 선택 모드
-  const [tempSortedItems, setTempSortedItems] = useState<CodeItemDisplay[]>([]); // 임시 순서 변경 데이터
-  const [isSortChanged, setIsSortChanged] = useState(false); // 순서 변경 여부
+  const [tempSortedItems, setTempSortedItems] = useState<CodeItemDisplay[]>([]); // 임시 정렬 변경 아이템
+  const [isSortChanged, setIsSortChanged] = useState(false); // 정렬 변경 여부
   const [selectedItemIds, setSelectedItemIds] = useState<(string | number)[]>([]); // 선택된 아이템 ID
 
-  // 동적 컴럼 생성
+  // 동적 컬럼 생성
   const dynamicColumns = useMemo((): GridColDef<CodeItemDisplay>[] => {
-    if (selectedGroup?.group_code === 'service_nm') {
-      // service_nm: 정렬순서, 서비스코드(code), 서비스명(code_name), 사용여부
+    if (selectedGroup?.groupCode === 'service_nm') {
+      // service_nm: 정렬순서, 서비스코드(code), 서비스명(codeName), 사용여부
       return [
         {
-          field: 'sort_order',
+          field: 'sortOrder',
           headerName: '정렬순서',
           width: 100,
           align: 'center' as const,
@@ -73,78 +69,51 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
           width: 150,
         },
         {
-          field: 'code_name',
+          field: 'codeName',
           headerName: '서비스명',
           flex: 1,
         },
         {
-          field: 'is_active',
+          field: 'isActive',
           headerName: '사용여부',
           width: 100,
           align: 'center' as const,
           headerAlign: 'center' as const,
           renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
-            params.value === 0 ? '미사용' : '사용',
+            params.value ? '사용' : '미사용',
         },
       ];
     }
-    // 다른 그룹: 정렬순서, 코드명(code_name), 사용여부 (코드는 숨김)
+    // 다른 그룹: 정렬순서, 코드명(codeName), 사용여부 (코드는 숨김)
     return [
       {
-        field: 'sort_order',
+        field: 'sortOrder',
         headerName: '정렬순서',
         width: 100,
         align: 'center' as const,
         headerAlign: 'center' as const,
       },
       {
-        field: 'code_name',
+        field: 'codeName',
         headerName: '코드명',
         flex: 1,
       },
       {
-        field: 'is_active',
+        field: 'isActive',
         headerName: '사용여부',
         width: 100,
         align: 'center' as const,
         headerAlign: 'center' as const,
         renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
-          params.value === 0 ? '미사용' : '사용',
+          params.value ? '사용' : '미사용',
       },
     ];
-  }, [selectedGroup]);
+  }, [selectedGroup?.groupCode]);
 
-  // selectedGroup이 변경될 때 코드아이템 자동 리프레시 및 상태 초기화
-  useEffect(() => {
-    if (selectedGroup) {
-      refetchCodeItems();
-    }
-    // 그룹이 변경되거나 없어지면 모든 관련 상태 초기화
-    setSelectedItem(null);
-    setIsItemFormOpen(false);
-    setIsNewItem(false);
-    setIsItemSortMode(false);
-    setIsItemSelectionMode(false);
-    setTempSortedItems([]);
-    setIsSortChanged(false);
-    setSelectedItemIds([]);
-  }, [selectedGroup, refetchCodeItems]);
-
-  // 순서 편집 모드 진입 시 현재 데이터를 임시 저장
-  useEffect(() => {
-    if (isItemSortMode) {
-      setTempSortedItems([...codeItems]);
-      setIsSortChanged(false);
-    }
-  }, [isItemSortMode, codeItems]);
-
-  // ========== 코드아이템 이벤트 핸들러 ==========
-
+  // 코드아이템 (소분류) 추가 및 수정 로직
   const handleItemRowClick = useCallback(
     (params: { id: string | number; row: CodeItemDisplay }) => {
       const item = params.row;
-      console.log('🔍 Item clicked:', item);
-
       setSelectedItem(item);
       setIsItemFormOpen(true);
       setIsNewItem(false);
@@ -167,46 +136,26 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
   }, [selectedGroup, showAlert]);
 
   const checkItemCodeDuplicate = useCallback(
-    (codeGroupId: number, code: string, excludeItemId?: number) => {
-      // 코드가 비어있으면 자동 채번되므로 중복 체크 스킵
-      // 단, API 레벨에서 자동 생성된 코드는 6자리(약 1600만 조합)로 충돌 가능성 거의 없음
-      if (!code || code.trim() === '') {
-        return false;
-      }
-      return codeItems.some(
-        (item) =>
-          item.code_group_id === codeGroupId &&
-          item.code === code &&
-          (excludeItemId === undefined || item.code_item_id !== excludeItemId)
-      );
-    },
-    [codeItems]
-  );
-
-  const checkItemNameDuplicate = useCallback(
-    (codeGroupId: number, codeName: string, excludeItemId?: number) => {
-      return codeItems.some(
-        (item) =>
-          item.code_group_id === codeGroupId &&
-          item.code_name === codeName &&
-          (excludeItemId === undefined || item.code_item_id !== excludeItemId)
-      );
+    (code: string) => {
+      return codeItems.some((item) => item.code === code);
     },
     [codeItems]
   );
 
   const handleSaveItem = useCallback(
-    async (
-      data: Omit<
-        CodeItem,
-        'code_item_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at'
-      >
-    ) => {
-      try {
-        console.log('handleSaveItem:', { isNewItem, selectedItem, data });
+    async (data: Omit<CodeItem, 'codeItemId' | 'codeGroupId'>) => {
+      if (!selectedGroup) {
+        showAlert({
+          title: ALERT_TITLES.ERROR,
+          message: ALERT_MESSAGES.SELECT_CODE_GROUP_FIRST,
+          severity: 'error',
+        });
+        return;
+      }
 
+      try {
         if (isNewItem) {
-          if (checkItemCodeDuplicate(data.code_group_id, data.code)) {
+          if (checkItemCodeDuplicate(data.code)) {
             showAlert({
               title: ALERT_TITLES.NOTIFICATION,
               message: ALERT_MESSAGES.CODE_ALREADY_EXISTS,
@@ -214,84 +163,28 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
             });
             return;
           }
-          if (checkItemNameDuplicate(data.code_group_id, data.code_name)) {
-            showAlert({
-              title: ALERT_TITLES.NOTIFICATION,
-              message: ALERT_MESSAGES.CODE_NAME_ALREADY_EXISTS,
-              severity: 'warning',
-            });
-            return;
-          }
 
-          console.log('Creating new item...');
-
-          // service_nm 그룹인 경우: service_cd 그룹에도 아이템 생성하고 매핑
-          if (selectedGroup?.group_code === 'service_nm') {
-            const serviceCdGroup = codeGroups.find((g) => g.group_code === 'service_cd');
-            if (serviceCdGroup) {
-              // 1. service_cd 그룹에 코드아이템 생성
-              // code = 자동생성, code_name = 입력한 서비스코드
-              const serviceCdData = {
-                code_group_id: serviceCdGroup.code_group_id,
-                code: '', // 자동 생성
-                code_name: data.code, // 서비스코드를 code_name으로
-                sort_order: data.sort_order,
-                is_active: data.is_active,
-              };
-              const serviceCdResult = await createItemMutation.mutateAsync(serviceCdData);
-
-              // 2. service_nm 그룹에 코드아이템 생성
-              const serviceNmResult = await createItemMutation.mutateAsync(data);
-
-              // 3. ServiceMapping 생성 (service_nm ↔ service_cd 연결)
-              await upsertServiceMappingMutation.mutateAsync({
-                mapping_type: 'SERVICE' as const,
-                parent_code_item_id: serviceNmResult.firebaseKey || serviceNmResult.code_item_id,
-                child_code_item_id: serviceCdResult.firebaseKey || serviceCdResult.code_item_id,
-                sort_order: 0,
-                is_active: 1,
-              });
-            }
-          } else {
-            // 일반 코드아이템 생성
-            await createItemMutation.mutateAsync(data);
-          }
+          await createItemMutation.mutateAsync({
+            groupCode: selectedGroup.groupCode,
+            data: {
+              code: data.code,
+              codeName: data.codeName,
+              sortOrder: data.sortOrder,
+            },
+          });
 
           showAlert({
             title: ALERT_TITLES.SUCCESS,
             message: TOAST_MESSAGES.CODE_ITEM_CREATED,
             severity: 'success',
           });
-        } else {
-          console.log('Updating existing item...');
-          if (!selectedItem) {
-            console.error('selectedItem is null in update mode');
-            return;
-          }
-          if (checkItemCodeDuplicate(data.code_group_id, data.code, selectedItem.code_item_id)) {
-            showAlert({
-              title: ALERT_TITLES.NOTIFICATION,
-              message: ALERT_MESSAGES.CODE_ALREADY_EXISTS,
-              severity: 'warning',
-            });
-            return;
-          }
-          if (
-            checkItemNameDuplicate(data.code_group_id, data.code_name, selectedItem.code_item_id)
-          ) {
-            showAlert({
-              title: ALERT_TITLES.NOTIFICATION,
-              message: ALERT_MESSAGES.CODE_NAME_ALREADY_EXISTS,
-              severity: 'warning',
-            });
-            return;
-          }
-
+        } else if (selectedItem) {
           await updateItemMutation.mutateAsync({
-            codeItemId: selectedItem.code_item_id,
+            codeItemId: selectedItem.codeItemId,
             data: {
-              ...data,
-              firebaseKey: selectedItem.firebaseKey,
+              code: data.code,
+              codeName: data.codeName,
+              sortOrder: data.sortOrder,
             },
           });
 
@@ -318,144 +211,67 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
       isNewItem,
       selectedItem,
       selectedGroup,
-      codeGroups,
       checkItemCodeDuplicate,
-      checkItemNameDuplicate,
       createItemMutation,
       updateItemMutation,
-      upsertServiceMappingMutation,
       showAlert,
     ]
   );
 
-  const handleDeleteItem = useCallback(
-    async (codeItemId: number) => {
-      try {
-        const firebaseKey = selectedItem?.firebaseKey;
-        await deleteItemMutation.mutateAsync({ codeItemId, firebaseKey });
-        setSelectedItem(null);
-        setIsItemFormOpen(false);
-        showAlert({
-          title: ALERT_TITLES.SUCCESS,
-          message: TOAST_MESSAGES.CODE_ITEM_DELETED,
-          severity: 'success',
-        });
-      } catch (error) {
-        console.error('Failed to delete code item:', error);
-        showAlert({
-          title: ALERT_TITLES.ERROR,
-          message: TOAST_MESSAGES.CODE_ITEM_DELETE_FAILED,
-          severity: 'error',
-        });
-      }
-    },
-    [selectedItem, deleteItemMutation, showAlert]
-  );
+  const handleDeleteItem = useCallback(async () => {
+    if (!selectedItem || !selectedGroup) return;
 
-  const handleDeleteSelectedItems = useCallback(
-    async (idsToDelete?: (string | number)[]) => {
-      const ids = idsToDelete || selectedItemIds;
+    try {
+      await deleteItemMutation.mutateAsync(selectedItem.codeItemId);
 
-      if (ids.length === 0) {
-        showAlert({
-          title: ALERT_TITLES.NOTIFICATION,
-          message: ALERT_MESSAGES.DELETE_ITEMS_SELECT,
-          severity: 'warning',
-        });
-        return;
-      }
+      setSelectedItem(null);
+      setIsItemFormOpen(false);
+      showAlert({
+        title: ALERT_TITLES.SUCCESS,
+        message: TOAST_MESSAGES.CODE_ITEM_DELETED,
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to delete code item:', error);
+      showAlert({
+        title: ALERT_TITLES.ERROR,
+        message: TOAST_MESSAGES.CODE_ITEM_DELETE_FAILED,
+        severity: 'error',
+      });
+    }
+  }, [selectedItem, selectedGroup, deleteItemMutation, showAlert]);
 
-      try {
-        const itemsToDelete = codeItems
-          .filter((item) => ids.includes(item.firebaseKey || item.code_item_id))
-          .map((item) => ({
-            codeItemId: item.code_item_id,
-            firebaseKey: item.firebaseKey,
-          }));
-
-        await deleteItemsMutation.mutateAsync(itemsToDelete);
-        setSelectedItemIds([]);
-        setIsItemSelectionMode(false);
-        showAlert({
-          title: ALERT_TITLES.SUCCESS,
-          message: getCodeItemDeleteSuccessMessage(itemsToDelete.length),
-          severity: 'success',
-        });
-      } catch (error) {
-        console.error('Failed to delete code items:', error);
-        showAlert({
-          title: ALERT_TITLES.ERROR,
-          message: TOAST_MESSAGES.CODE_ITEM_DELETE_FAILED,
-          severity: 'error',
-        });
-      }
-    },
-    [selectedItemIds, codeItems, deleteItemsMutation, showAlert]
-  );
-
-  const handleToggleBulkDeleteMode = useCallback(() => {
-    setIsItemSelectionMode((prev) => !prev);
-    setSelectedItemIds([]);
+  const handleCancelForm = useCallback(() => {
+    setIsItemFormOpen(false);
+    setSelectedItem(null);
   }, []);
 
-  const handleConfirmDelete = useCallback(() => {
-    if (selectedItemIds.length === 0) {
-      showAlert({
-        title: ALERT_TITLES.NOTIFICATION,
-        message: ALERT_MESSAGES.DELETE_ITEMS_SELECT,
-        severity: 'warning',
-      });
-      return;
-    }
+  // 정렬 편집 모드
+  const handleStartSortMode = useCallback(() => {
+    setIsItemSortMode(true);
+    setTempSortedItems([...codeItems]);
+    setIsSortChanged(false);
+  }, [codeItems]);
 
-    showAlert({
-      title: CONFIRM_TITLES.DELETE,
-      message: CONFIRM_MESSAGES.DELETE_SELECTED_ITEMS,
-      severity: 'warning',
-      confirmText: '삭제',
-      onConfirm: () => handleDeleteSelectedItems(selectedItemIds),
-    });
-  }, [selectedItemIds, showAlert, handleDeleteSelectedItems]);
-
-  // ========== 드래그 앤 드롭 순서 변경 핸들러 ==========
-
-  const handleDragOrderChange = useCallback((newItems: CodeItemDisplay[]) => {
-    setTempSortedItems(newItems);
-    setIsSortChanged(true);
+  const handleCancelSortMode = useCallback(() => {
+    setIsItemSortMode(false);
+    setTempSortedItems([]);
+    setIsSortChanged(false);
   }, []);
 
   const handleSaveSortOrder = useCallback(async () => {
     if (!selectedGroup || !isSortChanged) return;
 
     try {
-      const validItems = tempSortedItems.filter(
-        (item) => item.code && item.code_name && item.code_group_id > 0
-      );
+      const sortOrderUpdates = tempSortedItems.map((item, index) => ({
+        codeItemId: item.codeItemId,
+        sortOrder: index + 1,
+      }));
 
-      if (validItems.length === 0) {
-        showAlert({
-          title: ALERT_TITLES.NOTIFICATION,
-          message: ALERT_MESSAGES.NO_VALID_DATA_TO_SAVE,
-          severity: 'warning',
-        });
-        return;
-      }
-
-      const updatePromises = validItems.map((item, idx) =>
-        updateItemMutation.mutateAsync({
-          codeItemId: item.code_item_id,
-          data: {
-            code_group_id: item.code_group_id,
-            code: item.code,
-            code_name: item.code_name,
-            sort_order: idx + 1,
-            is_active: item.is_active,
-            firebaseKey: item.firebaseKey,
-          },
-        })
-      );
-
-      await Promise.all(updatePromises);
+      await reorderItemsMutation.mutateAsync({
+        groupCode: selectedGroup.groupCode,
+        items: sortOrderUpdates,
+      });
 
       showAlert({
         title: ALERT_TITLES.SUCCESS,
@@ -464,123 +280,166 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
       });
 
       setIsItemSortMode(false);
-      setIsSortChanged(false);
       setTempSortedItems([]);
+      setIsSortChanged(false);
+      await refetchCodeItems();
     } catch (error) {
-      console.error('Failed to update sort order:', error);
+      console.error('Failed to save sort order:', error);
       showAlert({
         title: ALERT_TITLES.ERROR,
         message: TOAST_MESSAGES.SORT_ORDER_SAVE_FAILED,
         severity: 'error',
       });
     }
-  }, [selectedGroup, isSortChanged, tempSortedItems, updateItemMutation, showAlert]);
+  }, [
+    selectedGroup,
+    isSortChanged,
+    tempSortedItems,
+    reorderItemsMutation,
+    showAlert,
+    refetchCodeItems,
+  ]);
 
-  const handleCancelSortMode = useCallback(() => {
-    setIsItemSortMode(false);
-    setIsSortChanged(false);
-    setTempSortedItems([]);
+  const handleRowReorder = useCallback((newRows: CodeItemDisplay[]) => {
+    setTempSortedItems(newRows);
+    setIsSortChanged(true);
   }, []);
+
+  // 선택 모드
+  const handleStartSelectionMode = useCallback(() => {
+    setIsItemSelectionMode(true);
+    setSelectedItemIds([]);
+  }, []);
+
+  const handleCancelSelectionMode = useCallback(() => {
+    setIsItemSelectionMode(false);
+    setSelectedItemIds([]);
+  }, []);
+
+  const handleDeleteSelectedItems = useCallback(async () => {
+    if (!selectedGroup || selectedItemIds.length === 0) return;
+
+    try {
+      const numericIds = selectedItemIds.map((id) => Number(id));
+      await deleteItemsMutation.mutateAsync(numericIds);
+
+      showAlert({
+        title: ALERT_TITLES.SUCCESS,
+        message: getCodeItemDeleteSuccessMessage(selectedItemIds.length),
+        severity: 'success',
+      });
+
+      setIsItemSelectionMode(false);
+      setSelectedItemIds([]);
+    } catch (error) {
+      console.error('Failed to delete selected items:', error);
+      showAlert({
+        title: ALERT_TITLES.ERROR,
+        message: TOAST_MESSAGES.CODE_ITEM_DELETE_FAILED,
+        severity: 'error',
+      });
+    }
+  }, [selectedGroup, selectedItemIds, deleteItemsMutation, showAlert]);
+
+  useEffect(() => {
+    if (!selectedGroup) {
+      setIsItemFormOpen(false);
+      setIsItemSortMode(false);
+      setIsItemSelectionMode(false);
+      setSelectedItem(null);
+      setTempSortedItems([]);
+      setSelectedItemIds([]);
+    }
+  }, [selectedGroup]);
+
+  const renderActionButtons = () => {
+    if (isItemSortMode) {
+      return (
+        <Stack direction="row" spacing={1}>
+          <MediumButton variant="outlined" onClick={handleCancelSortMode} subType="u">
+            취소
+          </MediumButton>
+          <MediumButton
+            variant="contained"
+            onClick={handleSaveSortOrder}
+            disabled={!isSortChanged}
+            subType="c"
+          >
+            저장
+          </MediumButton>
+        </Stack>
+      );
+    }
+
+    if (isItemSelectionMode) {
+      return (
+        <Stack direction="row" spacing={1}>
+          <MediumButton variant="outlined" onClick={handleCancelSelectionMode} subType="u">
+            취소
+          </MediumButton>
+          <MediumButton
+            variant="contained"
+            onClick={handleDeleteSelectedItems}
+            disabled={selectedItemIds.length === 0}
+            subType="d"
+          >
+            선택 삭제
+          </MediumButton>
+        </Stack>
+      );
+    }
+
+    return (
+      <Stack direction="row" spacing={1}>
+        <MediumButton variant="outlined" onClick={handleStartSortMode} subType="u">
+          정렬편집
+        </MediumButton>
+        <MediumButton variant="outlined" onClick={handleStartSelectionMode} subType="u">
+          선택
+        </MediumButton>
+        <MediumButton variant="contained" onClick={handleAddItem} subType="c">
+          추가
+        </MediumButton>
+      </Stack>
+    );
+  };
 
   return (
     <>
       <Section>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <h2 style={{ fontSize: '1.2rem' }}>
-            코드아이템 (소분류) {selectedGroup ? `- ${selectedGroup.group_name}` : ''}
-          </h2>
-          <Stack direction="row" spacing={1}>
-            {selectedGroup && isItemSelectionMode && (
-              <>
-                <MediumButton
-                  variant="contained"
-                  color="error"
-                  onClick={handleConfirmDelete}
-                  subType="d"
-                >
-                  삭제
-                </MediumButton>
-                <MediumButton variant="outlined" onClick={handleToggleBulkDeleteMode} subType="etc">
-                  취소
-                </MediumButton>
-              </>
-            )}
-            {selectedGroup && !isItemSortMode && !isItemSelectionMode && codeItems.length > 0 && (
-              <MediumButton
-                variant="outlined"
-                color="error"
-                onClick={handleToggleBulkDeleteMode}
-                subType="d"
-              >
-                일괄삭제
-              </MediumButton>
-            )}
-            {selectedGroup && !isItemSortMode && !isItemSelectionMode && (
-              <MediumButton
-                variant="outlined"
-                onClick={() => setIsItemSortMode(true)}
-                disabled={codeItems.length === 0}
-                subType="u"
-              >
-                순서 편집
-              </MediumButton>
-            )}
-            {selectedGroup && isItemSortMode && (
-              <>
-                <MediumButton
-                  variant="contained"
-                  onClick={handleSaveSortOrder}
-                  disabled={!isSortChanged}
-                  subType="u"
-                >
-                  저장
-                </MediumButton>
-                <MediumButton variant="outlined" onClick={handleCancelSortMode} subType="etc">
-                  취소
-                </MediumButton>
-              </>
-            )}
-            {!isItemSortMode && !isItemSelectionMode && (
-              <MediumButton
-                variant="contained"
-                onClick={handleAddItem}
-                disabled={!selectedGroup}
-                subType="c"
-              >
-                추가
-              </MediumButton>
-            )}
-          </Stack>
+          <h2 style={{ fontSize: '1.2rem' }}>코드아이템 (소분류)</h2>
+          {selectedGroup && renderActionButtons()}
         </Stack>
 
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          {selectedGroup ? (
+        {!selectedGroup ? (
+          <Box
+            sx={{
+              height: '400px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'text.secondary',
+            }}
+          >
+            왼쪽에서 코드그룹을 선택하세요
+          </Box>
+        ) : (
+          <Box sx={{ flex: 1, minHeight: 0 }}>
             <SortableList
               columns={dynamicColumns}
-              rows={isItemSortMode && tempSortedItems.length > 0 ? tempSortedItems : codeItems}
+              rows={isItemSortMode ? tempSortedItems : codeItems}
               isLoading={isItemLoading}
-              onRowClick={isItemSortMode || isItemSelectionMode ? undefined : handleItemRowClick}
-              rowIdGetter={(row) => row.firebaseKey || row.code_item_id || 0}
-              autoHeight={false}
+              onRowClick={!isItemSortMode && !isItemSelectionMode ? handleItemRowClick : undefined}
               isSortMode={isItemSortMode}
-              onSortChange={handleDragOrderChange}
               isSelectionMode={isItemSelectionMode}
-              onSelectionChange={(ids) => setSelectedItemIds(ids)}
+              onSortChange={handleRowReorder}
+              onSelectionChange={setSelectedItemIds}
+              rowIdGetter={(row) => row.codeItemId || 0}
+              autoHeight={false}
             />
-          ) : (
-            <Box
-              sx={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'text.secondary',
-              }}
-            >
-              코드그룹을 선택해주세요
-            </Box>
-          )}
-        </Box>
+          </Box>
+        )}
       </Section>
 
       {isItemFormOpen && selectedGroup && (
@@ -588,19 +447,10 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
           <CodeItemForm
             selectedItem={isNewItem ? null : selectedItem}
             isNew={isNewItem}
-            selectedCodeGroupId={selectedGroup.code_group_id}
-            groupCode={selectedGroup.group_code}
-            initialSortOrder={
-              isNewItem && codeItems.length > 0
-                ? Math.max(...codeItems.map((item) => item.sort_order)) + 1
-                : 1
-            }
+            selectedCodeGroupId={selectedGroup.codeGroupId}
+            groupCode={selectedGroup.groupCode}
             onSave={handleSaveItem}
-            onCancel={() => {
-              setIsItemFormOpen(false);
-              setIsNewItem(false);
-              setSelectedItem(null);
-            }}
+            onCancel={handleCancelForm}
             onDelete={handleDeleteItem}
           />
         </Box>
