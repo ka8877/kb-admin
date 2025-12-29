@@ -29,7 +29,6 @@ import {
   fetchRecommendedQuestion,
   fetchApprovalDetailQuestions,
   fetchCodeItems,
-  fetchServiceMappings,
   fetchQuestionMappings,
   createRecommendedQuestion,
   createRecommendedQuestionsBatch,
@@ -142,7 +141,7 @@ export const useQuestionCategoryOptionsMap = () => {
         acc[group.groupValue] = group.options;
         return acc;
       },
-      {},
+      {}
     );
   }, [allCategories]);
 };
@@ -304,12 +303,12 @@ export const useQuestionMappingData = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // 2. 서비스 매핑 조회 (service_nm ↔ service_cd)
-  const { data: serviceMappings = [] } = useQuery({
-    queryKey: commonCodeKeys.serviceMappings(),
-    queryFn: fetchServiceMappings,
-    staleTime: 1000 * 60 * 5,
-  });
+  // // 2. 서비스 매핑 조회 (service_nm ↔ service_cd)
+  // const { data: serviceMappings = [] } = useQuery({
+  //   queryKey: commonCodeKeys.serviceMappings(),
+  //   queryFn: fetchServiceMappings,
+  //   staleTime: 1000 * 60 * 5,
+  // });
 
   // 3. 질문 매핑 조회 (service_cd ↔ qst_ctgr)
   const { data: questionMappings = [] } = useQuery({
@@ -318,7 +317,7 @@ export const useQuestionMappingData = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  return { codeItems, serviceMappings, questionMappings };
+  return { codeItems, questionMappings };
 };
 
 /**
@@ -326,7 +325,7 @@ export const useQuestionMappingData = () => {
  * 훅과 validation 등에서 모두 사용 가능
  */
 export const fetchQuestionCategoriesByService = async (
-  serviceCode: string,
+  serviceCode: string
 ): Promise<{ label: string; value: string }[]> => {
   try {
     if (!serviceCode) return [];
@@ -433,7 +432,7 @@ export const useServiceDataConverter = () => {
       // 3. 매칭되는 것이 없으면 입력값을 그대로 반환 (fallback)
       return { serviceCd: input, serviceNm: input };
     },
-    [serviceOptions],
+    [serviceOptions]
   );
 
   return { getServiceData };
@@ -489,6 +488,6 @@ export const useSearchFields = (serviceNm?: string): SearchField[] => {
         position: 'end',
       }, */
     ],
-    [serviceOptions, ageGroupOptions, questionCategoryOptions],
+    [serviceOptions, ageGroupOptions, questionCategoryOptions]
   );
 };

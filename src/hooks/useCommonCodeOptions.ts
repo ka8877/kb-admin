@@ -17,12 +17,15 @@ export type CommonCodeOption = {
  */
 export const fetchCommonCodeItems = async (
   groupCode: string | number,
-  useCodeNameAsValue: boolean = false,
+  useCodeNameAsValue: boolean = false
 ): Promise<CommonCodeOption[]> => {
-  const response = await getApi<CommonCodeItem[]>(API_ENDPOINTS.COMMON_CODE.CODE_ITEMS(groupCode), {
-    params: { includeInactive: false },
-    errorMessage: '공통 코드 목록을 불러오지 못했습니다.',
-  });
+  const response = await getApi<CommonCodeItem[]>(
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEMS(String(groupCode)),
+    {
+      params: { includeInactive: false },
+      errorMessage: '공통 코드 목록을 불러오지 못했습니다.',
+    }
+  );
 
   if (Array.isArray(response.data)) {
     return convertCommonCodeToOptions(response.data, useCodeNameAsValue);
@@ -38,7 +41,7 @@ export const fetchCommonCodeItems = async (
  */
 export const useCommonCodeOptions = (
   groupCode: string | number,
-  useCodeNameAsValue: boolean = false,
+  useCodeNameAsValue: boolean = false
 ) => {
   return useQuery({
     queryKey: ['commonCodeItems', groupCode, useCodeNameAsValue],
