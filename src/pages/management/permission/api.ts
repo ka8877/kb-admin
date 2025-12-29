@@ -1,94 +1,89 @@
-import { getApi, postApi, putApi, deleteApi } from '@/utils/apiUtils';
+import { getApi, postApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
-import { env } from '@/config';
-import type { PermissionItem } from './types';
+import type { PermissionItem, RoleApiItem } from './types';
 
-const baseURL = env.testURL;
-
-type FirebasePermission = {
-  permission_id: string;
-  permission_name: string;
-  status?: '활성' | '비활성';
-  is_active?: number;
-  created_at?: string;
-  updated_at?: string;
-};
-
-const normalize = (id: string, data: FirebasePermission): PermissionItem => {
-  const status = data.status ?? (data.is_active === 0 ? '비활성' : '활성');
+/**
+ * API 응답을 화면 표시용 타입으로 변환
+ */
+const transformToPermissionItem = (apiItem: RoleApiItem): PermissionItem => {
   return {
-    id,
-    permission_id: data.permission_id,
-    permission_name: data.permission_name,
-    status,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    id: apiItem.roleId,
+    permission_id: apiItem.roleCode,
+    permission_name: apiItem.roleName,
+    status: apiItem.isActive ? '활성' : '비활성',
   };
 };
 
-export const fetchPermissions = async (): Promise<PermissionItem[]> => {
-  const res = await getApi<Record<string, FirebasePermission>>(API_ENDPOINTS.PERMISSION.LIST, {
-    baseURL,
+/**
+ * 권한(Role) 목록 조회
+ * API spec: GET /api/v1/roles
+ */
+export const fetchPermissions = async (params?: {
+  includeInactive?: boolean;
+}): Promise<PermissionItem[]> => {
+  const { includeInactive = false } = params || {};
+
+  const response = await getApi<RoleApiItem[]>(API_ENDPOINTS.PERMISSION.LIST, {
+    params: {
+      includeInactive,
+    },
     errorMessage: '권한 목록을 불러오지 못했습니다.',
   });
 
-  if (!res.data || typeof res.data !== 'object') return [];
-  return Object.entries(res.data).map(([key, value]) => normalize(key, value));
+  const items = Array.isArray(response.data) ? response.data : [];
+  return items.map(transformToPermissionItem);
 };
 
+/**
+ * 권한(Role) 생성
+ * API spec: POST /api/v1/roles
+ */
 export const createPermission = async (
-  payload: Omit<PermissionItem, 'id' | 'created_at' | 'updated_at'>,
+  payload: Omit<PermissionItem, 'id' | 'created_at' | 'updated_at'>
 ): Promise<PermissionItem> => {
-  const now = new Date().toISOString();
-  const body: FirebasePermission = {
-    permission_id: payload.permission_id,
-    permission_name: payload.permission_name,
-    status: payload.status,
-    is_active: payload.status === '활성' ? 1 : 0,
-    created_at: now,
-    updated_at: now,
+  const body = {
+    roleCode: payload.permission_id,
+    roleName: payload.permission_name,
+    isActive: payload.status === '활성',
   };
 
-  const res = await postApi<{ name: string }>(API_ENDPOINTS.PERMISSION.CREATE, body, {
-    baseURL,
+  const response = await postApi<RoleApiItem>(API_ENDPOINTS.PERMISSION.CREATE, body, {
     errorMessage: '권한 생성에 실패했습니다.',
   });
 
-  const id = res.data?.name ?? payload.permission_id;
-  return normalize(id, body);
+  return transformToPermissionItem(response.data);
 };
 
+/**
+ * 권한(Role) 수정
+ * API spec: POST /api/v1/roles/{roleId}
+ */
 export const updatePermission = async (
   id: string | number,
-  payload: Partial<PermissionItem>,
+  payload: Partial<PermissionItem>
 ): Promise<PermissionItem> => {
-  const now = new Date().toISOString();
-  const body: Partial<FirebasePermission> = {
-    permission_name: payload.permission_name,
-    status: payload.status,
-    is_active: payload.status === '활성' ? 1 : payload.status === '비활성' ? 0 : undefined,
-    updated_at: now,
+  const body = {
+    roleName: payload.permission_name!,
+    isActive: payload.status === '활성',
   };
 
-  await putApi(API_ENDPOINTS.PERMISSION.UPDATE(id as number), body, {
-    baseURL,
+  const response = await postApi<RoleApiItem>(API_ENDPOINTS.PERMISSION.UPDATE(Number(id)), body, {
     errorMessage: '권한 수정에 실패했습니다.',
   });
 
-  // 읽기 전용 필드는 호출자 상태 기반으로 반환
-  return {
-    id,
-    permission_id: payload.permission_id || '',
-    permission_name: payload.permission_name || '',
-    status: payload.status ?? '활성',
-    created_at: payload.created_at,
-    updated_at: now,
-  };
+  return transformToPermissionItem(response.data);
 };
 
+/**
+ * 권한(Role) 비활성화
+ * API spec: POST /api/v1/roles/{roleId}/deactivate
+ */
 export const deletePermission = async (id: string | number): Promise<void> => {
-  await deleteApi(API_ENDPOINTS.PERMISSION.DELETE(id as number), {
-    baseURL,
-    errorMessage: '권한 삭제에 실패했습니다.',
-  });
+  await postApi(
+    API_ENDPOINTS.PERMISSION.DEACTIVATE(Number(id)),
+    {},
+    {
+      errorMessage: '권한 비활성화에 실패했습니다.',
+    }
+  );
 };

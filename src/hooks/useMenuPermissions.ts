@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import type { MenuItem } from '@/routes/menu';
+import type { MenuTreeItem } from '@/pages/management/screen-permission/types';
+import { env } from '@/config/env';
 import {
   fetchMenuTree,
   fetchPermissions,
-  fetchScreenPermissions,
+  fetchRoleMenuAccess,
 } from '@/pages/management/screen-permission/api';
 
-type MenuNode = MenuItem & { id?: string | number; children?: MenuNode[] };
+type MenuNode = MenuItem & { id?: string | number; code?: string; children?: MenuNode[] };
 
 /**
  * 메뉴 트리에서 모든 경로를 수집하는 헬퍼 함수
@@ -59,7 +61,7 @@ export const useMenuPermissions = (
   userRole: string | undefined,
   pathname: string,
   isLoginPage: boolean,
-  refreshTrigger?: number,
+  refreshTrigger?: number
 ) => {
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
@@ -79,29 +81,58 @@ export const useMenuPermissions = (
     const loadAndFilterMenus = async () => {
       try {
         setMenusLoaded(false);
-        const roleCode = String(userRole || '').toUpperCase();
 
-        // 메뉴 트리와 권한 목록 병렬 조회
-        const [menuTree, permissions] = await Promise.all([fetchMenuTree(), fetchPermissions()]);
+        // 메뉴 트리 조회
+        const menuTree = await fetchMenuTree();
+
+        // AUTH_ENABLED가 true면 권한 체크 없이 전체 메뉴 노출
+        if (env.auth.enabled) {
+          if (!mounted) return;
+
+          const paths = collectPaths(menuTree as MenuItem[]);
+          setMenus(menuTree as MenuItem[]);
+          setAllowedPaths(paths);
+          setMenusLoaded(true);
+          return;
+        }
+
+        // AUTH_ENABLED가 false일 때만 권한 기반 필터링
+        const roleCode = String(userRole || '').toUpperCase();
+        const permissions = await fetchPermissions();
 
         // 사용자 역할 코드에 해당하는 permission 찾기
         const matchedPermission = permissions.find(
-          (p) => String(p.permission_code || '').toUpperCase() === roleCode,
+          (p) => String(p.permission_code || '').toUpperCase() === roleCode
         );
 
         let filteredMenus: MenuNode[];
         if (!matchedPermission) {
           // 권한 정보 없으면 전체 메뉴 노출
-
           filteredMenus = menuTree as MenuNode[];
         } else {
-          // 화면 권한 데이터로 메뉴 필터링
-          const screenPerms = await fetchScreenPermissions(matchedPermission.permission_id);
-          // 화면 권한이 없으면 전체 메뉴 노출, 있으면 필터링
-          if (screenPerms.length === 0) {
+          // 메뉴 접근 권한 데이터로 메뉴 필터링
+          const roleMenuAccess = await fetchRoleMenuAccess(matchedPermission.permission_code);
+          const grantedMenus = roleMenuAccess.menus.filter((m) => m.granted);
+
+          // 권한이 없으면 전체 메뉴 노출, 있으면 필터링
+          if (grantedMenus.length === 0) {
             filteredMenus = menuTree as MenuNode[];
           } else {
-            const allowedIds = new Set<string>(screenPerms.map((p) => String(p.menu_id)));
+            // menuCode를 menuTree의 id와 매칭하기 위해 menuCode를 id로 변환
+            const menuCodeToId = new Map<string, string | number>();
+            const buildCodeMap = (nodes: MenuTreeItem[]) => {
+              nodes.forEach((node) => {
+                if (node.id !== undefined && node.code) {
+                  menuCodeToId.set(node.code, node.id);
+                }
+                if (node.children) buildCodeMap(node.children);
+              });
+            };
+            buildCodeMap(menuTree);
+
+            const allowedIds = new Set<string>(
+              grantedMenus.map((m) => String(menuCodeToId.get(m.menuCode) || m.menuCode))
+            );
             filteredMenus = filterByAllowedIds(menuTree as MenuNode[], allowedIds);
           }
         }
@@ -140,7 +171,7 @@ export const useMenuPermissions = (
     if (!menusLoaded || isLoginPage || pathname === '/') return;
 
     const allowed = allowedPaths.some(
-      (p) => pathname === p || (p !== '/' && pathname.startsWith(p + '/')),
+      (p) => pathname === p || (p !== '/' && pathname.startsWith(p + '/'))
     );
 
     if (!allowed) {

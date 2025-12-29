@@ -1,15 +1,8 @@
 // 화면 권한 관리 React Query 훅
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  fetchPermissions,
-  fetchMenuTree,
-  fetchScreenPermissions,
-  saveScreenPermissions,
-  deleteScreenPermission,
-  updateMenuSortOrder,
-} from './api';
-import type { ScreenPermissionInput } from './types';
+import { fetchPermissions, fetchMenuTree, fetchRoleMenuAccess, saveRoleMenuAccess } from './api';
+import type { MenuTreeItem } from './types';
 
 const screenPermissionKeys = {
   all: ['screenPermission'] as const,
@@ -41,67 +34,37 @@ export const useMenuTree = () => {
 };
 
 /**
- * 화면 권한 조회 훅
+ * 권한별 메뉴 접근 정보 조회 훅
  */
-export const useScreenPermissions = (permissionId: number | null) => {
+export const useRoleMenuAccess = (roleCode: string | null) => {
   return useQuery({
-    queryKey: screenPermissionKeys.screenPermissions(permissionId!),
-    queryFn: () => fetchScreenPermissions(permissionId!),
-    enabled: !!permissionId,
+    queryKey: [...screenPermissionKeys.all, 'roleMenuAccess', roleCode] as const,
+    queryFn: () => fetchRoleMenuAccess(roleCode!),
+    enabled: !!roleCode,
   });
 };
 
 /**
- * 화면 권한 저장 뮤테이션 훅
+ * 권한별 메뉴 접근 권한 저장 훅
  */
-export const useSaveScreenPermissions = () => {
+export const useSaveRoleMenuAccess = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
-      permissionId,
-      permissions,
+      roleCode,
+      menuCodes,
+      accessMode = 'READ',
     }: {
-      permissionId: number;
-      permissions: ScreenPermissionInput[];
-    }) => saveScreenPermissions(permissionId, permissions),
+      roleCode: string;
+      menuCodes: string[];
+      accessMode?: 'READ' | 'WRITE';
+    }) => saveRoleMenuAccess(roleCode, menuCodes, accessMode),
     onSuccess: (_, variables) => {
-      // 해당 권한의 화면 권한 목록 무효화
+      // 해당 권한의 메뉴 접근 정보 무효화
       queryClient.invalidateQueries({
-        queryKey: screenPermissionKeys.screenPermissions(variables.permissionId),
+        queryKey: [...screenPermissionKeys.all, 'roleMenuAccess', variables.roleCode],
       });
-    },
-  });
-};
-
-/**
- * 화면 권한 삭제 뮤테이션 훅
- */
-export const useDeleteScreenPermission = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ permissionId, menuId }: { permissionId: number; menuId: number }) =>
-      deleteScreenPermission(permissionId, menuId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: screenPermissionKeys.screenPermissions(variables.permissionId),
-      });
-    },
-  });
-};
-
-/**
- * 메뉴 정렬 순서 업데이트 훅
- */
-export const useUpdateMenuSortOrder = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ menuId, sortOrder }: { menuId: string | number; sortOrder: number }) =>
-      updateMenuSortOrder(menuId, sortOrder),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: screenPermissionKeys.menuTree() });
     },
   });
 };

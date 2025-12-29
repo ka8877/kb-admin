@@ -12,13 +12,8 @@ import { useAuthStore } from '@/store/auth';
 import { ALERT_TITLES } from '@/constants/message';
 import { MenuTree } from './components/MenuTree';
 import { permissionColumns } from './columns';
-import {
-  usePermissions,
-  useMenuTree,
-  useScreenPermissions,
-  useSaveScreenPermissions,
-} from './hooks';
-import type { Permission, PermissionDisplay, ScreenPermissionInput } from './types';
+import { usePermissions, useMenuTree, useRoleMenuAccess, useSaveRoleMenuAccess } from './hooks';
+import type { Permission, PermissionDisplay } from './types';
 
 const ScreenPermissionPage: React.FC = () => {
   const { showAlert } = useAlertDialog();
@@ -28,13 +23,14 @@ const ScreenPermissionPage: React.FC = () => {
   const { data: menuTree = [], isLoading: isMenuTreeLoading } = useMenuTree();
 
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
-  const [selectedMenuIds, setSelectedMenuIds] = useState<Set<string | number>>(new Set());
+  const [selectedMenuCodes, setSelectedMenuCodes] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
 
-  const { data: screenPermissions = [], isLoading: isScreenPermissionsLoading } =
-    useScreenPermissions(selectedPermission?.permission_id || null);
+  const { data: roleMenuAccess, isLoading: isRoleMenuAccessLoading } = useRoleMenuAccess(
+    selectedPermission?.permission_code || null
+  );
 
-  const savePermissionsMutation = useSaveScreenPermissions();
+  const saveMenuAccessMutation = useSaveRoleMenuAccess();
 
   // 권한 목록 표시용 데이터
   const permissionRows: PermissionDisplay[] = useMemo(() => {
@@ -44,29 +40,31 @@ const ScreenPermissionPage: React.FC = () => {
     }));
   }, [permissions]);
 
-  // 화면 권한 로드 시 선택된 메뉴 초기화
+  // 메뉴 접근 정보 로드 시 선택된 메뉴 초기화
   React.useEffect(() => {
-    if (screenPermissions.length > 0) {
-      const menuIds = new Set(screenPermissions.map((sp) => sp.menu_id));
-      setSelectedMenuIds(menuIds);
+    if (roleMenuAccess?.menus) {
+      const grantedMenuCodes = new Set(
+        roleMenuAccess.menus.filter((m) => m.granted).map((m) => m.menuCode)
+      );
+      setSelectedMenuCodes(grantedMenuCodes);
       setHasChanges(false);
     } else if (selectedPermission) {
-      setSelectedMenuIds(new Set());
+      setSelectedMenuCodes(new Set());
       setHasChanges(false);
     }
-  }, [screenPermissions, selectedPermission]);
+  }, [roleMenuAccess, selectedPermission]);
 
   const handlePermissionSelect = useCallback((params: { row: PermissionDisplay }) => {
     setSelectedPermission(params.row);
   }, []);
 
-  const handleMenuToggle = useCallback((menuId: string | number, checked: boolean) => {
-    setSelectedMenuIds((prev) => {
+  const handleMenuToggle = useCallback((menuCode: string, checked: boolean) => {
+    setSelectedMenuCodes((prev) => {
       const newSet = new Set(prev);
       if (checked) {
-        newSet.add(menuId);
+        newSet.add(menuCode);
       } else {
-        newSet.delete(menuId);
+        newSet.delete(menuCode);
       }
       return newSet;
     });
@@ -77,13 +75,12 @@ const ScreenPermissionPage: React.FC = () => {
     if (!selectedPermission) return;
 
     try {
-      const permissions: ScreenPermissionInput[] = Array.from(selectedMenuIds).map((menuId) => ({
-        menu_id: menuId,
-      }));
+      const menuCodes = Array.from(selectedMenuCodes);
 
-      await savePermissionsMutation.mutateAsync({
-        permissionId: selectedPermission.permission_id,
-        permissions,
+      await saveMenuAccessMutation.mutateAsync({
+        roleCode: selectedPermission.permission_code,
+        menuCodes,
+        accessMode: 'READ',
       });
 
       setHasChanges(false);
@@ -110,17 +107,19 @@ const ScreenPermissionPage: React.FC = () => {
         severity: 'error',
       });
     }
-  }, [selectedPermission, selectedMenuIds, savePermissionsMutation, showAlert, user?.role]);
+  }, [selectedPermission, selectedMenuCodes, saveMenuAccessMutation, showAlert, user?.role]);
 
   const handleCancel = useCallback(() => {
-    if (screenPermissions.length > 0) {
-      const menuIds = new Set(screenPermissions.map((sp) => sp.menu_id));
-      setSelectedMenuIds(menuIds);
+    if (roleMenuAccess?.menus) {
+      const grantedMenuCodes = new Set(
+        roleMenuAccess.menus.filter((m) => m.granted).map((m) => m.menuCode)
+      );
+      setSelectedMenuCodes(grantedMenuCodes);
     } else {
-      setSelectedMenuIds(new Set());
+      setSelectedMenuCodes(new Set());
     }
     setHasChanges(false);
-  }, [screenPermissions]);
+  }, [roleMenuAccess]);
 
   return (
     <Stack spacing={2} sx={{ height: '100%' }}>
@@ -165,7 +164,7 @@ const ScreenPermissionPage: React.FC = () => {
                 <MediumButton
                   variant="outlined"
                   onClick={handleCancel}
-                  disabled={!hasChanges || savePermissionsMutation.isPending}
+                  disabled={!hasChanges || saveMenuAccessMutation.isPending}
                   subType="etc"
                 >
                   취소
@@ -173,7 +172,7 @@ const ScreenPermissionPage: React.FC = () => {
                 <MediumButton
                   variant="contained"
                   onClick={handleSave}
-                  disabled={!hasChanges || savePermissionsMutation.isPending}
+                  disabled={!hasChanges || saveMenuAccessMutation.isPending}
                   subType="u"
                 >
                   저장
@@ -184,14 +183,14 @@ const ScreenPermissionPage: React.FC = () => {
 
           <Box sx={{ flex: 1, overflow: 'auto' }}>
             {selectedPermission ? (
-              isMenuTreeLoading || isScreenPermissionsLoading ? (
+              isMenuTreeLoading || isRoleMenuAccessLoading ? (
                 <InlineSpinner />
               ) : (
                 <MenuTree
                   menus={menuTree}
-                  selectedMenuIds={selectedMenuIds}
+                  selectedMenuCodes={selectedMenuCodes}
                   onMenuToggle={handleMenuToggle}
-                  disabled={savePermissionsMutation.isPending}
+                  disabled={saveMenuAccessMutation.isPending}
                 />
               )
             ) : (

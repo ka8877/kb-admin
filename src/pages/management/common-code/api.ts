@@ -12,6 +12,7 @@ import type {
   QuestionMapping,
   ServiceMappingDisplay,
   QuestionMappingDisplay,
+  ServiceCategoryMappingItem,
 } from './types';
 import { env } from '@/config';
 
@@ -65,7 +66,7 @@ export const createCodeGroup = async (data: {
  */
 export const updateCodeGroup = async (
   groupCode: string,
-  data: { groupName: string },
+  data: { groupName: string }
 ): Promise<void> => {
   await postApi(API_ENDPOINTS.COMMON_CODE.CODE_GROUP_UPDATE(groupCode), data, {
     errorMessage: '코드그룹 수정에 실패했습니다.',
@@ -77,9 +78,13 @@ export const updateCodeGroup = async (
  * API spec: POST /api/v1/common-codes/groups/{groupCode}/deactivate
  */
 export const deactivateCodeGroup = async (groupCode: string): Promise<void> => {
-  await postApi(API_ENDPOINTS.COMMON_CODE.CODE_GROUP_DEACTIVATE(groupCode), {}, {
-    errorMessage: '코드그룹 비활성화에 실패했습니다.',
-  });
+  await postApi(
+    API_ENDPOINTS.COMMON_CODE.CODE_GROUP_DEACTIVATE(groupCode),
+    {},
+    {
+      errorMessage: '코드그룹 비활성화에 실패했습니다.',
+    }
+  );
 };
 
 // 하위 호환성을 위한 함수들
@@ -154,14 +159,14 @@ export const createCodeItem = async (
     code: string;
     codeName: string;
     sortOrder: number;
-  },
+  }
 ): Promise<CodeItem> => {
   const response = await postApi<CodeItem>(
     API_ENDPOINTS.COMMON_CODE.CODE_ITEM_CREATE(groupCode),
     data,
     {
       errorMessage: '코드아이템 생성에 실패했습니다.',
-    },
+    }
   );
 
   return response.data;
@@ -177,7 +182,7 @@ export const updateCodeItem = async (
     code: string;
     codeName: string;
     sortOrder: number;
-  },
+  }
 ): Promise<void> => {
   await postApi(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_UPDATE(codeItemId), data, {
     errorMessage: '코드아이템 수정에 실패했습니다.',
@@ -189,9 +194,13 @@ export const updateCodeItem = async (
  * API spec: POST /api/v1/common-codes/items/{codeItemId}/deactivate
  */
 export const deactivateCodeItem = async (codeItemId: number): Promise<void> => {
-  await postApi(API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DEACTIVATE(codeItemId), {}, {
-    errorMessage: '코드아이템 비활성화에 실패했습니다.',
-  });
+  await postApi(
+    API_ENDPOINTS.COMMON_CODE.CODE_ITEM_DEACTIVATE(codeItemId),
+    {},
+    {
+      errorMessage: '코드아이템 비활성화에 실패했습니다.',
+    }
+  );
 };
 
 /**
@@ -204,7 +213,7 @@ export const bulkDeactivateCodeItems = async (codeItemIds: number[]): Promise<vo
     { codeItemIds },
     {
       errorMessage: '코드아이템 일괄 비활성화에 실패했습니다.',
-    },
+    }
   );
 };
 
@@ -214,14 +223,14 @@ export const bulkDeactivateCodeItems = async (codeItemIds: number[]): Promise<vo
  */
 export const reorderCodeItems = async (
   groupCode: string,
-  items: Array<{ codeItemId: number; sortOrder: number }>,
+  items: Array<{ codeItemId: number; sortOrder: number }>
 ): Promise<void> => {
   await postApi(
     API_ENDPOINTS.COMMON_CODE.CODE_ITEMS_REORDER(groupCode),
     { items },
     {
       errorMessage: '정렬순서 저장에 실패했습니다.',
-    },
+    }
   );
 };
 
@@ -247,7 +256,7 @@ const codeMappingsBasePath = 'management/common-code/code-mappings';
  */
 const transformServiceMappingItem = (
   v: Partial<ServiceMapping> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number },
+  options: { index: number; fallbackId?: string | number }
 ): ServiceMapping | null => {
   const { fallbackId } = options;
 
@@ -309,7 +318,7 @@ export const upsertServiceMapping = async (
   data: Omit<
     ServiceMapping,
     'code_mapping_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at' | 'firebaseKey'
-  > & { firebaseKey?: string },
+  > & { firebaseKey?: string }
 ): Promise<ServiceMapping> => {
   const timestamp = Date.now();
   const code_mapping_id = timestamp;
@@ -339,7 +348,7 @@ export const upsertServiceMapping = async (
  */
 const transformQuestionMappingItem = (
   v: Partial<QuestionMapping> & Record<string, unknown>,
-  options: { index: number; fallbackId?: string | number },
+  options: { index: number; fallbackId?: string | number }
 ): QuestionMapping | null => {
   const { fallbackId } = options;
 
@@ -382,61 +391,56 @@ const transformQuestionMappings = (raw: unknown): QuestionMapping[] => {
 };
 
 /**
- * 질문 매핑 목록 조회 (Firebase)
+ * 서비스별 질문 카테고리 매핑 목록 조회
+ * API spec: GET /api/v1/common-codes/mappings/qst-categories?serviceCd={serviceCd}
  */
-export const fetchQuestionMappings = async (): Promise<QuestionMapping[]> => {
-  const response = await getApi<QuestionMapping[]>(`${codeMappingsBasePath}.json`, {
-    baseURL: env.testURL,
-    transform: transformQuestionMappings,
-    errorMessage: '질문 매핑 데이터를 불러오지 못했습니다.',
-  });
-
-  return response.data.filter((item) => item.mapping_type === 'QUESTION');
-};
-
-/**
- * 질문 매핑 생성/수정 (upsert) (Firebase)
- */
-export const upsertQuestionMapping = async (
-  data: Omit<
-    QuestionMapping,
-    'code_mapping_id' | 'created_by' | 'created_at' | 'updated_by' | 'updated_at' | 'firebaseKey'
-  > & { firebaseKey?: string },
-): Promise<QuestionMapping> => {
-  const timestamp = Date.now();
-  const code_mapping_id = timestamp;
-
-  const mappingData = {
-    ...data,
-    code_mapping_id,
-    mapping_type: 'QUESTION' as const,
-    created_by: 1,
-    created_at: new Date().toISOString(),
-  };
-
-  const path = data.firebaseKey
-    ? `${codeMappingsBasePath}/${data.firebaseKey}.json`
-    : `${codeMappingsBasePath}.json`;
-
-  const response = await postApi<QuestionMapping>(path, mappingData, {
-    baseURL: env.testURL,
-    errorMessage: '질문 매핑 저장에 실패했습니다.',
-  });
-
-  return response.data;
-};
-
-/**
- * 매핑 삭제 (Firebase)
- */
-export const deleteMapping = async (firebaseKey: string): Promise<void> => {
-  const path = `${codeMappingsBasePath}/${firebaseKey}.json`;
-
-  const response = await fetch(`${env.testURL}/${path}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    throw new Error('매핑 삭제에 실패했습니다.');
+export const fetchQuestionMappings = async (
+  serviceCd?: string
+): Promise<ServiceCategoryMappingItem[]> => {
+  if (!serviceCd) {
+    // serviceCd가 없으면 빈 배열 반환
+    return [];
   }
+
+  const response = await getApi<ServiceCategoryMappingItem[]>(
+    API_ENDPOINTS.COMMON_CODE.QST_CATEGORIES,
+    {
+      params: { serviceCd },
+      errorMessage: '질문 카테고리 매핑 데이터를 불러오지 못했습니다.',
+    }
+  );
+
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+/**
+ * 모든 서비스별 질문 카테고리 매핑 조회
+ * API spec: GET /api/v1/common-codes/mappings/qst-categories/services?includeInactiveService=false
+ */
+export const fetchAllServiceQstCategories = async (params?: {
+  includeInactiveService?: boolean;
+}): Promise<any[]> => {
+  const response = await getApi<any[]>(API_ENDPOINTS.COMMON_CODE.QST_CATEGORIES_SERVICES, {
+    params,
+    errorMessage: '서비스별 질문 카테고리 목록을 불러오지 못했습니다.',
+  });
+
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+/**
+ * 서비스별 질문 카테고리 매핑 저장
+ * API spec: POST /api/v1/common-codes/mappings/qst-categories/{serviceCd}
+ */
+export const saveQuestionMappings = async (
+  serviceCd: string,
+  data: {
+    qstCtgrCodeItemIds?: number[];
+    qstCtgrCodes?: string[];
+    reason?: string;
+  }
+): Promise<void> => {
+  await postApi(API_ENDPOINTS.COMMON_CODE.QST_CATEGORIES_SAVE(serviceCd), data, {
+    errorMessage: '질문 카테고리 매핑 저장에 실패했습니다.',
+  });
 };

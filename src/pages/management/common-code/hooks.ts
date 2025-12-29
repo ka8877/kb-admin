@@ -1,7 +1,6 @@
 // 공통코드 관련 React Query 훅
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { commonCodeKeys } from '@/constants/queryKey';
-import type { CodeGroupDisplay, CodeItemDisplay } from './types';
 import {
   fetchCodeGroups,
   fetchCodeGroup,
@@ -18,8 +17,8 @@ import {
   fetchServiceMappings,
   upsertServiceMapping,
   fetchQuestionMappings,
-  upsertQuestionMapping,
-  deleteMapping,
+  fetchAllServiceQstCategories,
+  saveQuestionMappings,
   type FetchCodeItemsParams,
 } from './api';
 
@@ -255,13 +254,16 @@ export const useUpsertServiceMapping = () => {
 };
 
 /**
- * 서비스 매핑 삭제 뮤테이션 훅
+ * 서비스 매핑 삭제 뮤테이션 훅 (레거시)
  */
 export const useDeleteServiceMapping = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (firebaseKey: string) => deleteMapping(firebaseKey),
+    mutationFn: async (_firebaseKey: string) => {
+      // Firebase 삭제는 더 이상 지원하지 않음
+      console.warn('Firebase mapping deletion is deprecated');
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceMappings'] });
     },
@@ -273,39 +275,51 @@ export const useDeleteServiceMapping = () => {
 // ======================
 
 /**
- * 질문 매핑 목록 조회 훅
+ * 질문 매핑 목록 조회 훅 (특정 서비스)
  */
-export const useQuestionMappings = () => {
+export const useQuestionMappings = (serviceCd?: string) => {
   return useQuery({
-    queryKey: ['questionMappings'],
-    queryFn: () => fetchQuestionMappings(),
+    queryKey: ['questionMappings', serviceCd],
+    queryFn: () => fetchQuestionMappings(serviceCd),
+    enabled: !!serviceCd,
   });
 };
 
 /**
- * 질문 매핑 생성/수정 뮤테이션 훅
+ * 모든 서비스별 질문 카테고리 매핑 조회 훅
  */
-export const useUpsertQuestionMapping = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: upsertQuestionMapping,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
-    },
+export const useAllServiceQstCategories = (params?: { includeInactiveService?: boolean }) => {
+  return useQuery({
+    queryKey: ['allServiceQstCategories', params],
+    queryFn: () => fetchAllServiceQstCategories(params),
   });
 };
 
 /**
- * 질문 매핑 삭제 뮤테이션 훅
+ * 질문 매핑 저장 뮤테이션 훅
  */
-export const useDeleteQuestionMapping = () => {
+export const useSaveQuestionMappings = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (firebaseKey: string) => deleteMapping(firebaseKey),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionMappings'] });
+    mutationFn: ({
+      serviceCd,
+      data,
+    }: {
+      serviceCd: string;
+      data: {
+        qstCtgrCodeItemIds?: number[];
+        qstCtgrCodes?: string[];
+        reason?: string;
+      };
+    }) => saveQuestionMappings(serviceCd, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['questionMappings', variables.serviceCd] });
+      queryClient.invalidateQueries({ queryKey: ['allServiceQstCategories'] });
     },
   });
 };
+
+// 하위 호환성
+export const useUpsertQuestionMapping = useSaveQuestionMappings;
+export const useDeleteQuestionMapping = useSaveQuestionMappings;

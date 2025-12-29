@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Checkbox,
@@ -16,13 +16,12 @@ import { ALERT_TITLES } from '@/constants/message';
 import {
   useCodeItems,
   useQuestionMappings,
-  useUpsertQuestionMapping,
-  useDeleteQuestionMapping,
+  useSaveQuestionMappings,
 } from '../hooks';
 
 /**
  * 질문 매핑 섹션
- * service_cd ↔ qst_ctgr (1:N 매핑)
+ * service_cd  qst_ctgr (1:N 매핑)
  * 사용자는 서비스명으로 보고 질문카테고리를 선택
  */
 const QuestionMappingSection: React.FC = () => {
@@ -31,121 +30,78 @@ const QuestionMappingSection: React.FC = () => {
   // 데이터 로드
   const { data: serviceCdItems = [] } = useCodeItems({ groupCode: 'service_cd' });
   const { data: qstCtgrItems = [] } = useCodeItems({ groupCode: 'qst_ctgr' });
-  const serviceCodeItems = serviceCdItems;
   const questionCategoryItems = qstCtgrItems;
-  const { data: questionMappings = [] } = useQuestionMappings();
 
-  const upsertMappingMutation = useUpsertQuestionMapping();
-  const deleteMappingMutation = useDeleteQuestionMapping();
-
-  const [selectedServiceFirebaseKey, setSelectedServiceFirebaseKey] = useState<number | null>(null);
-  const [selectedQuestionKeys, setSelectedQuestionKeys] = useState<Set<number>>(new Set());
+  const [selectedServiceCode, setSelectedServiceCode] = useState<string | null>(null);
+  const [selectedQuestionCodes, setSelectedQuestionCodes] = useState<Set<string>>(new Set());
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
-  // 서비스 목록 (서비스명 포함)
+  // 선택된 서비스의 매핑 데이터 조회
+  const { data: mappedCategories = [], isLoading: isMappingLoading } = useQuestionMappings(
+    selectedServiceCode || undefined
+  );
+
+  const saveMappingsMutation = useSaveQuestionMappings();
+
+  // 서비스 목록 (code를 serviceCd로 사용)
   const services = useMemo(() => {
-    return serviceCodeItems.map((item) => {
-      return {
-        codeItemId: item.codeItemId,
-        serviceCode: item.codeName, // service_cd의 codeName이 서비스코드
-        serviceName: item.codeName, // 기본적으로 codeName 사용
-        isActive: item.isActive,
-      };
-    });
-  }, [serviceCodeItems]);
+    return serviceCdItems.map((item) => ({
+      codeItemId: item.codeItemId,
+      serviceCode: item.code, // service_cd의 code가 실제 서비스코드
+      serviceName: item.codeName, // codeName이 서비스명
+      isActive: item.isActive,
+    }));
+  }, [serviceCdItems]);
 
-  // 선택된 서비스에 매핑된 질문 카테고리 codeItemId 목록
-  const mappedQuestionKeys = useMemo(() => {
-    if (!selectedServiceFirebaseKey) return new Set<number>();
+  // 현재 매핑된 질문 카테고리 코드 Set
+  const mappedQuestionCodes = useMemo(() => {
+    return new Set(mappedCategories.map((cat) => cat.code));
+  }, [mappedCategories]);
 
-    const mapped = questionMappings
-      .filter((m) => m.parent_code_item_id === selectedServiceFirebaseKey)
-      .map((m) => Number(m.child_code_item_id));
+  // 선택된 서비스에 매핑된 질문 카테고리 codeItemId 목록 (다른 서비스 것 제외)
+  const currentMappedItemIds = useMemo(() => {
+    return new Set(mappedCategories.map((cat) => cat.codeItemId));
+  }, [mappedCategories]);
 
-    return new Set(mapped);
-  }, [selectedServiceFirebaseKey, questionMappings]);
-
-  // 다른 서비스에 매핑된 질문 카테고리 codeItemId 목록
-  const otherServiceMappedKeys = useMemo(() => {
-    if (!selectedServiceFirebaseKey) return new Set<number>();
-
-    const otherMapped = questionMappings
-      .filter((m) => m.parent_code_item_id !== selectedServiceFirebaseKey)
-      .map((m) => Number(m.child_code_item_id));
-
-    return new Set(otherMapped);
-  }, [selectedServiceFirebaseKey, questionMappings]);
-
-  // 질문 카테고리가 매핑된 서비스명 찾기
-  const getQuestionMappedServiceName = (questionKey: number): string | null => {
-    const mapping = questionMappings.find(
-      (m) =>
-        Number(m.child_code_item_id) === questionKey &&
-        m.parent_code_item_id !== selectedServiceFirebaseKey
-    );
-
-    if (!mapping) return null;
-
-    const service = services.find((s) => s.codeItemId === Number(mapping.parent_code_item_id));
-    return service?.serviceName || null;
-  };
-
-  // 서비스 선택 시 현재 매핑된 질문 목록으로 초기화
+  // 서비스 선택 시 현재 매핑된 질문 코드로 초기화
   useEffect(() => {
-    if (selectedServiceFirebaseKey) {
-      setSelectedQuestionKeys(new Set(mappedQuestionKeys));
+    if (selectedServiceCode && mappedQuestionCodes.size > 0) {
+      setSelectedQuestionCodes(new Set(mappedQuestionCodes));
+    } else if (selectedServiceCode) {
+      setSelectedQuestionCodes(new Set());
     }
-  }, [selectedServiceFirebaseKey, mappedQuestionKeys]);
+  }, [selectedServiceCode, mappedQuestionCodes]);
 
-  const handleServiceSelect = (serviceCodeItemId: number) => {
-    setSelectedServiceFirebaseKey(serviceCodeItemId);
+  const handleServiceSelect = (serviceCode: string) => {
+    setSelectedServiceCode(serviceCode);
   };
 
-  const handleQuestionToggle = (questionCodeItemId: number, checked: boolean) => {
-    setSelectedQuestionKeys((prev) => {
+  const handleQuestionToggle = (questionCode: string, checked: boolean) => {
+    setSelectedQuestionCodes((prev) => {
       const newSet = new Set(prev);
       if (checked) {
-        newSet.add(questionCodeItemId);
+        newSet.add(questionCode);
       } else {
-        newSet.delete(questionCodeItemId);
+        newSet.delete(questionCode);
       }
       return newSet;
     });
   };
 
   const handleApply = async () => {
-    if (!selectedServiceFirebaseKey) return;
+    if (!selectedServiceCode) return;
 
     try {
-      // 추가할 항목과 삭제할 항목 계산
-      const toAdd = Array.from(selectedQuestionKeys).filter((key) => !mappedQuestionKeys.has(key));
-      const toDelete = Array.from(mappedQuestionKeys).filter(
-        (key) => !selectedQuestionKeys.has(key)
-      );
+      // 선택된 질문 카테고리 코드 배열로 저장
+      const qstCtgrCodes = Array.from(selectedQuestionCodes);
 
-      // 추가
-      for (const questionKey of toAdd) {
-        await upsertMappingMutation.mutateAsync({
-          mapping_type: 'QUESTION',
-          parent_code_item_id: selectedServiceFirebaseKey,
-          child_code_item_id: questionKey,
-          sort_order: 0,
-          is_active: 1,
-        });
-      }
-
-      // 삭제
-      for (const questionKey of toDelete) {
-        const mapping = questionMappings.find(
-          (m) =>
-            m.parent_code_item_id === selectedServiceFirebaseKey &&
-            Number(m.child_code_item_id) === questionKey
-        );
-
-        if (mapping?.firebaseKey) {
-          await deleteMappingMutation.mutateAsync(mapping.firebaseKey);
-        }
-      }
+      await saveMappingsMutation.mutateAsync({
+        serviceCd: selectedServiceCode,
+        data: {
+          qstCtgrCodes,
+          reason: '질문 카테고리 매핑 업데이트',
+        },
+      });
 
       showAlert({
         title: ALERT_TITLES.SUCCESS,
@@ -173,11 +129,11 @@ const QuestionMappingSection: React.FC = () => {
     );
   }, [questionCategoryItems, searchKeyword]);
 
-  const selectedService = services.find((s) => s.codeItemId === selectedServiceFirebaseKey);
+  const selectedService = services.find((s) => s.serviceCode === selectedServiceCode);
   const hasChanges =
-    selectedServiceFirebaseKey &&
-    (selectedQuestionKeys.size !== mappedQuestionKeys.size ||
-      Array.from(selectedQuestionKeys).some((key) => !mappedQuestionKeys.has(key)));
+    selectedServiceCode &&
+    (selectedQuestionCodes.size !== mappedQuestionCodes.size ||
+      Array.from(selectedQuestionCodes).some((code) => !mappedQuestionCodes.has(code)));
 
   return (
     <Section title="질문 매핑">
@@ -191,10 +147,8 @@ const QuestionMappingSection: React.FC = () => {
             {services.map((service) => (
               <MediumButton
                 key={service.codeItemId}
-                variant={
-                  selectedServiceFirebaseKey === service.codeItemId ? 'contained' : 'outlined'
-                }
-                onClick={() => handleServiceSelect(service.codeItemId)}
+                variant={selectedServiceCode === service.serviceCode ? 'contained' : 'outlined'}
+                onClick={() => handleServiceSelect(service.serviceCode)}
                 sx={{
                   justifyContent: 'flex-start',
                   textAlign: 'left',
@@ -232,11 +186,7 @@ const QuestionMappingSection: React.FC = () => {
                 <MediumButton
                   variant="contained"
                   onClick={handleApply}
-                  disabled={
-                    !hasChanges ||
-                    upsertMappingMutation.isPending ||
-                    deleteMappingMutation.isPending
-                  }
+                  disabled={!hasChanges || saveMappingsMutation.isPending || isMappingLoading}
                   subType="u"
                 >
                   적용
@@ -252,41 +202,32 @@ const QuestionMappingSection: React.FC = () => {
               <Box sx={{ flex: 1, overflow: 'auto' }}>
                 <Stack spacing={1}>
                   {filteredQuestionItems.map((question) => {
-                    const questionKey = question.codeItemId;
-                    const isMappedToOther = otherServiceMappedKeys.has(questionKey);
-                    const mappedServiceName = isMappedToOther
-                      ? getQuestionMappedServiceName(questionKey)
-                      : null;
+                    const questionCode = question.code;
+                    const isMapped = currentMappedItemIds.has(question.codeItemId);
+                    
                     return (
                       <FormControlLabel
-                        key={questionKey}
+                        key={question.codeItemId}
                         control={
                           <Checkbox
-                            checked={selectedQuestionKeys.has(questionKey)}
-                            onChange={(e) => handleQuestionToggle(questionKey, e.target.checked)}
-                            disabled={
-                              upsertMappingMutation.isPending ||
-                              deleteMappingMutation.isPending ||
-                              isMappedToOther
-                            }
+                            checked={selectedQuestionCodes.has(questionCode)}
+                            onChange={(e) => handleQuestionToggle(questionCode, e.target.checked)}
+                            disabled={saveMappingsMutation.isPending || isMappingLoading}
                           />
                         }
                         label={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                             <Box sx={{ flex: 1 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{ color: isMappedToOther ? 'text.disabled' : 'inherit' }}
-                              >
+                              <Typography variant="body2">
                                 {question.codeName}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {question.code}
                               </Typography>
                             </Box>
-                            {isMappedToOther && mappedServiceName && (
+                            {isMapped && (
                               <Chip
-                                label={mappedServiceName}
+                                label="매핑됨"
                                 size="small"
                                 color="primary"
                                 variant="outlined"

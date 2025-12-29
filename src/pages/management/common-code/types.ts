@@ -42,7 +42,25 @@ export interface CodeItemDisplay extends CodeItem {
 // 하위 호환성을 위한 타입 (기존 코드에서 사용 중)
 export type RowItem = CodeItemDisplay;
 
-// 레거시 매핑 타입들 (Firebase 기반, API spec에 없으므로 추후 제거 예정)
+/**
+ * 서비스별 질문 카테고리 매핑 정보
+ * API spec 6) 공통코드 매핑 참조
+ */
+export interface ServiceCategoryMappingItem extends CodeItem {
+  mappingSortOrder: number;
+}
+
+/**
+ * 서비스별 질문 카테고리 전체 정보
+ */
+export interface ServiceQstCategoriesInfo {
+  serviceCodeItemId: number;
+  serviceCd: string;
+  serviceName: string;
+  qstCategories: ServiceCategoryMappingItem[];
+}
+
+// 레거시 매핑 타입들 (Firebase 기반, 하위 호환성을 위해 유지)
 export interface ServiceMapping {
   code_mapping_id: number;
   mapping_type: 'SERVICE';

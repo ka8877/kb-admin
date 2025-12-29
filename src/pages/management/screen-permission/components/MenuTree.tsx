@@ -1,37 +1,31 @@
 import React from 'react';
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Typography,
-  Stack,
-} from '@mui/material';
+import { Box, Checkbox, FormControlLabel, Typography, Stack } from '@mui/material';
 import type { MenuTreeItem } from '../types';
 
 interface MenuTreeProps {
   menus: MenuTreeItem[];
-  selectedMenuIds: Set<string | number>;
-  onMenuToggle: (menuId: string | number, checked: boolean) => void;
+  selectedMenuCodes: Set<string>;
+  onMenuToggle: (menuCode: string, checked: boolean) => void;
   disabled?: boolean;
 }
 
 interface MenuTreeNodeProps {
   menu: MenuTreeItem;
-  selectedMenuIds: Set<string | number>;
-  onMenuToggle: (menuId: string | number, checked: boolean) => void;
+  selectedMenuCodes: Set<string>;
+  onMenuToggle: (menuCode: string, checked: boolean) => void;
   disabled?: boolean;
   isChild?: boolean;
 }
 
 const MenuTreeNode: React.FC<MenuTreeNodeProps> = ({
   menu,
-  selectedMenuIds,
+  selectedMenuCodes,
   onMenuToggle,
   disabled = false,
   isChild = false,
 }) => {
   const hasChildren = Boolean(menu.children && menu.children.length);
-  const isChecked = selectedMenuIds.has(menu.id);
+  const isChecked = selectedMenuCodes.has(menu.code);
 
   if (!hasChildren) {
     if (!isChild) {
@@ -47,7 +41,7 @@ const MenuTreeNode: React.FC<MenuTreeNodeProps> = ({
         control={
           <Checkbox
             checked={isChecked}
-            onChange={(e) => onMenuToggle(menu.id, e.target.checked)}
+            onChange={(e) => onMenuToggle(menu.code, e.target.checked)}
             disabled={disabled}
             size="small"
           />
@@ -64,9 +58,9 @@ const MenuTreeNode: React.FC<MenuTreeNodeProps> = ({
 
   return (
     <Box sx={{ my: 1 }}>
-      <Typography 
-        variant="body2" 
-        fontWeight="medium" 
+      <Typography
+        variant="body2"
+        fontWeight="medium"
         sx={{ fontSize: '0.875rem', mb: 0.5, color: 'text.secondary' }}
       >
         {menu.label}
@@ -76,7 +70,7 @@ const MenuTreeNode: React.FC<MenuTreeNodeProps> = ({
           <MenuTreeNode
             key={child.id}
             menu={child}
-            selectedMenuIds={selectedMenuIds}
+            selectedMenuCodes={selectedMenuCodes}
             onMenuToggle={onMenuToggle}
             disabled={disabled}
             isChild
@@ -89,7 +83,7 @@ const MenuTreeNode: React.FC<MenuTreeNodeProps> = ({
 
 export const MenuTree: React.FC<MenuTreeProps> = ({
   menus,
-  selectedMenuIds,
+  selectedMenuCodes,
   onMenuToggle,
   disabled = false,
 }) => {
@@ -99,7 +93,7 @@ export const MenuTree: React.FC<MenuTreeProps> = ({
         <MenuTreeNode
           key={menu.id}
           menu={menu}
-          selectedMenuIds={selectedMenuIds}
+          selectedMenuCodes={selectedMenuCodes}
           onMenuToggle={onMenuToggle}
           disabled={disabled}
         />

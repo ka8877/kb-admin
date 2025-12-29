@@ -39,22 +39,28 @@ export const API_ENDPOINTS = {
     // 질문 카테고리 조회 (서비스 코드별) - 새로운 API
     QUESTION_CATEGORIES: '/api/v1/common-codes/mappings/qst-categories',
     // 코드그룹 (cm_code_group)
-    CODE_GROUPS: '/management/common-code/code-groups.json',
-    CODE_GROUP_DETAIL: (id: number) => `/management/common-code/code-groups/${id}.json`,
-    CODE_GROUP_CREATE: '/management/common-code/code-groups.json',
-    CODE_GROUP_UPDATE: (id: number | string) => `/management/common-code/code-groups/${id}.json`,
-    CODE_GROUP_DELETE: (id: number | string) => `/management/common-code/code-groups/${id}.json`,
-    // 코드아이템 (cm_code_item) - 새로운 API
-    CODE_ITEMS: (groupCode: string | number) => `/api/v1/common-codes/groups/${groupCode}/items`,
-    CODE_ITEM_DETAIL: (id: number | string) => `/management/common-code/code-items/${id}.json`,
-    CODE_ITEM_CREATE: '/management/common-code/code-items.json',
-    CODE_ITEM_UPDATE: (id: number | string) => `/management/common-code/code-items/${id}.json`,
-    CODE_ITEM_DELETE: (id: number | string) => `/management/common-code/code-items/${id}.json`,
-    // 코드 매핑 (cm_code_mapping)
-    CODE_MAPPINGS: '/management/common-code/code-mappings.json',
-    CODE_MAPPING_CREATE: '/management/common-code/code-mappings.json',
-    CODE_MAPPING_UPDATE: (id: number) => `/management/common-code/code-mappings/${id}.json`,
-    CODE_MAPPING_DELETE: (id: number) => `/management/common-code/code-mappings/${id}.json`,
+    CODE_GROUPS: '/api/v1/common-codes/groups',
+    CODE_GROUP_DETAIL: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}`,
+    CODE_GROUP_CREATE: '/api/v1/common-codes/groups',
+    CODE_GROUP_UPDATE: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}`,
+    CODE_GROUP_DEACTIVATE: (groupCode: string) =>
+      `/api/v1/common-codes/groups/${groupCode}/deactivate`,
+    // 코드아이템 (cm_code_item)
+    CODE_ITEMS_ALL: '/api/v1/common-codes/items', // 모든 코드 아이템 조회
+    CODE_ITEMS: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
+    CODE_ITEM_DETAIL: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
+    CODE_ITEM_CREATE: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
+    CODE_ITEM_UPDATE: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
+    CODE_ITEM_DEACTIVATE: (codeItemId: number) =>
+      `/api/v1/common-codes/items/${codeItemId}/deactivate`,
+    CODE_ITEMS_BULK_DEACTIVATE: '/api/v1/common-codes/items/bulk-deactivate',
+    CODE_ITEMS_REORDER: (groupCode: string) =>
+      `/api/v1/common-codes/groups/${groupCode}/items/reorder`,
+    // 코드 매핑 (서비스별 질문 카테고리)
+    QST_CATEGORIES: '/api/v1/common-codes/mappings/qst-categories', // serviceCd query 필요
+    QST_CATEGORIES_SERVICES: '/api/v1/common-codes/mappings/qst-categories/services',
+    QST_CATEGORIES_SAVE: (serviceCd: string) =>
+      `/api/v1/common-codes/mappings/qst-categories/${serviceCd}`,
   },
 
   // 사용자 역할 변경 이력
@@ -74,9 +80,20 @@ export const API_ENDPOINTS = {
     LIST: '/api/v1/histories/logins',
   },
 
-  // 데이터 변경 이력
+  // 결재 이력
+  APPROVAL_HISTORY: {
+    LIST: '/api/v1/histories/approvals',
+  },
+
+  // 데이터 변경 이력 (Audit Log)
   AUDIT_LOG: {
-    LIST: '/api/v1/audit-logs',
+    LIST: '/api/v1/histories/data-changes',
+  },
+
+  // 결재 요청 취소
+  APPROVAL_REQUEST: {
+    RETRACT: (approvalRequestId: number) =>
+      `/api/v1/approval-requests/${approvalRequestId}/retract`,
   },
 
   // 권한 관리 (auth_role)
