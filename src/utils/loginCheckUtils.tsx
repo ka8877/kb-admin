@@ -1,11 +1,5 @@
 import React from 'react';
 
-// interface UserInfoResponse {
-//   ip: string;
-//   lastLoginIp?: string;
-//   lastLoginTime?: string;
-// }
-
 /**
  * 로그인 후 사용자 IP 체크 및 알림 로직
  * @param userId 사용자 ID
@@ -13,8 +7,6 @@ import React from 'react';
 export const checkUserLoginIp = async (_userId: string) => {
   try {
     // 1. 사용자 정보 조회 (최근 로그인 IP 포함)
-    // const response = await getApi<UserInfoResponse>(API_ENDPOINTS.USER.INFO(userId));
-    // const { ip: lastLoginIp, lastLoginTime } = response.data;
 
     // 테스트용 하드코딩 데이터
     const lastLoginIp: string = '192.168.0.1';

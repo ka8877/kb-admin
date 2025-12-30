@@ -8,15 +8,9 @@ import PageHeader from '@/components/common/PageHeader';
 import ApprovalDetailList from '@components/common/list/ApprovalDetailList';
 import { ROUTES } from '@/routes/menu';
 import { selectFieldsConfig, dateFieldsConfig } from '@/pages/data-reg/app-scheme/data';
-import { TOAST_MESSAGES } from '@/constants/message';
-import { toast } from 'react-toastify';
-import { useApprovalDetailAppSchemes } from '@/pages/data-reg/app-scheme/hooks';
-import { fetchApprovalRequest, updateApprovalRequestStatus } from '@/pages/data-reg/app-scheme/api';
-import { useQuery } from '@tanstack/react-query';
-import { formatDateForStorage } from '@/utils/dateUtils';
+
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
 import { createProcessedColumns } from '@components/common/upload/utils/listUtils';
-import { APP_SCHEME, appSchemeKeys, approvalRequestKeys } from '@/constants/queryKey';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 
 const AppSchemeApprovalDetailPage: React.FC = () => {
@@ -25,14 +19,12 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   // React Query로 데이터 fetching
-  const { data = [], isLoading, isError } = useApprovalDetailAppSchemes(id);
+  const data: any[] = [];
+  const isLoading = false;
+  const isError = false;
 
   // 승인 요청 정보 조회
-  const { data: approvalRequest } = useQuery({
-    queryKey: appSchemeKeys.approvalRequest(id!),
-    queryFn: () => fetchApprovalRequest(id!),
-    enabled: !!id,
-  });
+  const approvalRequest: any = undefined;
 
   // sessionStorage 접근 최적화
   const savedApprovalState = useMemo(() => sessionStorage.getItem(APPROVAL_PAGE_STATE), []);
@@ -71,28 +63,7 @@ const AppSchemeApprovalDetailPage: React.FC = () => {
 
   // 최종 결재 처리
   const handleFinalApproval = useCallback(async () => {
-    try {
-      if (!id) {
-        toast.error(TOAST_MESSAGES.APPROVAL_ID_MISSING);
-        return;
-      }
-
-      // status를 in_review로 업데이트
-      const inReviewStatus = IN_REVIEW;
-      const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-      await updateApprovalRequestStatus(id, inReviewStatus, processDate);
-
-      // 모든 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalRequest(id!) });
-      queryClient.invalidateQueries({ queryKey: appSchemeKeys.approvalDetailQuestions(id!) });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
-
-      // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
-      handleBack();
-    } catch (error) {
-      console.error('결재 승인 실패:', error);
-      toast.error(TOAST_MESSAGES.FINAL_APPROVAL_FAILED);
-    }
+    console.log('handleFinalApproval disabled');
   }, [queryClient, id, handleBack]);
 
   return (

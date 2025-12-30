@@ -11,17 +11,12 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string | number) => `/api/v1/recommended-questions/${id}`,
     DELETE: (id: string | number) => `/api/v1/recommended-questions/${id}/remove`,
     DELETE_BATCH: '/api/v1/recommended-questions/bulk-remove',
-    APPROVAL: '/approval/recommended-questions.json',
     APPROVAL_LIST: '/api/v1/recommended-questions/approval-queue',
-    APPROVAL_DETAIL: (id: string | number) => `/approval/recommended-questions/${id}.json`,
-    APPROVAL_DETAIL_LIST: (id: string | number) =>
-      `/approval/recommended-questions/${id}/list.json`,
   },
 
   // 앱 스킴 관련
   APP_SCHEME: {
     BASE: '/api/v1/app-schemes',
-    LIST: '/data-reg/app-scheme.json',
     DETAIL: (id: string | number) => `/api/v1/app-schemes/${id}`,
     CREATE: '/api/v1/app-schemes',
     BULK_CREATE: '/api/v1/app-schemes/bulk-create',
@@ -29,8 +24,6 @@ export const API_ENDPOINTS = {
     DELETE: (id: string | number) => `/api/v1/app-schemes/${id}/remove`,
     DELETE_BATCH: '/api/v1/app-schemes/bulk-remove',
     APPROVAL_LIST: '/api/v1/app-schemes/approval-queue',
-    APPROVAL_DETAIL: (id: string | number) => `/approval/app-scheme/${id}.json`,
-    APPROVAL_DETAIL_LIST: (id: string | number) => `/approval/app-scheme/${id}/list.json`,
   },
 
   // 공통코드 관련 (cm_code_group, cm_code_item, cm_code_mapping)

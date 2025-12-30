@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
-import { useQueries } from '@tanstack/react-query';
 import ExcelUpload from '@/components/common/upload/ExcelUpload';
 import { SERVICE_CD } from '@/pages/data-reg/recommended-questions/data';
 import { yesNoOptions } from '@/constants/options';
@@ -11,7 +10,7 @@ import {
   useCreateRecommendedQuestionsBatch,
   useExcelSelectFieldsData,
   useServiceDataConverter,
-  fetchQuestionCategoriesByService,
+  useQuestionCategoriesCache,
 } from '@/pages/data-reg/recommended-questions/hooks';
 import { transformToApiFormat } from '@/pages/data-reg/recommended-questions/api';
 import { ROUTES } from '@/routes/menu';
@@ -41,23 +40,8 @@ const ApprovalExcelUpload: React.FC = () => {
   // 서비스 옵션을 메모이제이션
   const serviceOptions = useMemo(() => selectFieldsData[SERVICE_NM] || [], [selectFieldsData]);
 
-  // 모든 서비스 코드에 대한 질문 카테고리를 useQueries로 동시에 로드
-  const questionCategoryQueries = useQueries({
-    queries: serviceOptions.map((service) => ({
-      queryKey: ['questionCategories', service.value],
-      queryFn: () => fetchQuestionCategoriesByService(service.value),
-      staleTime: 1000 * 60 * 5,
-    })),
-  });
-
   // 질문 카테고리 캐시 생성
-  const questionCategoriesCache = useMemo(() => {
-    const cache: Record<string, { label: string; value: string }[]> = {};
-    serviceOptions.forEach((service, index) => {
-      cache[service.value] = questionCategoryQueries[index]?.data || [];
-    });
-    return cache;
-  }, [serviceOptions, questionCategoryQueries]);
+  const questionCategoriesCache = useQuestionCategoriesCache(serviceOptions);
 
   // 템플릿용 컬럼 (엑셀 파일용 - no 제외, serviceNm을 serviceCd로 교체)
   const templateColumns: GridColDef[] = useMemo(() => {

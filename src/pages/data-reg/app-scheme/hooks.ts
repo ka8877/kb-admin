@@ -8,7 +8,6 @@ import {
   updateAppScheme,
   createAppScheme,
   createAppSchemesBatch,
-  fetchApprovalDetailAppSchemes,
 } from '@/pages/data-reg/app-scheme/api';
 import type { AppSchemeItem } from '@/pages/data-reg/app-scheme/types';
 import { appSchemeKeys, approvalRequestKeys, APP_SCHEME } from '@/constants/queryKey';
@@ -64,17 +63,6 @@ export const useCreateAppSchemesBatch = () => {
       queryClient.invalidateQueries({ queryKey: appSchemeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: approvalRequestKeys.list(APP_SCHEME) });
     },
-  });
-};
-
-/**
- * 승인 요청 상세 조회 훅 (결재 요청에 포함된 앱스킴 목록)
- */
-export const useApprovalDetailAppSchemes = (approvalId: string | number | undefined) => {
-  return useQuery({
-    queryKey: appSchemeKeys.approvalDetailQuestions(approvalId!),
-    queryFn: () => fetchApprovalDetailAppSchemes(approvalId!),
-    enabled: !!approvalId,
   });
 };
 

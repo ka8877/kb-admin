@@ -1,9 +1,8 @@
 // frontend/src/pages/data-reg/recommended-questions/hooks.ts
 // frontend/src/pages/data-reg/recommended-questions/hooks.ts
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import {
   AGE_GRP,
-  loadQuestionCategoryGroupedOptions,
   QST_CTGR,
   SERVICE_NM,
   SHOW_U17,
@@ -12,24 +11,21 @@ import {
   QST_STYLE,
 } from '@/pages/data-reg/recommended-questions/data';
 
-type QuestionCategoryGroup = {
-  groupLabel: string;
-  groupValue: string;
-  options: { label: string; value: string }[];
-};
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+  useQueries,
+} from '@tanstack/react-query';
 import {
   approvalRequestKeys,
   RECOMMENDED_QUESTIONS,
   recommendedQuestionsKeys,
-  commonCodeKeys,
 } from '@/constants/queryKey';
 import {
   fetchRecommendedQuestions,
   fetchRecommendedQuestion,
-  fetchApprovalDetailQuestions,
-  fetchCodeItems,
-  fetchQuestionMappings,
   createRecommendedQuestion,
   createRecommendedQuestionsBatch,
   updateRecommendedQuestion,
@@ -50,101 +46,6 @@ import { getApi } from '@/utils/apiUtils';
 import { API_ENDPOINTS } from '@/constants/endpoints';
 import { CommonCodeItem } from '@/types/types';
 import { convertCommonCodeToOptions } from '@/utils/dataUtils';
-
-/**
- * 질문 카테고리 그룹 옵션을 로드하는 공통 훅
- * 내부적으로 사용되며, 다른 훅들이 이 데이터를 재사용할 수 있도록 함
- */
-export const useQuestionCategoryGroups = () => {
-  const [allCategories, setAllCategories] = useState<QuestionCategoryGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoading(true);
-        const categories = await loadQuestionCategoryGroupedOptions();
-        setAllCategories(categories);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadCategories();
-  }, []);
-
-  return { allCategories, isLoading };
-};
-
-/**
- * 선택된 서비스에 따라 필터링된 질문 카테고리 옵션을 반환하는 커스텀 훅
- * (그룹화된 형태 - GroupedSelectInput용)
- *
- * @param serviceCode - 선택된 서비스 코드 (예: 'ai_search', 'ai_calc')
- * @returns 필터링된 질문 카테고리 그룹 옵션 배열
- *
- * @example
- * const filteredOptions = useFilteredQuestionCategories('ai_search');
- * // AI 검색 관련 카테고리만 반환
- */
-export const useFilteredQuestionCategories = (serviceCode: string | undefined) => {
-  const { allCategories } = useQuestionCategoryGroups();
-
-  return useMemo(() => {
-    if (!serviceCode) {
-      return []; // 서비스 코드 미선택 시 빈 배열
-    }
-    // 선택된 서비스 코드와 groupValue가 일치하는 그룹만 필터링
-    return allCategories.filter((group) => group.groupValue === serviceCode);
-  }, [serviceCode, allCategories]);
-};
-
-/**
- * 선택된 서비스에 따라 필터링된 질문 카테고리 옵션을 반환하는 커스텀 훅
- * (평탄화된 형태 - 일반 SelectInput용)
- *
- * @param serviceCode - 선택된 서비스 코드 (예: 'ai_search', 'ai_calc')
- * @returns 필터링된 질문 카테고리 옵션 배열 (평탄화)
- *
- * @example
- * const options = useQuestionCategoryOptions('ai_search');
- * // AI 검색 관련 카테고리 옵션 배열 반환
- */
-export const useQuestionCategoryOptions = (serviceCode: string | undefined) => {
-  const { allCategories } = useQuestionCategoryGroups();
-
-  return useMemo(() => {
-    if (!serviceCode) {
-      return []; // 서비스 코드 미선택 시 빈 배열
-    }
-    // 선택된 서비스 코드와 groupValue가 일치하는 그룹 찾기
-    const matchedGroup = allCategories.find((group) => group.groupValue === serviceCode);
-    return matchedGroup ? matchedGroup.options : [];
-  }, [serviceCode, allCategories]);
-};
-
-/**
- * 서비스 코드별 질문 카테고리 옵션 맵을 반환하는 커스텀 훅
- * (ExcelUpload 등에서 동적 옵션 제공용)
- *
- * @returns 서비스 코드를 키로 하는 질문 카테고리 옵션 맵
- *
- * @example
- * const optionsMap = useQuestionCategoryOptionsMap();
- * const options = optionsMap['ai_search']; // AI 검색 관련 옵션 배열
- */
-export const useQuestionCategoryOptionsMap = () => {
-  const { allCategories } = useQuestionCategoryGroups();
-
-  return useMemo(() => {
-    return allCategories.reduce<Record<string, { label: string; value: string }[]>>(
-      (acc, group) => {
-        acc[group.groupValue] = group.options;
-        return acc;
-      },
-      {}
-    );
-  }, [allCategories]);
-};
 
 /**
  * 추천질문 목록 조회 훅 파라미터 타입
@@ -183,13 +84,6 @@ export const useRecommendedQuestion = (id: string | number | undefined) => {
 /**
  * 승인 요청 상세 조회 훅 (결재 요청에 포함된 추천질문 목록)
  */
-export const useApprovalDetailQuestions = (approvalId: string | number | undefined) => {
-  return useQuery({
-    queryKey: approvalRequestKeys.detailQuestions(approvalId!),
-    queryFn: () => fetchApprovalDetailQuestions(approvalId!),
-    enabled: !!approvalId,
-  });
-};
 
 /**
  * 추천질문 생성 뮤테이션 훅
@@ -284,48 +178,11 @@ export const useDeleteRecommendedQuestions = () => {
 };
 
 /**
- * 서비스 옵션 목록 조회 훅
- * code_group_id: 1765259941522 인 공통 코드를 조회
- */
-export const useServiceCodeOptions = () => {
-  return useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
-};
-
-/**
- * 질문 매핑 데이터를 로드하는 훅
- * (RecommendedQuestionDetailPage 등에서 동적 옵션 생성 시 사용)
- */
-export const useQuestionMappingData = () => {
-  // 1. 모든 코드 아이템 조회
-  const { data: codeItems = [] } = useQuery({
-    queryKey: commonCodeKeys.codeItemsLists(),
-    queryFn: fetchCodeItems,
-    staleTime: 1000 * 60 * 5,
-  });
-
-  // // 2. 서비스 매핑 조회 (service_nm ↔ service_cd)
-  // const { data: serviceMappings = [] } = useQuery({
-  //   queryKey: commonCodeKeys.serviceMappings(),
-  //   queryFn: fetchServiceMappings,
-  //   staleTime: 1000 * 60 * 5,
-  // });
-
-  // 3. 질문 매핑 조회 (service_cd ↔ qst_ctgr)
-  const { data: questionMappings = [] } = useQuery({
-    queryKey: commonCodeKeys.questionMappings(),
-    queryFn: fetchQuestionMappings,
-    staleTime: 1000 * 60 * 5,
-  });
-
-  return { codeItems, questionMappings };
-};
-
-/**
  * 서비스 코드별 질문 카테고리 조회 (공통 함수)
  * 훅과 validation 등에서 모두 사용 가능
  */
 export const fetchQuestionCategoriesByService = async (
-  serviceCode: string
+  serviceCode: string,
 ): Promise<{ label: string; value: string }[]> => {
   try {
     if (!serviceCode) return [];
@@ -359,23 +216,6 @@ export const useQuestionCategoriesByService = (serviceInput: string | undefined)
   });
 
   return questionCategories;
-};
-
-/**
- * 엑셀 참조 데이터를 반환하는 커스텀 훅
- * 서비스 코드와 연령대 옵션을 동적으로 로드하여 반환
- */
-export const useExcelReferenceData = () => {
-  const { data: serviceOptions = [] } = useCommonCodeOptions(CODE_GRUOP_ID_SERVICE_NM);
-  const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
-  const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
-
-  return {
-    서비스코드: serviceOptions,
-    연령대: ageGroupOptions,
-    '17세미만노출여부': yesNoOptions,
-    질문카테고리: questionCategoryOptions,
-  };
 };
 
 export const useSelectFieldsData = () => {
@@ -432,7 +272,7 @@ export const useServiceDataConverter = () => {
       // 3. 매칭되는 것이 없으면 입력값을 그대로 반환 (fallback)
       return { serviceCd: input, serviceNm: input };
     },
-    [serviceOptions]
+    [serviceOptions],
   );
 
   return { getServiceData };
@@ -472,22 +312,32 @@ export const useSearchFields = (serviceNm?: string): SearchField[] => {
       { field: STATUS, label: '데이터 등록 반영 상태', type: 'select', options: statusOptions },
       { field: AGE_GRP, label: '연령대', type: 'select', options: ageGroupOptions },
       { field: SHOW_U17, label: '17세 미만 여부', type: 'radio', options: yesNoOptions },
-      /*
-      {
-        field: 'imp_start',
-        dataField: IMP_START_DATE,
-        label: '노출 시작일시',
-        type: 'dateRange',
-        position: 'start',
-      },
-      {
-        field: 'imp_end',
-        dataField: IMP_END_DATE,
-        label: '노출 종료일시',
-        type: 'dateRange',
-        position: 'end',
-      }, */
     ],
-    [serviceOptions, ageGroupOptions, questionCategoryOptions]
+    [serviceOptions, ageGroupOptions, questionCategoryOptions],
   );
+};
+
+/**
+ * 서비스 옵션 목록에 대한 질문 카테고리를 일괄 조회하고 캐싱하는 훅
+ */
+export const useQuestionCategoriesCache = (serviceOptions: { label: string; value: string }[]) => {
+  // 모든 서비스 코드에 대한 질문 카테고리를 useQueries로 동시에 로드
+  const questionCategoryQueries = useQueries({
+    queries: serviceOptions.map((service) => ({
+      queryKey: ['questionCategories', service.value],
+      queryFn: () => fetchQuestionCategoriesByService(service.value),
+      staleTime: 1000 * 60 * 5,
+    })),
+  });
+
+  // 질문 카테고리 캐시 생성
+  const questionCategoriesCache = useMemo(() => {
+    const cache: Record<string, { label: string; value: string }[]> = {};
+    serviceOptions.forEach((service, index) => {
+      cache[service.value] = questionCategoryQueries[index]?.data || [];
+    });
+    return cache;
+  }, [serviceOptions, questionCategoryQueries]);
+
+  return questionCategoriesCache;
 };

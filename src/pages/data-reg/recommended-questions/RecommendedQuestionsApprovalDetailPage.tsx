@@ -13,17 +13,8 @@ import {
   createSelectFieldsConfig,
   dateFieldsConfig,
 } from '@/pages/data-reg/recommended-questions/data';
-import { TOAST_MESSAGES } from '@/constants/message';
-import { toast } from 'react-toastify';
-import { useApprovalDetailQuestions } from '@/pages/data-reg/recommended-questions/hooks';
-import {
-  fetchApprovalRequest,
-  updateApprovalRequestStatus,
-} from '@/pages/data-reg/recommended-questions/api';
-import { useQuery } from '@tanstack/react-query';
-import { formatDateForStorage } from '@/utils/dateUtils';
+
 import { IN_REVIEW, DONE_REVIEW, APPROVAL_PAGE_STATE } from '@/constants/options';
-import { approvalRequestKeys, RECOMMENDED_QUESTIONS } from '@/constants/queryKey';
 import { createProcessedColumns } from '@/components/common/upload/utils/listUtils';
 import { PAGE_TITLES } from '@/constants/pageTitle';
 
@@ -48,14 +39,12 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
   }, []);
 
   // React Query로 데이터 fetching
-  const { data = [], isLoading, isError } = useApprovalDetailQuestions(id);
+  const data: any[] = [];
+  const isLoading = false;
+  const isError = false;
 
   // 승인 요청 정보 조회
-  const { data: approvalRequest } = useQuery({
-    queryKey: approvalRequestKeys.detail(id!),
-    queryFn: () => fetchApprovalRequest(id!),
-    enabled: !!id,
-  });
+  const approvalRequest: any = undefined;
 
   // sessionStorage 접근 최적화
   const savedApprovalState = useMemo(() => sessionStorage.getItem(APPROVAL_PAGE_STATE), []);
@@ -99,30 +88,7 @@ const RecommendedQuestionsApprovalDetailPage: React.FC = () => {
 
   // 최종 결재 처리
   const handleFinalApproval = useCallback(async () => {
-    try {
-      if (!id) {
-        toast.error(TOAST_MESSAGES.APPROVAL_ID_MISSING);
-        return;
-      }
-
-      // status를 in_review로 업데이트
-      const inReviewStatus = IN_REVIEW;
-      const processDate = formatDateForStorage(new Date(), 'YYYYMMDDHHmmss') || '';
-      await updateApprovalRequestStatus(id, inReviewStatus, processDate);
-
-      // 모든 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: approvalRequestKeys.detailQuestions(id) });
-      queryClient.invalidateQueries({
-        queryKey: approvalRequestKeys.list(RECOMMENDED_QUESTIONS),
-      });
-
-      // toast.success(TOAST_MESSAGES.FINAL_APPROVAL_REQUESTED);
-      handleBack();
-    } catch (error) {
-      console.error('결재 승인 실패:', error);
-      toast.error(TOAST_MESSAGES.FINAL_APPROVAL_FAILED);
-    }
+    console.log('handleFinalApproval disabled');
   }, [queryClient, id, handleBack]);
 
   return (

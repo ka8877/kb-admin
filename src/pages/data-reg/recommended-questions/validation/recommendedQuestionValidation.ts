@@ -6,9 +6,8 @@
  */
 
 import { useCommonCodeOptions } from '@/hooks';
-import { useCallback, useMemo } from 'react';
-import { useQueries } from '@tanstack/react-query';
-import { fetchQuestionCategoriesByService } from '@/pages/data-reg/recommended-questions/hooks';
+import { useCallback } from 'react';
+import { useQuestionCategoriesCache } from '@/pages/data-reg/recommended-questions/hooks';
 import {
   CODE_GROUP_ID_QST_CTGR,
   CODE_GRUOP_ID_SERVICE_NM,
@@ -233,23 +232,8 @@ export const useRecommendedQuestionValidator = () => {
   const { data: ageGroupOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_AGE);
   const { data: questionCategoryOptions = [] } = useCommonCodeOptions(CODE_GROUP_ID_QST_CTGR);
 
-  // 모든 서비스 코드에 대한 질문 카테고리를 useQueries로 동시에 로드
-  const questionCategoryQueries = useQueries({
-    queries: serviceOptions.map((service) => ({
-      queryKey: ['questionCategories', service.value],
-      queryFn: () => fetchQuestionCategoriesByService(service.value),
-      staleTime: 1000 * 60 * 5,
-    })),
-  });
-
   // 질문 카테고리 캐시 생성 (서비스별 카테고리 매핑)
-  const questionCategoriesCache = useMemo(() => {
-    const cache: Record<string, { label: string; value: string }[]> = {};
-    serviceOptions.forEach((service, index) => {
-      cache[service.value] = questionCategoryQueries[index]?.data || [];
-    });
-    return cache;
-  }, [serviceOptions, questionCategoryQueries]);
+  const questionCategoriesCache = useQuestionCategoriesCache(serviceOptions);
 
   const validateServiceName = useCallback((value: string | null | undefined): ValidationResult => {
     if (!value || value.trim() === '') {
