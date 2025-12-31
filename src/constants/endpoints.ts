@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
     CODE_ITEMS_ALL: '/api/v1/common-codes/items', // 모든 코드 아이템 조회
     CODE_ITEMS: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
     CODE_ITEM_DETAIL: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
-    CODE_ITEM_CREATE: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
+    CODE_ITEM_CREATE: (groupCode: string) => `/api/aia/v1/common-codes/groups/${groupCode}/items`,
     CODE_ITEM_UPDATE: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
     CODE_ITEM_DEACTIVATE: (codeItemId: number) =>
       `/api/v1/common-codes/items/${codeItemId}/deactivate`,
