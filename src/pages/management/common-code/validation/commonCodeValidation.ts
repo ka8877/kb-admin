@@ -88,11 +88,18 @@ export class CodeItemValidator {
     return /[\x00-\x1F\x7F-\x9F]/.test(value);
   }
 
-  // 코드 validation (빈 값 허용 - 백엔드 자동 채번)
-  static validateCode(value: string | null | undefined): ValidationResult {
-    // 빈 값인 경우 백엔드에서 자동 채번되므로 통과
-    if (!value || String(value).trim() === '') {
-      return { isValid: true };
+  // 코드 validation (빈 값 허용 - 백엔드 자동 채번, service_nm의 경우 필수)
+  static validateCode(value: string | null | undefined, groupCode?: string): ValidationResult {
+    // service_nm의 경우 필수 입력
+    if (groupCode === 'service_nm') {
+      if (!value || String(value).trim() === '') {
+        return { isValid: false, message: '서비스코드는 필수입니다' };
+      }
+    } else {
+      // 빈 값인 경우 백엔드에서 자동 채번되므로 통과
+      if (!value || String(value).trim() === '') {
+        return { isValid: true };
+      }
     }
 
     const code = String(value).trim();
@@ -134,9 +141,12 @@ export class CodeItemValidator {
   }
 
   // 필드별 validation 결과 반환
-  static validateByField(data: { code?: string; codeName?: string }): FieldValidationResult {
+  static validateByField(
+    data: { code?: string; codeName?: string },
+    groupCode?: string,
+  ): FieldValidationResult {
     return {
-      code: this.validateCode(data.code),
+      code: this.validateCode(data.code, groupCode),
       codeName: this.validateCodeName(data.codeName),
     };
   }

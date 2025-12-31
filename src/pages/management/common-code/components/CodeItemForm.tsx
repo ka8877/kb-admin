@@ -64,7 +64,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
   }, []);
 
   const validateAndShowErrors = useCallback((): boolean => {
-    const validationResults = CodeItemValidator.validateByField(formData);
+    const validationResults = CodeItemValidator.validateByField(formData, groupCode);
     const errors: Record<string, string> = {};
 
     Object.entries(validationResults).forEach(([field, result]) => {
@@ -75,7 +75,7 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [formData]);
+  }, [formData, groupCode]);
 
   const handleSave = useCallback(() => {
     if (!validateAndShowErrors()) {
@@ -155,27 +155,22 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               <MenuItem value="0">미사용</MenuItem>
             </TextField>
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <TextField
-              fullWidth
-              size="small"
-              label={groupCode === 'service_nm' ? '서비스코드' : '코드 (선택)'}
-              value={formData.code || ''}
-              onChange={(e) => handleChange('code', e.target.value)}
-              disabled={disabled}
-              placeholder={
-                groupCode === 'service_nm' ? '서비스코드 입력' : '비워두면 자동 생성됩니다'
-              }
-              error={!!fieldErrors.code}
-              helperText={
-                fieldErrors.code ||
-                (groupCode === 'service_nm'
-                  ? '서비스코드 값을 입력하세요 (예: service_01)'
-                  : '입력하지 않으면 자동으로 생성됩니다')
-              }
-              required={groupCode === 'service_nm'}
-            />
-          </Box>
+          {groupCode === 'service_nm' && (
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="서비스코드"
+                value={formData.code || ''}
+                onChange={(e) => handleChange('code', e.target.value)}
+                disabled={disabled}
+                placeholder="서비스코드 입력"
+                error={!!fieldErrors.code}
+                helperText={fieldErrors.code || '서비스코드 값을 입력하세요 (예: service_01)'}
+                required
+              />
+            </Box>
+          )}
         </Stack>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1 }}>
