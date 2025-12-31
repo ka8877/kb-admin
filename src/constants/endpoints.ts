@@ -39,16 +39,16 @@ export const API_ENDPOINTS = {
     CODE_GROUP_DEACTIVATE: (groupCode: string) =>
       `/api/v1/common-codes/groups/${groupCode}/deactivate`,
     // 코드아이템 (cm_code_item)
-    CODE_ITEMS_ALL: '/api/v1/common-codes/items', // 모든 코드 아이템 조회
-    CODE_ITEMS: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
-    CODE_ITEM_DETAIL: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
-    CODE_ITEM_CREATE: (groupCode: string) => `/api/v1/common-codes/groups/${groupCode}/items`,
-    CODE_ITEM_UPDATE: (codeItemId: number) => `/api/v1/common-codes/items/${codeItemId}`,
+    CODE_ITEMS_ALL: '/api/aia/v1/common-codes/items', // 모든 코드 아이템 조회
+    CODE_ITEMS: (groupCode: string) => `/api/aia/v1/common-codes/groups/${groupCode}/items`,
+    CODE_ITEM_DETAIL: (codeItemId: number) => `/api/aia/v1/common-codes/items/${codeItemId}`,
+    CODE_ITEM_CREATE: (groupCode: string) => `/api/aia/v1/common-codes/groups/${groupCode}/items`,
+    CODE_ITEM_UPDATE: (codeItemId: number) => `/api/aia/v1/common-codes/items/${codeItemId}`,
     CODE_ITEM_DEACTIVATE: (codeItemId: number) =>
-      `/api/v1/common-codes/items/${codeItemId}/deactivate`,
-    CODE_ITEMS_BULK_DEACTIVATE: '/api/v1/common-codes/items/bulk-deactivate',
+      `/api/aia/v1/common-codes/items/${codeItemId}/deactivate`,
+    CODE_ITEMS_BULK_DEACTIVATE: '/api/aia/v1/common-codes/items/bulk-deactivate',
     CODE_ITEMS_REORDER: (groupCode: string) =>
-      `/api/v1/common-codes/groups/${groupCode}/items/reorder`,
+      `/api/aia/v1/common-codes/groups/${groupCode}/items/reorder`,
     // 코드 매핑 (서비스별 질문 카테고리)
     QST_CATEGORIES: '/api/v1/common-codes/mappings/qst-categories', // serviceCd query 필요
     QST_CATEGORIES_SERVICES: '/api/v1/common-codes/mappings/qst-categories/services',
