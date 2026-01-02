@@ -54,7 +54,7 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
   // 다음 정렬순서 자동 계산
   const nextSortOrder = useMemo(() => {
     if (codeItems.length === 0) return 1;
-    const maxSortOrder = Math.max(...codeItems.map((item) => item.sortOrder));
+    const maxSortOrder = Math.max(...codeItems.map((item) => item.sortOrder || 0));
     return maxSortOrder + 1;
   }, [codeItems]);
 
