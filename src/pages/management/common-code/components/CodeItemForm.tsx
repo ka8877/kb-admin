@@ -155,27 +155,23 @@ const CodeItemForm: React.FC<CodeItemFormProps> = ({
               <MenuItem value="0">미사용</MenuItem>
             </TextField>
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <TextField
-              fullWidth
-              size="small"
-              label={groupCode === 'service_nm' ? '서비스코드' : '코드 (선택)'}
-              value={formData.code || ''}
-              onChange={(e) => handleChange('code', e.target.value)}
-              disabled={disabled}
-              placeholder={
-                groupCode === 'service_nm' ? '서비스코드 입력' : '비워두면 자동 생성됩니다'
-              }
-              error={!!fieldErrors.code}
-              helperText={
-                fieldErrors.code ||
-                (groupCode === 'service_nm'
-                  ? '서비스코드 값을 입력하세요 (예: service_01)'
-                  : '입력하지 않으면 자동으로 생성됩니다')
-              }
-              required={groupCode === 'service_nm'}
-            />
-          </Box>
+          {/* 코드 입력란 - service_nm일 때만 표시 */}
+          {groupCode === 'service_nm' && (
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="서비스코드"
+                value={formData.code || ''}
+                onChange={(e) => handleChange('code', e.target.value)}
+                disabled={disabled || !isNew}
+                placeholder="서비스코드 입력"
+                required
+                error={!!fieldErrors.code}
+                helperText={fieldErrors.code || '서비스코드 값을 입력하세요 (예: service_01)'}
+              />
+            </Box>
+          )}
         </Stack>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1 }}>

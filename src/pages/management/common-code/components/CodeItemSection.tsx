@@ -51,41 +51,16 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
   const [isSortChanged, setIsSortChanged] = useState(false); // 정렬 변경 여부
   const [selectedItemIds, setSelectedItemIds] = useState<(string | number)[]>([]); // 선택된 아이템 ID
 
+  // 다음 정렬순서 자동 계산
+  const nextSortOrder = useMemo(() => {
+    if (codeItems.length === 0) return 1;
+    const maxSortOrder = Math.max(...codeItems.map((item) => item.sortOrder));
+    return maxSortOrder + 1;
+  }, [codeItems]);
+
   // 동적 컬럼 생성
   const dynamicColumns = useMemo((): GridColDef<CodeItemDisplay>[] => {
-    if (selectedGroup?.groupCode === 'service_nm') {
-      // service_nm: 정렬순서, 서비스코드(code), 서비스명(codeName), 사용여부
-      return [
-        {
-          field: 'sortOrder',
-          headerName: '정렬순서',
-          width: 100,
-          align: 'center' as const,
-          headerAlign: 'center' as const,
-        },
-        {
-          field: 'code',
-          headerName: '서비스코드',
-          width: 150,
-        },
-        {
-          field: 'codeName',
-          headerName: '서비스명',
-          flex: 1,
-        },
-        {
-          field: 'isActive',
-          headerName: '사용여부',
-          width: 100,
-          align: 'center' as const,
-          headerAlign: 'center' as const,
-          renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
-            params.value ? '사용' : '미사용',
-        },
-      ];
-    }
-    // 다른 그룹: 정렬순서, 코드명(codeName), 사용여부 (코드는 숨김)
-    return [
+    const baseColumns: GridColDef<CodeItemDisplay>[] = [
       {
         field: 'sortOrder',
         headerName: '정렬순서',
@@ -93,9 +68,21 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
         align: 'center' as const,
         headerAlign: 'center' as const,
       },
+    ];
+
+    // service_nm인 경우에만 코드 컬럼 추가
+    if (selectedGroup?.groupCode === 'service_nm') {
+      baseColumns.push({
+        field: 'code',
+        headerName: '서비스코드',
+        width: 150,
+      });
+    }
+
+    baseColumns.push(
       {
         field: 'codeName',
-        headerName: '코드명',
+        headerName: selectedGroup?.groupCode === 'service_nm' ? '서비스명' : '코드명',
         flex: 1,
       },
       {
@@ -107,8 +94,10 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
         renderCell: (params: GridRenderCellParams<CodeItemDisplay>) =>
           params.value ? '사용' : '미사용',
       },
-    ];
-  }, [selectedGroup?.groupCode]);
+    );
+
+    return baseColumns;
+  }, [selectedGroup]);
 
   // 코드아이템 (소분류) 추가 및 수정 로직
   const handleItemRowClick = useCallback(
@@ -118,7 +107,7 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
       setIsItemFormOpen(true);
       setIsNewItem(false);
     },
-    []
+    [],
   );
 
   const handleAddItem = useCallback(() => {
@@ -139,7 +128,7 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
     (code: string) => {
       return codeItems.some((item) => item.code === code);
     },
-    [codeItems]
+    [codeItems],
   );
 
   const handleSaveItem = useCallback(
@@ -215,7 +204,7 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
       createItemMutation,
       updateItemMutation,
       showAlert,
-    ]
+    ],
   );
 
   const handleDeleteItem = useCallback(async () => {
@@ -449,6 +438,7 @@ const CodeItemSection: React.FC<CodeItemSectionProps> = ({ selectedGroup }) => {
             isNew={isNewItem}
             selectedCodeGroupId={selectedGroup.codeGroupId}
             groupCode={selectedGroup.groupCode}
+            initialSortOrder={nextSortOrder}
             onSave={handleSaveItem}
             onCancel={handleCancelForm}
             onDelete={handleDeleteItem}
